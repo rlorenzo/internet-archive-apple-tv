@@ -9,13 +9,14 @@ This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swi
 ---
 
 ## Sprint 1: Project Configuration & Build Setup
-**Estimated Time:** 8-12 hours
+**Estimated Time:** 10-14 hours
 **PR Title:** `chore: Update project configuration for Xcode 16 and Swift 6.2`
 
 ### Goals
 - Get project to open in modern Xcode
 - Update build settings
 - Prepare for dependency updates
+- Set up code quality tooling
 
 ### Tasks
 - [ ] Update `.xcodeproj` Swift language version to 6.2
@@ -26,9 +27,19 @@ This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swi
 - [ ] Remove deprecated build settings
 - [ ] Add `.swift-version` file
 - [ ] Update `.gitignore` for modern Xcode artifacts
+- [ ] **Set up SwiftLint:**
+  - [ ] Add SwiftLint to Podfile (or install via Homebrew/SPM)
+  - [ ] Create `.swiftlint.yml` configuration file
+  - [ ] Configure rules appropriate for legacy codebase migration
+  - [ ] Add SwiftLint build phase to Xcode project
+- [ ] **Set up pre-commit hook:**
+  - [ ] Create `.git/hooks/pre-commit` script
+  - [ ] Run SwiftLint on staged Swift files before commit
+  - [ ] Add installation script for team onboarding
+  - [ ] Document hook setup in README
 
 ### Deliverable
-Project opens in Xcode 16+ without configuration errors (code won't compile yet)
+Project opens in Xcode 16+ without configuration errors, SwiftLint configured with pre-commit hook (code won't compile yet due to Swift version mismatch)
 
 ---
 
