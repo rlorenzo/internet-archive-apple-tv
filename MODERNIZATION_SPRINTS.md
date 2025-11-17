@@ -59,9 +59,10 @@ This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swi
 
 ---
 
-## Sprint 2: Dependency Modernization & Xcode Configuration
+## Sprint 2: Dependency Modernization & Xcode Configuration ✅ COMPLETED
 **Estimated Time:** 12-16 hours
 **PR Title:** `chore: Migrate dependencies to modern versions and update Xcode project`
+**Status:** Merged to master
 
 ### Goals
 - Update CocoaPods to latest versions
@@ -71,29 +72,37 @@ This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swi
 
 ### Tasks
 **Xcode Project Configuration (deferred from Sprint 1):**
-- [ ] Update `.xcodeproj` Swift language version to 5.0 (stepping stone to 6.0)
-- [ ] Update tvOS deployment target to 17.0 in project settings
-- [ ] Update build settings for Xcode 16+
-- [ ] Fix code signing configuration for CI
-- [ ] Update Info.plist for modern requirements
-- [ ] Remove deprecated build settings
-- [ ] Add SwiftLint build phase to Xcode project
+- [x] Update `.xcodeproj` Swift language version to 6.0 (direct jump to latest)
+- [x] Update tvOS deployment target to 26.0 (latest tvOS)
+- [x] Update build settings for Xcode 16+
+- [x] Fix code signing configuration for CI (Automatic signing, no hardcoded profiles)
+- [x] Update Info.plist for modern requirements (version 2.0.0)
+- [x] Remove deprecated build settings (removed manual provisioning)
+- [x] Add SwiftLint build phase to Xcode project
 
 **Dependency Updates:**
-- [ ] Update Podfile for modern dependency versions:
+- [x] Update Podfile for modern dependency versions:
   ```ruby
-  pod 'Alamofire', '~> 5.10'
-  pod 'AlamofireImage', '~> 4.3'
-  pod 'SVProgressHUD', '~> 2.3'
-  pod 'MBProgressHUD', '~> 1.2'
-  pod 'TvOSMoreButton', '~> 1.3'
+  pod 'Alamofire', '~> 4.9.1'      # Latest 4.x (5.x migration in Sprint 4)
+  pod 'AlamofireImage', '~> 3.6.0'
+  pod 'SVProgressHUD', '~> 2.3.1'
+  pod 'MBProgressHUD', '~> 1.2.0'
+  pod 'TvOSMoreButton', '~> 1.4.1'
+  pod 'TvOSTextViewer', '~> 1.1.1'
   ```
-- [ ] Consider migrating to Swift Package Manager (SPM)
-- [ ] Update framework embed settings
-- [ ] Document dependency versions in README
+- [ ] Consider migrating to Swift Package Manager (SPM) *(deferred - low priority)*
+- [x] Update framework embed settings
+- [x] Update CI/CD to use macOS-15/26 with Xcode 16.4/26.0
 
 ### Deliverable
-Xcode project configured for modern toolchain, modern dependencies ready (compilation errors expected due to API changes)
+✅ Xcode project configured for Swift 6.0 and tvOS 26.0, dependencies updated to latest compatible versions, SwiftLint build phase integrated.
+
+### Files Modified
+- `Internet Archive.xcodeproj/project.pbxproj` - Swift 6.0, tvOS 26.0, SwiftLint build phase
+- `Internet Archive/Info.plist` - Version 2.0.0
+- `Podfile` - Updated all dependency versions
+- `.github/workflows/ci.yml` - macOS-15/26 matrix builds
+- All documentation updated to reflect Swift 6.0 and tvOS 26.0
 
 ---
 
