@@ -255,6 +255,7 @@
 			buildPhases = (
 				E806C61111DA9AB4C11D4A9C /* [CP] Check Pods Manifest.lock */,
 				C3260C6220A2287F00C32ACA /* Sources */,
+				SWIFTLINT000000000000001 /* SwiftLint */,
 				C3260C6320A2287F00C32ACA /* Frameworks */,
 				C3260C6420A2287F00C32ACA /* Resources */,
 				AEDB3DA496DBC581E859B8B4 /* [CP] Embed Pods Frameworks */,
@@ -349,6 +350,24 @@
 			shellPath = /bin/sh;
 			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Internet Archive/Pods-Internet Archive-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
+		};
+		SWIFTLINT000000000000001 /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Run SwiftLint if available\nif which swiftlint >/dev/null; then\n  swiftlint\nelif [ -f \"${PODS_ROOT}/SwiftLint/swiftlint\" ]; then\n  \"${PODS_ROOT}/SwiftLint/swiftlint\"\nelse\n  echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\nfi\n";
 		};
 		C7E165C9561790F7E7A3A5A1 /* [CP] Copy Pods Resources */ = {
 			isa = PBXShellScriptBuildPhase;
