@@ -65,7 +65,7 @@ class APIManager: NSObject {
             HTTPCookiePropertyKey.value: "1",
             HTTPCookiePropertyKey.domain: ".archive.org",
             HTTPCookiePropertyKey.secure: false,
-            HTTPCookiePropertyKey.expires: NSDate(timeIntervalSinceNow: 86400 * 20)
+            HTTPCookiePropertyKey.expires: Date(timeIntervalSinceNow: 86400 * 20)
         ]
         
         if let cookie = HTTPCookie(properties: cookieProps) {

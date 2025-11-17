@@ -18,11 +18,6 @@ class BaseNC: UINavigationController {
         // Do any additional setup after loading the view.
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
-    
 //    func gotoYearsVC(collection: String, title: String, identifier: String) -> Void {
 //        let yearsVC = self.storyboard?.instantiateViewController(withIdentifier: "YearsVC") as! YearsVC
 //        yearsVC.collection = collection

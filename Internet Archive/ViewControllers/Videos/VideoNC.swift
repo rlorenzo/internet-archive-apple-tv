@@ -16,11 +16,6 @@ class VideoNC: BaseNC {
         gotoVideoVC()
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
-    
     func gotoVideoVC() -> Void {
         let videoVC = self.storyboard?.instantiateViewController(withIdentifier: "VideoVC") as! VideoVC
         self.viewControllers = [videoVC]
