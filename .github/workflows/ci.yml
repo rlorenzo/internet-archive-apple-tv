@@ -2,9 +2,9 @@ name: CI - Lint and Build
 
 on:
   push:
-    branches: [ master, main, 'claude/**' ]
+    branches: [ master, main ]  # Only run on direct pushes to main/master
   pull_request:
-    branches: [ master, main ]
+    branches: [ master, main ]  # Run on PRs targeting main/master
 
 env:
   SCHEME: "Internet Archive"
