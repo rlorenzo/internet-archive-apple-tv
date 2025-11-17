@@ -2,15 +2,16 @@
 
 ## Overview
 
-This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swift 6.2/tvOS 26 into manageable sprints, each resulting in a separate Pull Request.
+This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swift 6.0/tvOS 26 into manageable sprints, each resulting in a separate Pull Request.
 
 **Total Estimated Time:** 200-300 hours across 10-12 sprints
 
 ---
 
-## Sprint 1: Project Configuration & Build Setup
+## Sprint 1: Project Configuration & Build Setup ✅ COMPLETED
 **Estimated Time:** 10-14 hours
-**PR Title:** `chore: Update project configuration for Xcode 16 and Swift 6.2`
+**PR Title:** `chore: Update project configuration for Xcode 16 and Swift 6.0`
+**Status:** Merged to master
 
 ### Goals
 - Get project to open in modern Xcode
@@ -19,41 +20,66 @@ This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swi
 - Set up code quality tooling
 
 ### Tasks
-- [ ] Update `.xcodeproj` Swift language version to 6.2
-- [ ] Update tvOS deployment target to 17.0 (minimum for modern features)
-- [ ] Update build settings for new Xcode
-- [ ] Fix code signing configuration
-- [ ] Update Info.plist for modern requirements
-- [ ] Remove deprecated build settings
-- [ ] Add `.swift-version` file
-- [ ] Update `.gitignore` for modern Xcode artifacts
-- [ ] **Set up SwiftLint:**
-  - [ ] Add SwiftLint to Podfile (or install via Homebrew/SPM)
-  - [ ] Create `.swiftlint.yml` configuration file
-  - [ ] Configure rules appropriate for legacy codebase migration
-  - [ ] Add SwiftLint build phase to Xcode project
-- [ ] **Set up pre-commit hook:**
-  - [ ] Create `.git/hooks/pre-commit` script
-  - [ ] Run SwiftLint on staged Swift files before commit
-  - [ ] Add installation script for team onboarding
-  - [ ] Document hook setup in README
+- [ ] Update `.xcodeproj` Swift language version to 6.0 *(deferred to Sprint 2)*
+- [ ] Update tvOS deployment target to 17.0 (minimum for modern features) *(deferred to Sprint 2)*
+- [ ] Update build settings for new Xcode *(deferred to Sprint 2)*
+- [ ] Fix code signing configuration *(deferred to Sprint 2)*
+- [ ] Update Info.plist for modern requirements *(deferred to Sprint 2)*
+- [ ] Remove deprecated build settings *(deferred to Sprint 2)*
+- [x] Add `.swift-version` file
+- [x] Update `.gitignore` for modern Xcode artifacts
+- [x] **Set up SwiftLint:**
+  - [x] Add SwiftLint to Podfile (or install via Homebrew/SPM)
+  - [x] Create `.swiftlint.yml` configuration file
+  - [x] Configure rules appropriate for legacy codebase migration
+  - [ ] Add SwiftLint build phase to Xcode project *(deferred to Sprint 2)*
+- [x] **Set up pre-commit hook:**
+  - [x] Create `.git/hooks/pre-commit` script
+  - [x] Run SwiftLint on staged Swift files before commit
+  - [x] Add installation script for team onboarding
+  - [x] Document hook setup in README
+- [x] **Set up GitHub Actions CI:** *(added)*
+  - [x] Create workflow for linting and building
+  - [x] Configure matrix builds for multiple macOS versions
+  - [x] Make workflow lenient during migration phase
 
 ### Deliverable
-Project opens in Xcode 16+ without configuration errors, SwiftLint configured with pre-commit hook (code won't compile yet due to Swift version mismatch)
+✅ SwiftLint configured with pre-commit hook and GitHub Actions CI pipeline. Xcode project configuration deferred to Sprint 2.
+
+### Files Added/Modified
+- `.swiftlint.yml` - Custom rules for deprecated APIs
+- `.gitignore` - Modern Xcode 16+ exclusions
+- `.swift-version` - Target Swift 6.0
+- `.env.example` - Template for API credentials
+- `Podfile` - Added SwiftLint pod, tvOS 17.0 platform
+- `scripts/pre-commit` - Git hook for SwiftLint
+- `scripts/setup-hooks.sh` - Team onboarding script
+- `DEVELOPMENT_SETUP.md` - Comprehensive setup guide
+- `.github/workflows/ci.yml` - CI/CD pipeline
 
 ---
 
-## Sprint 2: Dependency Modernization
+## Sprint 2: Dependency Modernization & Xcode Configuration
 **Estimated Time:** 12-16 hours
-**PR Title:** `chore: Migrate dependencies to modern versions`
+**PR Title:** `chore: Migrate dependencies to modern versions and update Xcode project`
 
 ### Goals
 - Update CocoaPods to latest versions
 - Replace deprecated dependencies
+- Update Xcode project configuration for modern toolchain
 - Prepare for networking layer changes
 
 ### Tasks
-- [ ] Update CocoaPods to 1.16+
+**Xcode Project Configuration (deferred from Sprint 1):**
+- [ ] Update `.xcodeproj` Swift language version to 5.0 (stepping stone to 6.0)
+- [ ] Update tvOS deployment target to 17.0 in project settings
+- [ ] Update build settings for Xcode 16+
+- [ ] Fix code signing configuration for CI
+- [ ] Update Info.plist for modern requirements
+- [ ] Remove deprecated build settings
+- [ ] Add SwiftLint build phase to Xcode project
+
+**Dependency Updates:**
 - [ ] Update Podfile for modern dependency versions:
   ```ruby
   pod 'Alamofire', '~> 5.10'
@@ -62,19 +88,18 @@ Project opens in Xcode 16+ without configuration errors, SwiftLint configured wi
   pod 'MBProgressHUD', '~> 1.2'
   pod 'TvOSMoreButton', '~> 1.3'
   ```
-- [ ] Run `pod install` with new versions
 - [ ] Consider migrating to Swift Package Manager (SPM)
 - [ ] Update framework embed settings
 - [ ] Document dependency versions in README
 
 ### Deliverable
-Modern dependencies installed (compilation errors expected due to API changes)
+Xcode project configured for modern toolchain, modern dependencies ready (compilation errors expected due to API changes)
 
 ---
 
 ## Sprint 3: Swift Syntax Migration - Phase 1
 **Estimated Time:** 10-14 hours
-**PR Title:** `fix: Update deprecated Swift 4 syntax to Swift 6.2`
+**PR Title:** `fix: Update deprecated Swift 4 syntax to Swift 6.0`
 
 ### Goals
 - Fix all Swift language syntax errors
@@ -98,7 +123,7 @@ Modern dependencies installed (compilation errors expected due to API changes)
   - RegisterVC.swift
   - FavoriteNC.swift
 - [ ] Update `UIActivityIndicatorViewStyle` if present
-- [ ] Fix any other Swift 4→6.2 syntax issues
+- [ ] Fix any other Swift 4→6.0 syntax issues
 
 ### Deliverable
 All Swift syntax errors resolved (API errors from Alamofire still present)

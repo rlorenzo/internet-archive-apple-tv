@@ -4,8 +4,8 @@ This guide explains how to set up your development environment for the Internet 
 
 ## Prerequisites
 
-- **Xcode 16.0+** (for Swift 6.2 support)
-- **tvOS 17.0+ SDK**
+- **Xcode 16.0+** (for Swift 6.0 support)
+- **tvOS 26.0 SDK**
 - **CocoaPods 1.16+** (`gem install cocoapods`)
 - **SwiftLint** (`brew install swiftlint`)
 
@@ -106,12 +106,11 @@ The SwiftLint configuration includes custom rules to catch:
 ## Build Configuration
 
 ### Swift Version
-- **Target:** Swift 6.2
+- **Target:** Swift 6.0
 - **Strict Concurrency:** Enabled (after Sprint 8)
 
 ### tvOS Deployment Target
-- **Minimum:** tvOS 17.0
-- **Recommended:** tvOS 18.0+
+- **Target:** tvOS 26.0
 
 ### Code Signing
 Configure your development team in Xcode:
