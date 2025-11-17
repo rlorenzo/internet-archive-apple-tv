@@ -1,0 +1,108 @@
+name: CI - Lint and Build
+
+on:
+  push:
+    branches: [ master, main, 'claude/**' ]
+  pull_request:
+    branches: [ master, main ]
+
+env:
+  SCHEME: "Internet Archive"
+  WORKSPACE: "Internet Archive.xcworkspace"
+
+jobs:
+  swiftlint:
+    name: SwiftLint
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Run SwiftLint
+        run: swiftlint lint --config .swiftlint.yml --reporter github-actions-logging
+
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            xcode: latest-stable
+            destination: "platform=tvOS Simulator,name=Apple TV 4K (3rd generation)"
+          - os: macos-15
+            xcode: "16.1"
+            destination: "platform=tvOS Simulator,name=Apple TV 4K (3rd generation)"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: |
+          if [ "${{ matrix.xcode }}" = "latest-stable" ]; then
+            sudo xcode-select -s /Applications/Xcode.app
+          else
+            sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
+          fi
+          xcodebuild -version
+          swift --version
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+
+      - name: Install CocoaPods
+        run: |
+          gem install cocoapods
+          pod --version
+
+      - name: Install xcpretty
+        run: gem install xcpretty
+
+      - name: Install dependencies
+        run: pod install --repo-update
+
+      - name: Show available simulators
+        run: xcrun simctl list devices available | grep -i "tv"
+
+      - name: Build for tvOS
+        run: |
+          set -o pipefail
+          xcodebuild clean build \
+            -workspace "${{ env.WORKSPACE }}" \
+            -scheme "${{ env.SCHEME }}" \
+            -destination "${{ matrix.destination }}" \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | xcpretty --color
+
+      - name: Build status
+        if: always()
+        run: |
+          echo "Build completed with status: ${{ job.status }}"
+
+  # Summary job that requires all other jobs to pass
+  ci-success:
+    name: CI Success
+    needs: [swiftlint, build]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all jobs
+        run: |
+          if [ "${{ needs.swiftlint.result }}" != "success" ] || [ "${{ needs.build.result }}" != "success" ]; then
+            echo "One or more jobs failed"
+            exit 1
+          fi
+          echo "All CI checks passed!"
