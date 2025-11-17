@@ -1,18 +1,20 @@
 # Internet Archive Apple TV
-# Platform: tvOS 17.0+ (minimum for modern SwiftUI and async/await features)
-platform :tvos, '17.0'
+# Platform: tvOS 26.0 (latest version with newest APIs and features)
+platform :tvos, '26.0'
 
 target 'Internet Archive' do
   # Comment the next line if you're not using Swift and don't want to use dynamic frameworks
   use_frameworks!
 
   # Pods for Internet Archive
-  pod 'Alamofire'
-  pod 'AlamofireImage', '~> 3.3'
-  pod 'SVProgressHUD', :git => 'https://github.com/SVProgressHUD/SVProgressHUD.git'
-  pod 'TvOSMoreButton', '~> 1.1.1'
+  # Note: Keeping Alamofire 4.x for now until Sprint 4 (networking layer rewrite)
+  # Alamofire 5.x has breaking API changes that require code migration
+  pod 'Alamofire', '~> 4.9.1'
+  pod 'AlamofireImage', '~> 3.6.0'
+  pod 'SVProgressHUD', '~> 2.3.1'
+  pod 'TvOSMoreButton', '~> 1.4.1'
   pod 'TvOSTextViewer', '~> 1.1.1'
-  pod 'MBProgressHUD', '~> 1.1.0'
+  pod 'MBProgressHUD', '~> 1.2.0'
 
   # Development tools
   pod 'SwiftLint', :configurations => ['Debug']
@@ -23,7 +25,7 @@ post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
       # Set minimum deployment target
-      config.build_settings['TVOS_DEPLOYMENT_TARGET'] = '17.0'
+      config.build_settings['TVOS_DEPLOYMENT_TARGET'] = '26.0'
 
       # Disable library evolution/module stability for faster builds
       # Enable (set to 'YES') only if distributing frameworks

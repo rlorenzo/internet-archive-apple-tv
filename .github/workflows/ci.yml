@@ -37,12 +37,12 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
-            xcode: latest-stable
-            destination: "platform=tvOS Simulator,name=Apple TV 4K (3rd generation)"
           - os: macos-15
-            xcode: "16.1"
-            destination: "platform=tvOS Simulator,name=Apple TV 4K (3rd generation)"
+            xcode: "16.4"
+            destination: "platform=tvOS Simulator,OS=26.0,name=Apple TV 4K (3rd generation)"
+          - os: macos-26
+            xcode: "26.0"
+            destination: "platform=tvOS Simulator,OS=26.0,name=Apple TV 4K (3rd generation)"
 
     steps:
       - name: Checkout code
@@ -99,7 +99,7 @@ jobs:
         if: always()
         run: |
           if [ "${{ steps.build.outcome }}" == "failure" ]; then
-            echo "::warning::Build failed. This is expected during migration phase (Swift 4.0 → 6.2)."
+            echo "::warning::Build failed. This is expected during migration phase (Swift 4.0 → 6.0)."
             echo "Build failures will be resolved in Sprint 3 (Swift Syntax Migration)."
           else
             echo "::notice::Build succeeded!"

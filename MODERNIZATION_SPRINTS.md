@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swift 6.2/tvOS 26 into manageable sprints, each resulting in a separate Pull Request.
+This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swift 6.0/tvOS 26 into manageable sprints, each resulting in a separate Pull Request.
 
 **Total Estimated Time:** 200-300 hours across 10-12 sprints
 
@@ -10,7 +10,7 @@ This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swi
 
 ## Sprint 1: Project Configuration & Build Setup ✅ COMPLETED
 **Estimated Time:** 10-14 hours
-**PR Title:** `chore: Update project configuration for Xcode 16 and Swift 6.2`
+**PR Title:** `chore: Update project configuration for Xcode 16 and Swift 6.0`
 **Status:** Merged to master
 
 ### Goals
@@ -20,7 +20,7 @@ This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swi
 - Set up code quality tooling
 
 ### Tasks
-- [ ] Update `.xcodeproj` Swift language version to 6.2 *(deferred to Sprint 2)*
+- [ ] Update `.xcodeproj` Swift language version to 6.0 *(deferred to Sprint 2)*
 - [ ] Update tvOS deployment target to 17.0 (minimum for modern features) *(deferred to Sprint 2)*
 - [ ] Update build settings for new Xcode *(deferred to Sprint 2)*
 - [ ] Fix code signing configuration *(deferred to Sprint 2)*
@@ -49,7 +49,7 @@ This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swi
 ### Files Added/Modified
 - `.swiftlint.yml` - Custom rules for deprecated APIs
 - `.gitignore` - Modern Xcode 16+ exclusions
-- `.swift-version` - Target Swift 6.2
+- `.swift-version` - Target Swift 6.0
 - `.env.example` - Template for API credentials
 - `Podfile` - Added SwiftLint pod, tvOS 17.0 platform
 - `scripts/pre-commit` - Git hook for SwiftLint
@@ -71,7 +71,7 @@ This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swi
 
 ### Tasks
 **Xcode Project Configuration (deferred from Sprint 1):**
-- [ ] Update `.xcodeproj` Swift language version to 5.0 (stepping stone to 6.2)
+- [ ] Update `.xcodeproj` Swift language version to 5.0 (stepping stone to 6.0)
 - [ ] Update tvOS deployment target to 17.0 in project settings
 - [ ] Update build settings for Xcode 16+
 - [ ] Fix code signing configuration for CI
@@ -99,7 +99,7 @@ Xcode project configured for modern toolchain, modern dependencies ready (compil
 
 ## Sprint 3: Swift Syntax Migration - Phase 1
 **Estimated Time:** 10-14 hours
-**PR Title:** `fix: Update deprecated Swift 4 syntax to Swift 6.2`
+**PR Title:** `fix: Update deprecated Swift 4 syntax to Swift 6.0`
 
 ### Goals
 - Fix all Swift language syntax errors
@@ -123,7 +123,7 @@ Xcode project configured for modern toolchain, modern dependencies ready (compil
   - RegisterVC.swift
   - FavoriteNC.swift
 - [ ] Update `UIActivityIndicatorViewStyle` if present
-- [ ] Fix any other Swift 4→6.2 syntax issues
+- [ ] Fix any other Swift 4→6.0 syntax issues
 
 ### Deliverable
 All Swift syntax errors resolved (API errors from Alamofire still present)
