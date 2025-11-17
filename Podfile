@@ -25,7 +25,8 @@ post_install do |installer|
       # Set minimum deployment target
       config.build_settings['TVOS_DEPLOYMENT_TARGET'] = '17.0'
 
-      # Enable module stability for Swift 6
+      # Disable library evolution/module stability for faster builds
+      # Enable (set to 'YES') only if distributing frameworks
       config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'NO'
     end
   end

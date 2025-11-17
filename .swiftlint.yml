@@ -143,6 +143,6 @@ custom_rules:
 
   hardcoded_credentials:
     name: "Hardcoded Credentials"
-    regex: '(ACCESS|SECRET)\s*[:=]\s*"[^"]+"'
-    message: "Avoid hardcoding credentials. Use secure storage."
+    regex: '(?i)\b(pass(word)?|passwd|token|key|secret|access|api[_-]?key)\b\s*[:=]\s*["'']([A-Za-z0-9_\-]{8,})["'']'
+    message: "Avoid hardcoding credentials (passwords, tokens, keys, secrets, etc.). Use secure storage."
     severity: error

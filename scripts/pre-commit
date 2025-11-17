@@ -33,20 +33,13 @@ echo "$STAGED_SWIFT_FILES" | while read -r file; do
     echo "  - $file"
 done
 
-# Create a temporary file to store the result
-LINT_RESULT=0
-
-# Run SwiftLint on staged files only
-# Use --strict to treat warnings as errors (optional, can be removed)
+# Run SwiftLint on all staged files at once
 # Using --quiet to reduce noise, remove if you want verbose output
 echo ""
-echo "$STAGED_SWIFT_FILES" | while read -r file; do
-    if [ -f "$file" ]; then
-        swiftlint lint --path "$file" --config .swiftlint.yml --quiet
-    fi
-done
 
-LINT_EXIT_CODE=$?
+# Use xargs to properly pass files and capture exit code
+LINT_EXIT_CODE=0
+echo "$STAGED_SWIFT_FILES" | xargs swiftlint lint --config .swiftlint.yml --quiet || LINT_EXIT_CODE=$?
 
 if [ $LINT_EXIT_CODE -ne 0 ]; then
     echo ""
@@ -56,7 +49,7 @@ if [ $LINT_EXIT_CODE -ne 0 ]; then
     echo "  swiftlint lint"
     echo ""
     echo "To auto-fix some issues, run:"
-    echo "  swiftlint lint --fix"
+    echo "  swiftlint --fix"
     echo ""
     echo "To bypass this check (not recommended), use:"
     echo "  git commit --no-verify"
