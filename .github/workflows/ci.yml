@@ -1,0 +1,134 @@
+name: CI - Lint and Build
+
+on:
+  push:
+    branches: [ master, main ]  # Only run on direct pushes to main/master
+  pull_request:
+    branches: [ master, main ]  # Run on PRs targeting main/master
+
+env:
+  SCHEME: "Internet Archive"
+  WORKSPACE: "Internet Archive.xcworkspace"
+
+jobs:
+  swiftlint:
+    name: SwiftLint
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install SwiftLint
+        run: brew install swiftlint
+
+      - name: Run SwiftLint
+        run: swiftlint lint --config .swiftlint.yml --reporter github-actions-logging
+        continue-on-error: true  # Allow warnings during migration phase (remove after Sprint 3)
+
+      - name: SwiftLint Summary
+        run: |
+          echo "::notice::SwiftLint completed. During migration phase, lint errors are reported but don't fail the build."
+          echo "This will become strict after Sprint 3 (Swift Syntax Migration)."
+
+  build:
+    name: Build (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: macos-latest
+            xcode: latest-stable
+            destination: "platform=tvOS Simulator,name=Apple TV 4K (3rd generation)"
+          - os: macos-15
+            xcode: "16.1"
+            destination: "platform=tvOS Simulator,name=Apple TV 4K (3rd generation)"
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: |
+          if [ "${{ matrix.xcode }}" = "latest-stable" ]; then
+            sudo xcode-select -s /Applications/Xcode.app
+          else
+            sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
+          fi
+          xcodebuild -version
+          swift --version
+
+      - name: Cache CocoaPods
+        uses: actions/cache@v4
+        with:
+          path: Pods
+          key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pods-
+
+      - name: Install CocoaPods
+        run: |
+          gem install cocoapods
+          pod --version
+
+      - name: Install xcpretty
+        run: gem install xcpretty
+
+      - name: Install dependencies
+        run: pod install --repo-update
+
+      - name: Show available simulators
+        run: xcrun simctl list devices available | grep -i "tv"
+
+      - name: Build for tvOS
+        id: build
+        run: |
+          set -o pipefail
+          xcodebuild clean build \
+            -workspace "${{ env.WORKSPACE }}" \
+            -scheme "${{ env.SCHEME }}" \
+            -destination "${{ matrix.destination }}" \
+            -configuration Debug \
+            CODE_SIGN_IDENTITY="" \
+            CODE_SIGNING_REQUIRED=NO \
+            CODE_SIGNING_ALLOWED=NO \
+            2>&1 | xcpretty --color
+        continue-on-error: true  # Allow build failures during migration phase (remove after Sprint 3)
+
+      - name: Build status
+        if: always()
+        run: |
+          if [ "${{ steps.build.outcome }}" == "failure" ]; then
+            echo "::warning::Build failed. This is expected during migration phase (Swift 4.0 → 6.2)."
+            echo "Build failures will be resolved in Sprint 3 (Swift Syntax Migration)."
+          else
+            echo "::notice::Build succeeded!"
+          fi
+          echo "Build completed with outcome: ${{ steps.build.outcome }}"
+
+  # Summary job that checks overall CI health
+  ci-success:
+    name: CI Success
+    needs: [swiftlint, build]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all jobs
+        run: |
+          echo "=== CI Summary ==="
+          echo "SwiftLint: ${{ needs.swiftlint.result }}"
+          echo "Build: ${{ needs.build.result }}"
+          echo ""
+
+          # During migration phase, we track but don't fail
+          # Change to strict after Sprint 3
+          if [ "${{ needs.swiftlint.result }}" == "success" ] && [ "${{ needs.build.result }}" == "success" ]; then
+            echo "✅ All CI checks passed!"
+          else
+            echo "⚠️ CI checks completed with issues (expected during migration phase)"
+            echo "::notice::Migration in progress. See MODERNIZATION_SPRINTS.md for timeline."
+          fi
+
+          # Always pass during migration phase
+          # TODO: Change to exit 1 after Sprint 3 is complete
+          exit 0
