@@ -5,13 +5,15 @@
 //  Created by Eagle19243 on 5/8/18.
 //  Copyright © 2018 Eagle19243. All rights reserved.
 //
+//  Updated for Sprint 4: Alamofire 5.x migration with async/await support
+//
 
 import Foundation
 import Alamofire
 
 class APIManager: NSObject {
     static let sharedManager = APIManager()
-    
+
     let BASE_URL = "https://archive.org/"
     let API_CREATE = "services/xauthn/?op=create"
     let API_LOGIN = "services/xauthn/?op=authenticate"
@@ -20,44 +22,46 @@ class APIManager: NSObject {
     let API_WEB_LOGIN = "account/login.php"
     let API_SAVE_FAVORITE = "bookmarks.php?add_bookmark=1"
     let API_GET_FAVORITE = "metadata/fav-"
-    
+
     let ACCESS = "trS8dVjP8dzaE296"
     let SECRET = "ICXDO78cnzUlPAt1"
     let API_VERSION = 1
-    
-    let HEADERS = [
+
+    let HEADERS: HTTPHeaders = [
         "User-Agent": "Wayback_Machine_iOS/\(Bundle.main.infoDictionary!["CFBundleShortVersionString"]!)",
-        "Wayback-Extension-Version": "Wayback_Machine_iOS/\(Bundle.main.infoDictionary!["CFBundleShortVersionString"]!)"]
-    
+        "Wayback-Extension-Version": "Wayback_Machine_iOS/\(Bundle.main.infoDictionary!["CFBundleShortVersionString"]!)"
+    ]
+
+    // MARK: - Private Helper Methods (Updated for Alamofire 5.x)
+
     private func SendDataToService(params: [String: Any], operation: String, completion: @escaping ([String: Any]?) -> Void) {
-        
-        var parameters          = params
-        parameters["access"]    = ACCESS
-        parameters["secret"]    = SECRET
-        parameters["version"]   = API_VERSION
-        
-        Alamofire
-            .request("\(BASE_URL)\(operation)", method: .post, parameters: parameters, encoding: URLEncoding.default, headers: HEADERS)
-            .responseJSON{ (response) in
-            
-            switch response.result {
-            case .success:
-                if let json = response.result.value {
-                    completion(json as? [String: Any])
+
+        var parameters = params
+        parameters["access"] = ACCESS
+        parameters["secret"] = SECRET
+        parameters["version"] = API_VERSION
+
+        AF.request("\(BASE_URL)\(operation)",
+                   method: .post,
+                   parameters: parameters,
+                   encoding: URLEncoding.default,
+                   headers: HEADERS)
+            .responseJSON { response in
+                switch response.result {
+                case .success(let value):
+                    completion(value as? [String: Any])
+                case .failure:
+                    completion(nil)
                 }
-            case .failure:
-                completion(nil)
-                
             }
-        }
     }
-    
+
     private func GetCookieData(email: String, password: String, completion: @escaping([String: Any]?) -> Void) {
         var params = [String: Any]()
         params["username"] = email
         params["password"] = password
         params["action"] = "login"
-        
+
         let cookieProps: [HTTPCookiePropertyKey: Any] = [
             HTTPCookiePropertyKey.version: 0,
             HTTPCookiePropertyKey.name: "test-cookie",
@@ -67,96 +71,105 @@ class APIManager: NSObject {
             HTTPCookiePropertyKey.secure: false,
             HTTPCookiePropertyKey.expires: Date(timeIntervalSinceNow: 86400 * 20)
         ]
-        
+
         if let cookie = HTTPCookie(properties: cookieProps) {
-            Alamofire.SessionManager.default.session.configuration.httpCookieStorage?.setCookie(cookie)
+            Session.default.session.configuration.httpCookieStorage?.setCookie(cookie)
         }
-        
-        Alamofire.request(BASE_URL + API_WEB_LOGIN, method: .post, parameters: params, encoding: URLEncoding.default, headers: ["Content-Type": "application/x-www-form-urlencoded"]).responseString{ (response) in
-            
-            switch response.result {
-            case .success:
-                if let cookies = HTTPCookieStorage.shared.cookies {
-                    var cookieData = [String: Any]()
-                    
-                    for cookie in cookies {
-                        if cookie.name == "logged-in-sig" {
-                            cookieData["logged-in-sig"] = cookie
-                        } else if cookie.name == "logged-in-user" {
-                            cookieData["logged-in-user"] = cookie
+
+        var headers = HTTPHeaders()
+        headers.add(name: "Content-Type", value: "application/x-www-form-urlencoded")
+
+        AF.request(BASE_URL + API_WEB_LOGIN,
+                   method: .post,
+                   parameters: params,
+                   encoding: URLEncoding.default,
+                   headers: headers)
+            .responseString { response in
+                switch response.result {
+                case .success:
+                    if let cookies = HTTPCookieStorage.shared.cookies {
+                        var cookieData = [String: Any]()
+
+                        for cookie in cookies {
+                            if cookie.name == "logged-in-sig" {
+                                cookieData["logged-in-sig"] = cookie
+                            } else if cookie.name == "logged-in-user" {
+                                cookieData["logged-in-user"] = cookie
+                            }
                         }
+
+                        completion(cookieData)
+                    } else {
+                        completion(nil)
                     }
-                    
-                    completion(cookieData)
-                } else {
+                case .failure:
                     completion(nil)
                 }
-            case .failure:
-                completion(nil)
-                
             }
-        }
     }
-    
+
+    // MARK: - Legacy Completion-Based Methods (Backward Compatibility)
+
     // Register new Account
     func register(params: [String: Any], completion: @escaping ([String: Any]?) -> Void) {
         SendDataToService(params: params, operation: API_CREATE, completion: completion)
     }
-    
+
     // Login
     func login(email: String, password: String, completion: @escaping ([String: Any]?) -> Void) {
         SendDataToService(params: [
-            "email"     : email,
-            "password"  : password
-            ], operation: API_LOGIN, completion: completion)
+            "email": email,
+            "password": password
+        ], operation: API_LOGIN, completion: completion)
     }
-    
+
     // Get Account Info
     func getAccountInfo(email: String, completion: @escaping ([String: Any]?) -> Void) {
         SendDataToService(params: ["email": email], operation: API_INFO, completion: completion)
     }
-    
-//    // Get Username
-//    func getUsername(itemname: String, completion: @escaping (String?) -> Void) {
-//        SendDataToService(params: ["itemname": itemname], operation: API_INFO, completion: { (data) in
-//            print(data)
-//        })
-//    }
-    
+
     func search(query: String, options: [String: String], completion: @escaping (_ data: [String: Any]?, _ err: Int?) -> Void) {
         var str_option = "&output=json"
-        
+
         for (key, value) in options {
             str_option += "&\(key)=\(value)"
         }
-        
+
         let url = "\(BASE_URL)advancedsearch.php?q=\(query)\(str_option)"
-        let encodedURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-        
-        Alamofire
-            .request(encodedURL!, method: .get, encoding: URLEncoding.default, headers: HEADERS)
-            .responseJSON{ (response) in
-                
-            switch response.result {
-            case .success:
-                if let json = response.result.value, let result = json as? [String: Any], let data = result["response"] as? [String: Any] {
-                    completion(data, nil)
-                }
-            case .failure:
-                completion(nil, 0)
-            }
+        guard let encodedURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            completion(nil, 0)
+            return
         }
+
+        AF.request(encodedURL,
+                   method: .get,
+                   encoding: URLEncoding.default,
+                   headers: HEADERS)
+            .responseJSON { response in
+                switch response.result {
+                case .success(let value):
+                    if let result = value as? [String: Any],
+                       let data = result["response"] as? [String: Any] {
+                        completion(data, nil)
+                    } else {
+                        completion(nil, 0)
+                    }
+                case .failure:
+                    completion(nil, 0)
+                }
+            }
     }
-    
+
     func getCollections(collection: String, result_type: String, limit: Int?, completion: @escaping (_ collection: String, _ data: [[String: Any]]?, _ err: Int?) -> Void) {
         var options = [
-            "rows" : "1",
-            "fl[]" : "identifier,title,year,downloads,date,creator,description,mediatype"]
-        
+            "rows": "1",
+            "fl[]": "identifier,title,year,downloads,date,creator,description,mediatype"
+        ]
+
         if limit != nil {
             options["rows"] = "\(limit!)"
         }
-        
+
         search(query: "collection:(\(collection)) And mediatype:\(result_type)", options: options) { (data, err) in
             if data != nil {
                 if limit == nil, let numFound = data!["numFound"] as? Int {
@@ -167,83 +180,188 @@ class APIManager: NSObject {
                         self.getCollections(collection: collection, result_type: result_type, limit: numFound, completion: completion)
                     }
                 } else {
-                    completion(collection, data!["docs"] as? [[String : Any]], nil)
+                    completion(collection, data!["docs"] as? [[String: Any]], nil)
                 }
             } else {
                 completion(collection, nil, err)
             }
         }
+    }
 
-    }
-    
     func getMetaData(identifier: String, completion: @escaping (_ data: [String: Any]?, _ err: Int?) -> Void) {
-        Alamofire
-            .request("\(BASE_URL)\(API_METADATA)\(identifier)", method: .get, encoding: URLEncoding.default, headers: HEADERS)
-            .responseJSON{ (response) in
-                
-            switch response.result {
-            case .success:
-                if let json = response.result.value {
-                    completion(json as? [String: Any], nil)
+        AF.request("\(BASE_URL)\(API_METADATA)\(identifier)",
+                   method: .get,
+                   encoding: URLEncoding.default,
+                   headers: HEADERS)
+            .responseJSON { response in
+                switch response.result {
+                case .success(let value):
+                    completion(value as? [String: Any], nil)
+                case .failure:
+                    completion(nil, 0)
                 }
-            case .failure:
-                completion(nil, 0)
             }
-        }
     }
-    
+
     func getFavoriteItems(username: String,
                           completion: @escaping(_ success: Bool, _ err: Int?, _ items: [[String: Any]]?) -> Void) {
         let url = "\(BASE_URL)\(API_GET_FAVORITE)\(username.lowercased())"
-        
-        Alamofire.request(url, method: .get, encoding: URLEncoding.default).responseJSON { (data) in
-            switch data.result {
-            case .success:
-                if let jsonData = data.result.value as? [String: Any],
-                    let items = jsonData["members"] as? [[String: Any]]{
-                    completion(true, nil, items)
-                } else {
-                    completion(true, nil, nil)
+
+        AF.request(url, method: .get, encoding: URLEncoding.default)
+            .responseJSON { response in
+                switch response.result {
+                case .success(let value):
+                    if let jsonData = value as? [String: Any],
+                       let items = jsonData["members"] as? [[String: Any]] {
+                        completion(true, nil, items)
+                    } else {
+                        completion(true, nil, nil)
+                    }
+                case .failure:
+                    completion(false, response.response?.statusCode, nil)
                 }
-            case .failure:
-                completion(false, data.response?.statusCode, nil)
             }
-        }
     }
-    
+
     func saveFavoriteItem(email: String, password: String, identifier: String, mediatype: String, title: String, completion: @escaping(_ success: Bool, _ err: Int?) -> Void) {
-        
+
         GetCookieData(email: email, password: password) { (data) in
             if data != nil {
-                
-                let loggedInSig = data!["logged-in-sig"] as! HTTPCookie
-                let loggedInUser = data!["logged-in-user"] as! HTTPCookie
-                
-                Alamofire.SessionManager.default.session.configuration.httpCookieStorage?.setCookie(loggedInSig)
-                Alamofire.SessionManager.default.session.configuration.httpCookieStorage?.setCookie(loggedInUser)
-                
+
+                guard let loggedInSig = data!["logged-in-sig"] as? HTTPCookie,
+                      let loggedInUser = data!["logged-in-user"] as? HTTPCookie else {
+                    completion(false, 301)
+                    return
+                }
+
+                Session.default.session.configuration.httpCookieStorage?.setCookie(loggedInSig)
+                Session.default.session.configuration.httpCookieStorage?.setCookie(loggedInUser)
+
                 let url = "\(self.BASE_URL)\(self.API_SAVE_FAVORITE)&mediatype=\(mediatype)&identifier=\(identifier)&title=\(title)"
-                let encodedURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-                
-                Alamofire.request(encodedURL!, method: .get, encoding: URLEncoding.default)
-                    .responseString {(response) in
-                    
+                guard let encodedURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+                    completion(false, 0)
+                    return
+                }
+
+                AF.request(encodedURL, method: .get, encoding: URLEncoding.default)
+                    .responseString { response in
                         switch response.result {
                         case .success:
                             completion(true, nil)
                         case .failure:
                             completion(false, response.response?.statusCode)
-                    
+                        }
                     }
-                }
-                
+
             } else {
                 completion(false, 301)
             }
         }
-        
     }
-    
+
+    // MARK: - Modern Async/Await Methods
+
+    /// Register new account (async/await)
+    func register(params: [String: Any]) async throws -> [String: Any] {
+        return try await withCheckedThrowingContinuation { continuation in
+            register(params: params) { data in
+                if let data = data {
+                    continuation.resume(returning: data)
+                } else {
+                    continuation.resume(throwing: NetworkError.apiError(message: "Registration failed"))
+                }
+            }
+        }
+    }
+
+    /// Login (async/await)
+    func login(email: String, password: String) async throws -> [String: Any] {
+        return try await withCheckedThrowingContinuation { continuation in
+            login(email: email, password: password) { data in
+                if let data = data {
+                    continuation.resume(returning: data)
+                } else {
+                    continuation.resume(throwing: NetworkError.invalidCredentials)
+                }
+            }
+        }
+    }
+
+    /// Get account info (async/await)
+    func getAccountInfo(email: String) async throws -> [String: Any] {
+        return try await withCheckedThrowingContinuation { continuation in
+            getAccountInfo(email: email) { data in
+                if let data = data {
+                    continuation.resume(returning: data)
+                } else {
+                    continuation.resume(throwing: NetworkError.apiError(message: "Failed to get account info"))
+                }
+            }
+        }
+    }
+
+    /// Search (async/await)
+    func search(query: String, options: [String: String]) async throws -> [String: Any] {
+        return try await withCheckedThrowingContinuation { continuation in
+            search(query: query, options: options) { data, err in
+                if let data = data {
+                    continuation.resume(returning: data)
+                } else {
+                    continuation.resume(throwing: NetworkError.serverError(statusCode: err ?? 0))
+                }
+            }
+        }
+    }
+
+    /// Get collections (async/await)
+    func getCollections(collection: String, resultType: String, limit: Int? = nil) async throws -> (collection: String, data: [[String: Any]]) {
+        return try await withCheckedThrowingContinuation { continuation in
+            getCollections(collection: collection, result_type: resultType, limit: limit) { collection, data, err in
+                if let data = data {
+                    continuation.resume(returning: (collection, data))
+                } else {
+                    continuation.resume(throwing: NetworkError.serverError(statusCode: err ?? 0))
+                }
+            }
+        }
+    }
+
+    /// Get metadata (async/await)
+    func getMetaData(identifier: String) async throws -> [String: Any] {
+        return try await withCheckedThrowingContinuation { continuation in
+            getMetaData(identifier: identifier) { data, err in
+                if let data = data {
+                    continuation.resume(returning: data)
+                } else {
+                    continuation.resume(throwing: NetworkError.serverError(statusCode: err ?? 0))
+                }
+            }
+        }
+    }
+
+    /// Get favorite items (async/await)
+    func getFavoriteItems(username: String) async throws -> [[String: Any]]? {
+        return try await withCheckedThrowingContinuation { continuation in
+            getFavoriteItems(username: username) { success, err, items in
+                if success {
+                    continuation.resume(returning: items)
+                } else {
+                    continuation.resume(throwing: NetworkError.serverError(statusCode: err ?? 0))
+                }
+            }
+        }
+    }
+
+    /// Save favorite item (async/await)
+    func saveFavoriteItem(email: String, password: String, identifier: String, mediatype: String, title: String) async throws {
+        return try await withCheckedThrowingContinuation { continuation in
+            saveFavoriteItem(email: email, password: password, identifier: identifier, mediatype: mediatype, title: title) { success, err in
+                if success {
+                    continuation.resume()
+                } else {
+                    continuation.resume(throwing: NetworkError.serverError(statusCode: err ?? 0))
+                }
+            }
+        }
+    }
 }
-
-
