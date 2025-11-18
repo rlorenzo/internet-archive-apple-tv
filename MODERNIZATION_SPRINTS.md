@@ -213,7 +213,7 @@ This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swi
   - [x] `loginTyped()` → `AuthResponse`
   - [x] `getAccountInfoTyped()` → `AccountInfoResponse`
   - [x] `searchTyped()` → `SearchResponse`
-  - [x] `getCollectionsTyped()` → `[SearchResult]`
+  - [x] `getCollectionsTyped()` → `(collection: String, results: [SearchResult])`
   - [x] `getMetaDataTyped()` → `ItemMetadataResponse`
   - [x] `getFavoriteItemsTyped()` → `FavoritesResponse`
 - [x] Add backward-compatible `toDictionary()` methods for gradual migration
