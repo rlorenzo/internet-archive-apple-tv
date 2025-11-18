@@ -5,83 +5,86 @@
 //  Created by Eagle19243 on 5/8/18.
 //  Copyright © 2018 Eagle19243. All rights reserved.
 //
+//  Updated for Sprint 6: Async/await migration with typed models
+//
 
 import UIKit
 
+@MainActor
 class LoginVC: UIViewController {
 
     @IBOutlet weak var txtEmail: UITextField!
     @IBOutlet weak var txtPassword: UITextField!
-    
+
     override func viewDidLoad() {
         super.viewDidLoad()
-
         // Do any additional setup after loading the view.
     }
 
     @IBAction func onLogin(_ sender: Any) {
-        if !validate() {
+        guard validate() else {
             return
         }
-        
+
+        guard let email = txtEmail.text, !email.isEmpty,
+              let password = txtPassword.text, !password.isEmpty else {
+            return
+        }
+
         AppProgressHUD.sharedManager.show(view: self.view)
-        
-        let email = txtEmail.text!
-        let password = txtPassword.text!
-        
-        APIManager.sharedManager.login(email: email, password: password) { (data) in
-            if data == nil {
-                AppProgressHUD.sharedManager.hide()
-                Global.showAlert(title: "Error", message: "Server error", target: self)
-                return
-            }
-            
-            if data!["success"] as! Bool {
-                APIManager.sharedManager.getAccountInfo(email: email, completion: { (data) in
+
+        Task {
+            do {
+                // Login with typed response
+                let authResponse = try await APIManager.sharedManager.loginTyped(email: email, password: password)
+
+                guard authResponse.isSuccess else {
                     AppProgressHUD.sharedManager.hide()
-                    
-                    let values = data!["values"] as! [String: Any]
-                    let username = values["screenname"] as! String
-                    
-                    Global.saveUserData(userData: [
-                        "username" : username,
-                        "email" : email,
-                        "password" : password,
-                        "logged-in" : true
-                        ])
-                    
-                    let accountNC = self.navigationController as? AccountNC
-                    accountNC?.gotoAccountVC()
-                })
-            } else {
+                    let errorMessage = authResponse.error ?? "Login failed"
+                    Global.showAlert(title: "Error", message: errorMessage, target: self)
+                    return
+                }
+
+                // Get account info with typed response
+                let accountInfo = try await APIManager.sharedManager.getAccountInfoTyped(email: email)
                 AppProgressHUD.sharedManager.hide()
-                Global.showAlert(title: "Error", message: "Login failed", target: self)
+
+                guard let values = accountInfo.values,
+                      let username = values.screenname else {
+                    Global.showAlert(title: "Error", message: "Failed to retrieve account information", target: self)
+                    return
+                }
+
+                Global.saveUserData(userData: [
+                    "username": username,
+                    "email": email,
+                    "password": password,
+                    "logged-in": true
+                ])
+
+                if let accountNC = self.navigationController as? AccountNC {
+                    accountNC.gotoAccountVC()
+                }
+
+            } catch {
+                AppProgressHUD.sharedManager.hide()
+                let errorMessage = (error as? NetworkError)?.localizedDescription ?? error.localizedDescription
+                Global.showAlert(title: "Error", message: errorMessage, target: self)
             }
         }
     }
-    
+
     func validate() -> Bool {
-        if txtEmail.text!.isEmpty {
+        guard let email = txtEmail.text, !email.isEmpty else {
             Global.showAlert(title: "Error", message: "Please enter an email address", target: self)
             return false
         }
-        
-        if txtPassword.text!.isEmpty {
+
+        guard let password = txtPassword.text, !password.isEmpty else {
             Global.showAlert(title: "Error", message: "Please enter a password", target: self)
             return false
         }
+
         return true
     }
-    
-
-    /*
-    // MARK: - Navigation
-
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
-
 }
