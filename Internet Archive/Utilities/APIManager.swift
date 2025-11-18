@@ -6,6 +6,7 @@
 //  Copyright © 2018 Eagle19243. All rights reserved.
 //
 //  Updated for Sprint 4: Alamofire 5.x migration with async/await support
+//  Updated for Sprint 5: Added Codable model support
 //
 
 import Foundation
@@ -363,5 +364,123 @@ class APIManager: NSObject {
                 }
             }
         }
+    }
+
+    // MARK: - Type-Safe Async/Await Methods (Codable Models)
+
+    /// Register new account with typed response (async/await)
+    func registerTyped(params: [String: Any]) async throws -> AuthResponse {
+        var parameters = params
+        parameters["access"] = ACCESS
+        parameters["secret"] = SECRET
+        parameters["version"] = API_VERSION
+
+        return try await AF.request("\(BASE_URL)\(API_CREATE)",
+                                     method: .post,
+                                     parameters: parameters,
+                                     encoding: URLEncoding.default,
+                                     headers: HEADERS)
+            .serializingDecodable(AuthResponse.self)
+            .value
+    }
+
+    /// Login with typed response (async/await)
+    func loginTyped(email: String, password: String) async throws -> AuthResponse {
+        let params: [String: Any] = [
+            "email": email,
+            "password": password,
+            "access": ACCESS,
+            "secret": SECRET,
+            "version": API_VERSION
+        ]
+
+        return try await AF.request("\(BASE_URL)\(API_LOGIN)",
+                                     method: .post,
+                                     parameters: params,
+                                     encoding: URLEncoding.default,
+                                     headers: HEADERS)
+            .serializingDecodable(AuthResponse.self)
+            .value
+    }
+
+    /// Get account info with typed response (async/await)
+    func getAccountInfoTyped(email: String) async throws -> AccountInfoResponse {
+        let params: [String: Any] = [
+            "email": email,
+            "access": ACCESS,
+            "secret": SECRET,
+            "version": API_VERSION
+        ]
+
+        return try await AF.request("\(BASE_URL)\(API_INFO)",
+                                     method: .post,
+                                     parameters: params,
+                                     encoding: URLEncoding.default,
+                                     headers: HEADERS)
+            .serializingDecodable(AccountInfoResponse.self)
+            .value
+    }
+
+    /// Search with typed response (async/await)
+    func searchTyped(query: String, options: [String: String]) async throws -> SearchResponse {
+        var str_option = "&output=json"
+
+        for (key, value) in options {
+            str_option += "&\(key)=\(value)"
+        }
+
+        let url = "\(BASE_URL)advancedsearch.php?q=\(query)\(str_option)"
+        guard let encodedURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+            throw NetworkError.invalidParameters
+        }
+
+        return try await AF.request(encodedURL,
+                                     method: .get,
+                                     encoding: URLEncoding.default,
+                                     headers: HEADERS)
+            .serializingDecodable(SearchResponse.self)
+            .value
+    }
+
+    /// Get collections with typed response (async/await)
+    func getCollectionsTyped(collection: String, resultType: String, limit: Int? = nil) async throws -> (collection: String, results: [SearchResult]) {
+        var options = [
+            "rows": limit != nil ? "\(limit!)" : "1",
+            "fl[]": "identifier,title,year,downloads,date,creator,description,mediatype"
+        ]
+
+        let response = try await searchTyped(query: "collection:(\(collection)) And mediatype:\(resultType)", options: options)
+
+        // If first call to get count, make second call with actual limit
+        if limit == nil {
+            let numFound = response.response.numFound
+            if numFound == 0 {
+                return (collection, [])
+            }
+            return try await getCollectionsTyped(collection: collection, resultType: resultType, limit: numFound)
+        }
+
+        return (collection, response.response.docs)
+    }
+
+    /// Get metadata with typed response (async/await)
+    func getMetaDataTyped(identifier: String) async throws -> ItemMetadataResponse {
+        return try await AF.request("\(BASE_URL)\(API_METADATA)\(identifier)",
+                                     method: .get,
+                                     encoding: URLEncoding.default,
+                                     headers: HEADERS)
+            .serializingDecodable(ItemMetadataResponse.self)
+            .value
+    }
+
+    /// Get favorite items with typed response (async/await)
+    func getFavoriteItemsTyped(username: String) async throws -> FavoritesResponse {
+        let url = "\(BASE_URL)\(API_GET_FAVORITE)\(username.lowercased())"
+
+        return try await AF.request(url,
+                                     method: .get,
+                                     encoding: URLEncoding.default)
+            .serializingDecodable(FavoritesResponse.self)
+            .value
     }
 }
