@@ -16,11 +16,6 @@ class MusicNC: BaseNC {
         gotoMusicVC()
     }
     
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
-    
     func gotoMusicVC() -> Void {
         let musicVC = self.storyboard?.instantiateViewController(withIdentifier: "MusicVC") as! MusicVC
         self.viewControllers = [musicVC]

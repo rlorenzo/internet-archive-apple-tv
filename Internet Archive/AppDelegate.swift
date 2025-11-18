@@ -8,13 +8,13 @@
 
 import UIKit
 
-@UIApplicationMain
+@main
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
 
-    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplicationLaunchOptionsKey: Any]?) -> Bool {
+    func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
         
         if let tabController = window?.rootViewController as? UITabBarController {
@@ -56,7 +56,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     
     func setTabbarStyle() -> Void {
         let appearance = UITabBarItem.appearance()
-        let attributes = [NSAttributedStringKey.font: UIFont.boldSystemFont(ofSize: 42)]
+        let attributes = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 42)]
         appearance.setTitleTextAttributes(attributes, for: .normal)
     }
 

@@ -7,10 +7,10 @@ target 'Internet Archive' do
   use_frameworks!
 
   # Pods for Internet Archive
-  # Note: Keeping Alamofire 4.x for now until Sprint 4 (networking layer rewrite)
-  # Alamofire 5.x has breaking API changes that require code migration
-  pod 'Alamofire', '~> 4.9.1'
-  pod 'AlamofireImage', '~> 3.6.0'
+  # Updated to Alamofire 5.x for Sprint 4 (networking layer rewrite)
+  # Alamofire 5.x provides modern async/await support and better Swift 6 compatibility
+  pod 'Alamofire', '~> 5.9'
+  pod 'AlamofireImage', '~> 4.3'
   pod 'SVProgressHUD', '~> 2.3.1'
   pod 'TvOSMoreButton', '~> 1.4.1'
   pod 'TvOSTextViewer', '~> 1.1.1'

@@ -16,11 +16,6 @@ class FavoriteNC: BaseNC {
         gotoFavoriteVC()
     }
     
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
-    
     func gotoFavoriteVC() -> Void {
         let favoriteVC = self.storyboard?.instantiateViewController(withIdentifier: "FavoriteVC") as! FavoriteVC
         self.viewControllers = [favoriteVC]

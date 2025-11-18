@@ -20,11 +20,6 @@ class AccountNC: UINavigationController {
         }
     }
 
-    override func didReceiveMemoryWarning() {
-        super.didReceiveMemoryWarning()
-        // Dispose of any resources that can be recreated.
-    }
-    
     func gotoLoginVC() -> Void {
         let loginVC = self.storyboard?.instantiateViewController(withIdentifier: "LoginVC") as! LoginVC
         self.viewControllers = [loginVC]
