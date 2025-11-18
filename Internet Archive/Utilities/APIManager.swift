@@ -53,7 +53,7 @@ class APIManager: NSObject {
 
     // MARK: - Private Helper Methods (Updated for Alamofire 5.x)
 
-    private func SendDataToService(params: [String: Any], operation: String, completion: @escaping ([String: Any]?) -> Void) {
+    private func sendDataToService(params: [String: Any], operation: String, completion: @escaping ([String: Any]?) -> Void) {
 
         var parameters = params
         parameters["access"] = ACCESS
@@ -75,7 +75,7 @@ class APIManager: NSObject {
             }
     }
 
-    private func GetCookieData(email: String, password: String, completion: @escaping ([String: Any]?) -> Void) {
+    private func getCookieData(email: String, password: String, completion: @escaping ([String: Any]?) -> Void) {
         var params = [String: Any]()
         params["username"] = email
         params["password"] = password
@@ -131,12 +131,12 @@ class APIManager: NSObject {
 
     // Register new Account
     func register(params: [String: Any], completion: @escaping ([String: Any]?) -> Void) {
-        SendDataToService(params: params, operation: apiCreate, completion: completion)
+        sendDataToService(params: params, operation: apiCreate, completion: completion)
     }
 
     // Login
     func login(email: String, password: String, completion: @escaping ([String: Any]?) -> Void) {
-        SendDataToService(params: [
+        sendDataToService(params: [
             "email": email,
             "password": password
         ], operation: apiLogin, completion: completion)
@@ -144,17 +144,17 @@ class APIManager: NSObject {
 
     // Get Account Info
     func getAccountInfo(email: String, completion: @escaping ([String: Any]?) -> Void) {
-        SendDataToService(params: ["email": email], operation: apiInfo, completion: completion)
+        sendDataToService(params: ["email": email], operation: apiInfo, completion: completion)
     }
 
     func search(query: String, options: [String: String], completion: @escaping (_ data: [String: Any]?, _ err: Int?) -> Void) {
-        var str_option = "&output=json"
+        var strOption = "&output=json"
 
         for (key, value) in options {
-            str_option += "&\(key)=\(value)"
+            strOption += "&\(key)=\(value)"
         }
 
-        let url = "\(baseURL)advancedsearch.php?q=\(query)\(str_option)"
+        let url = "\(baseURL)advancedsearch.php?q=\(query)\(strOption)"
         guard let encodedURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
             completion(nil, 0)
             return
@@ -179,7 +179,7 @@ class APIManager: NSObject {
             }
     }
 
-    func getCollections(collection: String, result_type: String, limit: Int?, completion: @escaping (_ collection: String, _ data: [[String: Any]]?, _ err: Int?) -> Void) {
+    func getCollections(collection: String, resultType: String, limit: Int?, completion: @escaping (_ collection: String, _ data: [[String: Any]]?, _ err: Int?) -> Void) {
         var options = [
             "rows": "1",
             "fl[]": "identifier,title,year,downloads,date,creator,description,mediatype"
@@ -189,14 +189,14 @@ class APIManager: NSObject {
             options["rows"] = "\(limit!)"
         }
 
-        search(query: "collection:(\(collection)) And mediatype:\(result_type)", options: options) { (data, err) in
+        search(query: "collection:(\(collection)) And mediatype:\(resultType)", options: options) { (data, err) in
             if data != nil {
                 if limit == nil, let numFound = data!["numFound"] as? Int {
                     if numFound == 0 {
                         // API.GetCollections - fail
                         completion(collection, nil, 0)
                     } else {
-                        self.getCollections(collection: collection, result_type: result_type, limit: numFound, completion: completion)
+                        self.getCollections(collection: collection, resultType: resultType, limit: numFound, completion: completion)
                     }
                 } else {
                     completion(collection, data!["docs"] as? [[String: Any]], nil)
@@ -244,7 +244,7 @@ class APIManager: NSObject {
 
     func saveFavoriteItem(email: String, password: String, identifier: String, mediatype: String, title: String, completion: @escaping (_ success: Bool, _ err: Int?) -> Void) {
 
-        GetCookieData(email: email, password: password) { (data) in
+        getCookieData(email: email, password: password) { (data) in
             if data != nil {
 
                 guard let loggedInSig = data!["logged-in-sig"] as? HTTPCookie,
@@ -335,7 +335,7 @@ class APIManager: NSObject {
     /// Get collections (async/await)
     func getCollections(collection: String, resultType: String, limit: Int? = nil) async throws -> (collection: String, data: [[String: Any]]) {
         return try await withCheckedThrowingContinuation { continuation in
-            getCollections(collection: collection, result_type: resultType, limit: limit) { collection, data, err in
+            getCollections(collection: collection, resultType: resultType, limit: limit) { collection, data, err in
                 if let data = data {
                     continuation.resume(returning: (collection, data))
                 } else {
@@ -441,13 +441,13 @@ class APIManager: NSObject {
 
     /// Search with typed response (async/await)
     func searchTyped(query: String, options: [String: String]) async throws -> SearchResponse {
-        var str_option = "&output=json"
+        var strOption = "&output=json"
 
         for (key, value) in options {
-            str_option += "&\(key)=\(value)"
+            strOption += "&\(key)=\(value)"
         }
 
-        let url = "\(baseURL)advancedsearch.php?q=\(query)\(str_option)"
+        let url = "\(baseURL)advancedsearch.php?q=\(query)\(strOption)"
         guard let encodedURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
             throw NetworkError.invalidParameters
         }

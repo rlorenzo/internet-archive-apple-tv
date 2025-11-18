@@ -193,7 +193,7 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
         stopPlyaing()
     }
 
-    func _normalizedPowerLevelFromDecibels(_ decibels: Float) -> Float {
+    func normalizedPowerLevelFromDecibels(_ decibels: Float) -> Float {
         if decibels < -60.0 || decibels == 0.0 {
             return 0.0
         }
