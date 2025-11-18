@@ -47,21 +47,21 @@ struct AppConfiguration {
 
     /// Internet Archive API access key
     var apiAccessKey: String {
-        return configuration[ConfigKey.apiAccessKey.rawValue] as? String ?? ""
+        configuration[ConfigKey.apiAccessKey.rawValue] as? String ?? ""
     }
 
     /// Internet Archive API secret key
     var apiSecretKey: String {
-        return configuration[ConfigKey.apiSecretKey.rawValue] as? String ?? ""
+        configuration[ConfigKey.apiSecretKey.rawValue] as? String ?? ""
     }
 
     /// API version number
     var apiVersion: Int {
-        return configuration[ConfigKey.apiVersion.rawValue] as? Int ?? 1
+        configuration[ConfigKey.apiVersion.rawValue] as? Int ?? 1
     }
 
     /// Check if configuration is valid
     var isConfigured: Bool {
-        return !apiAccessKey.isEmpty && !apiSecretKey.isEmpty
+        !apiAccessKey.isEmpty && !apiSecretKey.isEmpty
     }
 }

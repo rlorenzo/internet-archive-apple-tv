@@ -21,13 +21,9 @@ class ItemCell: UICollectionViewCell {
     }
     
     override func awakeFromNib() {
-        super.awakeFromNib()        
+        super.awakeFromNib()
         itemImage.adjustsImageWhenAncestorFocused = true
         itemImage.clipsToBounds = false
-    }
-    
-    override func prepareForReuse() {
-        super.prepareForReuse()
     }
     
     override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {

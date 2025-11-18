@@ -44,7 +44,7 @@ class TabbarController: UITabBarController {
                         }
                     }
                 } else {
-                    Global.showAlert(title: "Error", message: Errors[302]!, target: self)
+                    Global.showAlert(title: "Error", message: errors[302]!, target: self)
                     return
                 }
             }
@@ -64,12 +64,12 @@ class TabbarController: UITabBarController {
             APIManager.sharedManager.login(email: email, password: password) { (data) in
                 
                 if data == nil {
-                    Global.showAlert(title: "Error", message: Errors[400]!, target: self)
+                    Global.showAlert(title: "Error", message: errors[400]!, target: self)
                     return
                 }
                 
                 if let success = data!["success"] as? Bool, !success {
-                    Global.showAlert(title: "Error", message: Errors[302]!, target: self)
+                    Global.showAlert(title: "Error", message: errors[302]!, target: self)
                     return
                 }
             }

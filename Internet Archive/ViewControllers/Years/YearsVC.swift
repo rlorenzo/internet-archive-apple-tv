@@ -91,7 +91,7 @@ class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
     
     // MARK: - UICollectionView datasource, delegate
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        if sortedData.count == 0 {
+        if sortedData.isEmpty {
             return 0
         } else {
             return (sortedData[sortedKeys[selectedRow]]?.count)!

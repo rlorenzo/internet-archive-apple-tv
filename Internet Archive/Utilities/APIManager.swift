@@ -16,21 +16,21 @@ import Alamofire
 class APIManager: NSObject {
     static let sharedManager = APIManager()
 
-    let BASE_URL = "https://archive.org/"
-    let API_CREATE = "services/xauthn/?op=create"
-    let API_LOGIN = "services/xauthn/?op=authenticate"
-    let API_INFO = "services/xauthn/?op=info"
-    let API_METADATA = "metadata/"
-    let API_WEB_LOGIN = "account/login.php"
-    let API_SAVE_FAVORITE = "bookmarks.php?add_bookmark=1"
-    let API_GET_FAVORITE = "metadata/fav-"
+    let baseURL = "https://archive.org/"
+    let apiCreate = "services/xauthn/?op=create"
+    let apiLogin = "services/xauthn/?op=authenticate"
+    let apiInfo = "services/xauthn/?op=info"
+    let apiMetadata = "metadata/"
+    let apiWebLogin = "account/login.php"
+    let apiSaveFavorite = "bookmarks.php?add_bookmark=1"
+    let apiGetFavorite = "metadata/fav-"
 
     // Load API credentials from secure configuration (not hardcoded)
-    private let ACCESS: String
-    private let SECRET: String
-    private let API_VERSION: Int
+    private let access: String
+    private let secret: String
+    private let apiVersion: Int
 
-    let HEADERS: HTTPHeaders = [
+    let headers: HTTPHeaders = [
         "User-Agent": "Wayback_Machine_iOS/\(Bundle.main.infoDictionary!["CFBundleShortVersionString"]!)",
         "Wayback-Extension-Version": "Wayback_Machine_iOS/\(Bundle.main.infoDictionary!["CFBundleShortVersionString"]!)"
     ]
@@ -39,9 +39,9 @@ class APIManager: NSObject {
 
     override private init() {
         // Load credentials from secure configuration
-        self.ACCESS = AppConfiguration.shared.apiAccessKey
-        self.SECRET = AppConfiguration.shared.apiSecretKey
-        self.API_VERSION = AppConfiguration.shared.apiVersion
+        self.access = AppConfiguration.shared.apiAccessKey
+        self.secret = AppConfiguration.shared.apiSecretKey
+        self.apiVersion = AppConfiguration.shared.apiVersion
 
         super.init()
 
@@ -60,11 +60,11 @@ class APIManager: NSObject {
         parameters["secret"] = SECRET
         parameters["version"] = API_VERSION
 
-        AF.request("\(BASE_URL)\(operation)",
+        AF.request("\(baseURL)\(operation)",
                    method: .post,
                    parameters: parameters,
                    encoding: URLEncoding.default,
-                   headers: HEADERS)
+                   headers: headers)
             .responseJSON { response in
                 switch response.result {
                 case .success(let value):
@@ -75,7 +75,7 @@ class APIManager: NSObject {
             }
     }
 
-    private func GetCookieData(email: String, password: String, completion: @escaping([String: Any]?) -> Void) {
+    private func GetCookieData(email: String, password: String, completion: @escaping ([String: Any]?) -> Void) {
         var params = [String: Any]()
         params["username"] = email
         params["password"] = password
@@ -98,7 +98,7 @@ class APIManager: NSObject {
         var headers = HTTPHeaders()
         headers.add(name: "Content-Type", value: "application/x-www-form-urlencoded")
 
-        AF.request(BASE_URL + API_WEB_LOGIN,
+        AF.request(baseURL + apiWebLogin,
                    method: .post,
                    parameters: params,
                    encoding: URLEncoding.default,
@@ -131,7 +131,7 @@ class APIManager: NSObject {
 
     // Register new Account
     func register(params: [String: Any], completion: @escaping ([String: Any]?) -> Void) {
-        SendDataToService(params: params, operation: API_CREATE, completion: completion)
+        SendDataToService(params: params, operation: apiCreate, completion: completion)
     }
 
     // Login
@@ -139,12 +139,12 @@ class APIManager: NSObject {
         SendDataToService(params: [
             "email": email,
             "password": password
-        ], operation: API_LOGIN, completion: completion)
+        ], operation: apiLogin, completion: completion)
     }
 
     // Get Account Info
     func getAccountInfo(email: String, completion: @escaping ([String: Any]?) -> Void) {
-        SendDataToService(params: ["email": email], operation: API_INFO, completion: completion)
+        SendDataToService(params: ["email": email], operation: apiInfo, completion: completion)
     }
 
     func search(query: String, options: [String: String], completion: @escaping (_ data: [String: Any]?, _ err: Int?) -> Void) {
@@ -154,7 +154,7 @@ class APIManager: NSObject {
             str_option += "&\(key)=\(value)"
         }
 
-        let url = "\(BASE_URL)advancedsearch.php?q=\(query)\(str_option)"
+        let url = "\(baseURL)advancedsearch.php?q=\(query)\(str_option)"
         guard let encodedURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
             completion(nil, 0)
             return
@@ -163,7 +163,7 @@ class APIManager: NSObject {
         AF.request(encodedURL,
                    method: .get,
                    encoding: URLEncoding.default,
-                   headers: HEADERS)
+                   headers: headers)
             .responseJSON { response in
                 switch response.result {
                 case .success(let value):
@@ -208,10 +208,10 @@ class APIManager: NSObject {
     }
 
     func getMetaData(identifier: String, completion: @escaping (_ data: [String: Any]?, _ err: Int?) -> Void) {
-        AF.request("\(BASE_URL)\(API_METADATA)\(identifier)",
+        AF.request("\(baseURL)\(apiMetadata)\(identifier)",
                    method: .get,
                    encoding: URLEncoding.default,
-                   headers: HEADERS)
+                   headers: headers)
             .responseJSON { response in
                 switch response.result {
                 case .success(let value):
@@ -223,8 +223,8 @@ class APIManager: NSObject {
     }
 
     func getFavoriteItems(username: String,
-                          completion: @escaping(_ success: Bool, _ err: Int?, _ items: [[String: Any]]?) -> Void) {
-        let url = "\(BASE_URL)\(API_GET_FAVORITE)\(username.lowercased())"
+                          completion: @escaping (_ success: Bool, _ err: Int?, _ items: [[String: Any]]?) -> Void) {
+        let url = "\(baseURL)\(apiGetFavorite)\(username.lowercased())"
 
         AF.request(url, method: .get, encoding: URLEncoding.default)
             .responseJSON { response in
@@ -242,7 +242,7 @@ class APIManager: NSObject {
             }
     }
 
-    func saveFavoriteItem(email: String, password: String, identifier: String, mediatype: String, title: String, completion: @escaping(_ success: Bool, _ err: Int?) -> Void) {
+    func saveFavoriteItem(email: String, password: String, identifier: String, mediatype: String, title: String, completion: @escaping (_ success: Bool, _ err: Int?) -> Void) {
 
         GetCookieData(email: email, password: password) { (data) in
             if data != nil {
@@ -256,7 +256,7 @@ class APIManager: NSObject {
                 Session.default.session.configuration.httpCookieStorage?.setCookie(loggedInSig)
                 Session.default.session.configuration.httpCookieStorage?.setCookie(loggedInUser)
 
-                let url = "\(self.BASE_URL)\(self.API_SAVE_FAVORITE)&mediatype=\(mediatype)&identifier=\(identifier)&title=\(title)"
+                let url = "\(self.baseURL)\(self.apiSaveFavorite)&mediatype=\(mediatype)&identifier=\(identifier)&title=\(title)"
                 guard let encodedURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
                     completion(false, 0)
                     return
@@ -393,11 +393,11 @@ class APIManager: NSObject {
         parameters["secret"] = SECRET
         parameters["version"] = API_VERSION
 
-        return try await AF.request("\(BASE_URL)\(API_CREATE)",
+        return try await AF.request("\(baseURL)\(apiCreate)",
                                      method: .post,
                                      parameters: parameters,
                                      encoding: URLEncoding.default,
-                                     headers: HEADERS)
+                                     headers: headers)
             .serializingDecodable(AuthResponse.self)
             .value
     }
@@ -412,11 +412,11 @@ class APIManager: NSObject {
             "version": API_VERSION
         ]
 
-        return try await AF.request("\(BASE_URL)\(API_LOGIN)",
+        return try await AF.request("\(baseURL)\(apiLogin)",
                                      method: .post,
                                      parameters: params,
                                      encoding: URLEncoding.default,
-                                     headers: HEADERS)
+                                     headers: headers)
             .serializingDecodable(AuthResponse.self)
             .value
     }
@@ -430,11 +430,11 @@ class APIManager: NSObject {
             "version": API_VERSION
         ]
 
-        return try await AF.request("\(BASE_URL)\(API_INFO)",
+        return try await AF.request("\(baseURL)\(apiInfo)",
                                      method: .post,
                                      parameters: params,
                                      encoding: URLEncoding.default,
-                                     headers: HEADERS)
+                                     headers: headers)
             .serializingDecodable(AccountInfoResponse.self)
             .value
     }
@@ -447,7 +447,7 @@ class APIManager: NSObject {
             str_option += "&\(key)=\(value)"
         }
 
-        let url = "\(BASE_URL)advancedsearch.php?q=\(query)\(str_option)"
+        let url = "\(baseURL)advancedsearch.php?q=\(query)\(str_option)"
         guard let encodedURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
             throw NetworkError.invalidParameters
         }
@@ -455,7 +455,7 @@ class APIManager: NSObject {
         return try await AF.request(encodedURL,
                                      method: .get,
                                      encoding: URLEncoding.default,
-                                     headers: HEADERS)
+                                     headers: headers)
             .serializingDecodable(SearchResponse.self)
             .value
     }
@@ -483,17 +483,17 @@ class APIManager: NSObject {
 
     /// Get metadata with typed response (async/await)
     func getMetaDataTyped(identifier: String) async throws -> ItemMetadataResponse {
-        return try await AF.request("\(BASE_URL)\(API_METADATA)\(identifier)",
+        return try await AF.request("\(baseURL)\(apiMetadata)\(identifier)",
                                      method: .get,
                                      encoding: URLEncoding.default,
-                                     headers: HEADERS)
+                                     headers: headers)
             .serializingDecodable(ItemMetadataResponse.self)
             .value
     }
 
     /// Get favorite items with typed response (async/await)
     func getFavoriteItemsTyped(username: String) async throws -> FavoritesResponse {
-        let url = "\(BASE_URL)\(API_GET_FAVORITE)\(username.lowercased())"
+        let url = "\(baseURL)\(apiGetFavorite)\(username.lowercased())"
 
         return try await AF.request(url,
                                      method: .get,

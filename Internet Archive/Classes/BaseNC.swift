@@ -7,16 +7,10 @@
 //
 
 import UIKit
-//import AVKit
-//import AVFoundation
+// import AVKit
+// import AVFoundation
 
 class BaseNC: UINavigationController {
-    
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
-        // Do any additional setup after loading the view.
-    }
 
 //    func gotoYearsVC(collection: String, title: String, identifier: String) -> Void {
 //        let yearsVC = self.storyboard?.instantiateViewController(withIdentifier: "YearsVC") as! YearsVC
