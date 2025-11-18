@@ -47,7 +47,7 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
         txtDescription.text = iDescription
 
         if let imageURL = iImageURL {
-            itemImage.af.setImage(withURL: imageURL)
+            itemImage.af_setImage(withURL: imageURL)
         }
 
         txtDescription.buttonWasPressed = onMoreButtonPressed

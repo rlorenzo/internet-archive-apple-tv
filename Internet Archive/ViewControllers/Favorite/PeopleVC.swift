@@ -130,7 +130,7 @@ class PeopleVC: UIViewController, UICollectionViewDelegate, UICollectionViewData
 
         let imageURL = URL(string: "https://archive.org/services/get-item-image.php?identifier=\(item.identifier)")
         if let imageURL = imageURL {
-            itemCell.itemImage.af.setImage(withURL: imageURL)
+            itemCell.itemImage.af_setImage(withURL: imageURL)
         }
 
         return itemCell

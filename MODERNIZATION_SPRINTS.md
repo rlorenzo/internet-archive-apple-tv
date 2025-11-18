@@ -234,7 +234,7 @@ This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swi
 ## Sprint 6: View Controller Migration - Part 1 ✅ COMPLETED
 **Estimated Time:** 15-20 hours
 **PR Title:** `refactor: Update ViewControllers to use async/await and modern patterns`
-**Status:** Ready for merge
+**Status:** Ready for merge (fixed AlamofireImage API compatibility)
 
 ### Goals
 - Update view controllers to use new APIManager
@@ -260,6 +260,7 @@ This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swi
   - [x] `items` changed from `[[String: Any]]` to `[SearchResult]`
   - [x] `videoItems`, `musicItems`, `peoples` now use `[SearchResult]`
 - [x] Fixed bug in RegisterVC (was saving hardcoded strings instead of actual values)
+- [x] Fixed AlamofireImage API compatibility (corrected `af.setImage` to `af_setImage` for v4.3)
 
 ### Deliverable
 ✅ All view controllers compile and use modern async/await patterns with full type safety
