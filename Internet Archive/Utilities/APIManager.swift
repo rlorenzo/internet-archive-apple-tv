@@ -7,6 +7,7 @@
 //
 //  Updated for Sprint 4: Alamofire 5.x migration with async/await support
 //  Updated for Sprint 5: Added Codable model support
+//  Updated for Sprint 7: Removed hardcoded credentials, using secure configuration
 //
 
 import Foundation
@@ -24,14 +25,31 @@ class APIManager: NSObject {
     let API_SAVE_FAVORITE = "bookmarks.php?add_bookmark=1"
     let API_GET_FAVORITE = "metadata/fav-"
 
-    let ACCESS = "trS8dVjP8dzaE296"
-    let SECRET = "ICXDO78cnzUlPAt1"
-    let API_VERSION = 1
+    // Load API credentials from secure configuration (not hardcoded)
+    private let ACCESS: String
+    private let SECRET: String
+    private let API_VERSION: Int
 
     let HEADERS: HTTPHeaders = [
         "User-Agent": "Wayback_Machine_iOS/\(Bundle.main.infoDictionary!["CFBundleShortVersionString"]!)",
         "Wayback-Extension-Version": "Wayback_Machine_iOS/\(Bundle.main.infoDictionary!["CFBundleShortVersionString"]!)"
     ]
+
+    // MARK: - Initialization
+
+    override private init() {
+        // Load credentials from secure configuration
+        self.ACCESS = AppConfiguration.shared.apiAccessKey
+        self.SECRET = AppConfiguration.shared.apiSecretKey
+        self.API_VERSION = AppConfiguration.shared.apiVersion
+
+        super.init()
+
+        // Warn if configuration is not properly set up
+        if !AppConfiguration.shared.isConfigured {
+            print("⚠️ Warning: API credentials not configured. Please set up Configuration.plist")
+        }
+    }
 
     // MARK: - Private Helper Methods (Updated for Alamofire 5.x)
 

@@ -153,6 +153,10 @@ Temporary Items
 local.xcconfig
 *.local
 
+# Sprint 7: Sensitive API Configuration
+# Configuration.plist contains actual API credentials and must not be committed
+Internet Archive/Configuration.plist
+
 # Test output
 #
 *.xcresult/
