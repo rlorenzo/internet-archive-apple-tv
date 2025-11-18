@@ -47,8 +47,26 @@ post_install do |installer|
     # Fix NSAttributedStringKey -> NSAttributedString.Key
     text.gsub!('NSAttributedStringKey', 'NSAttributedString.Key')
 
+    # Fix UITouchType -> UITouch.TouchType
+    text.gsub!('UITouchType.indirect', 'UITouch.TouchType.indirect')
+
     File.write(text_viewer_file, text)
     puts "✅ Patched TvOSTextViewer for Swift 6 compatibility"
+  end
+
+  # Fix deprecated languageCode in TvOSMoreButton for tvOS 16+
+  bundle_loader_file = 'Pods/TvOSMoreButton/Source/Private/Helpers/BundleLoader.swift'
+  if File.exist?(bundle_loader_file)
+    # Make file writable
+    File.chmod(0644, bundle_loader_file)
+
+    text = File.read(bundle_loader_file)
+
+    # Fix Locale.current.languageCode -> Locale.current.language.languageCode.identifier
+    text.gsub!('Locale.current.languageCode', 'Locale.current.language.languageCode?.identifier')
+
+    File.write(bundle_loader_file, text)
+    puts "✅ Patched TvOSMoreButton for tvOS 16+ compatibility"
   end
 end
 
