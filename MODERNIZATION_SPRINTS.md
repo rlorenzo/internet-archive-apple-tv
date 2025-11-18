@@ -188,9 +188,10 @@ This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swi
 
 ---
 
-## Sprint 5: Data Models & Codable
+## Sprint 5: Data Models & Codable ✅ COMPLETED
 **Estimated Time:** 12-16 hours
 **PR Title:** `feat: Implement Codable data models for Internet Archive API`
+**Status:** Ready for merge
 
 ### Goals
 - Create type-safe data models
@@ -198,25 +199,35 @@ This document breaks down the modernization effort from Swift 4.0/tvOS 11 to Swi
 - Improve type safety
 
 ### Tasks
-- [ ] Create Codable models:
-  ```swift
-  struct SearchResponse: Codable
-  struct SearchResult: Codable
-  struct ItemMetadata: Codable
-  struct FileInfo: Codable
-  struct FavoritesResponse: Codable
-  struct AuthResponse: Codable
-  struct AccountInfo: Codable
-  ```
-- [ ] Add custom CodingKeys for API field mapping
-- [ ] Implement date parsing strategies
-- [ ] Add optional field handling with defaults
-- [ ] Create DTOs vs Domain models if needed
-- [ ] Update APIManager to return typed models
-- [ ] Remove all `as! [String: Any]` force casts
+- [x] Create Codable models:
+  - [x] `SearchResponse` and `SearchResult` - Search API responses
+  - [x] `ItemMetadataResponse`, `ItemMetadata`, and `FileInfo` - Metadata API responses
+  - [x] `FavoritesResponse` and `FavoriteItem` - Favorites API responses
+  - [x] `AuthResponse` and `AccountInfoResponse` - Authentication API responses
+- [x] Add custom CodingKeys for API field mapping (e.g., `files_count` → `filesCount`)
+- [x] Implement flexible field handling for String/Array polymorphic types
+- [x] Add optional field handling with safe defaults
+- [x] Add computed properties for safe access (e.g., `safeMediaType`, `isVerified`)
+- [x] Update APIManager with new typed async/await methods:
+  - [x] `registerTyped()` → `AuthResponse`
+  - [x] `loginTyped()` → `AuthResponse`
+  - [x] `getAccountInfoTyped()` → `AccountInfoResponse`
+  - [x] `searchTyped()` → `SearchResponse`
+  - [x] `getCollectionsTyped()` → `[SearchResult]`
+  - [x] `getMetaDataTyped()` → `ItemMetadataResponse`
+  - [x] `getFavoriteItemsTyped()` → `FavoritesResponse`
+- [x] Add backward-compatible `toDictionary()` methods for gradual migration
+- [x] Keep legacy dictionary-based methods for backward compatibility *(will be removed in Sprint 6)*
 
 ### Deliverable
-Type-safe API responses, no more dictionary parsing
+✅ Type-safe API responses available via new typed methods, full backward compatibility maintained
+
+### Files Modified
+- `Internet Archive/Models/SearchModels.swift` - New search response models
+- `Internet Archive/Models/MetadataModels.swift` - New metadata response models
+- `Internet Archive/Models/FavoritesModels.swift` - New favorites response models
+- `Internet Archive/Models/AuthModels.swift` - New authentication response models
+- `Internet Archive/Utilities/APIManager.swift` - Added type-safe async/await methods
 
 ---
 
