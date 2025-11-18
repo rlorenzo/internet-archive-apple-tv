@@ -46,8 +46,6 @@ opt_in_rules:
   - overridden_super_call
   - prefer_self_type_over_type_of_self
   - prefer_zero_over_explicit_init
-  - private_action
-  - private_outlet
   - prohibited_super_call
   - redundant_nil_coalescing
   - redundant_type_annotation
@@ -67,6 +65,8 @@ disabled_rules:
   - function_body_length # Will refactor in later sprints
   - cyclomatic_complexity # Will address in refactoring phase
   - trailing_whitespace # Minor issue, fix later
+  - private_outlet # IBOutlets accessed from other VCs in current architecture
+  - private_action # IBActions accessed from other VCs in current architecture
 
 # Rule configurations
 force_cast:
