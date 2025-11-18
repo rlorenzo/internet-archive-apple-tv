@@ -32,5 +32,20 @@ post_install do |installer|
       config.build_settings['BUILD_LIBRARY_FOR_DISTRIBUTION'] = 'NO'
     end
   end
+
+  # Fix deprecated Swift 4 APIs in TvOSTextViewer for Swift 6 compatibility
+  text_viewer_file = 'Pods/TvOSTextViewer/TvOSTextViewer/Sources/TvOSTextViewerViewController.swift'
+  if File.exist?(text_viewer_file)
+    text = File.read(text_viewer_file)
+
+    # Fix UIBlurEffectStyle -> UIBlurEffect.Style
+    text.gsub!('UIBlurEffectStyle', 'UIBlurEffect.Style')
+
+    # Fix NSAttributedStringKey -> NSAttributedString.Key
+    text.gsub!('NSAttributedStringKey', 'NSAttributedString.Key')
+
+    File.write(text_viewer_file, text)
+    puts "✅ Patched TvOSTextViewer for Swift 6 compatibility"
+  end
 end
 
