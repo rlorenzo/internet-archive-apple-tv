@@ -13,6 +13,12 @@
 import Foundation
 import Alamofire
 
+struct FavoriteItemParams {
+    let identifier: String
+    let mediatype: String
+    let title: String
+}
+
 class APIManager: NSObject {
     static let sharedManager = APIManager()
 
@@ -31,8 +37,8 @@ class APIManager: NSObject {
     private let apiVersion: Int
 
     let headers: HTTPHeaders = [
-        "User-Agent": "Wayback_Machine_iOS/\(Bundle.main.infoDictionary!["CFBundleShortVersionString"]!)",
-        "Wayback-Extension-Version": "Wayback_Machine_iOS/\(Bundle.main.infoDictionary!["CFBundleShortVersionString"]!)"
+        "User-Agent": "Wayback_Machine_iOS/\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")",
+        "Wayback-Extension-Version": "Wayback_Machine_iOS/\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")"
     ]
 
     // MARK: - Initialization
@@ -56,9 +62,9 @@ class APIManager: NSObject {
     private func sendDataToService(params: [String: Any], operation: String, completion: @escaping ([String: Any]?) -> Void) {
 
         var parameters = params
-        parameters["access"] = ACCESS
-        parameters["secret"] = SECRET
-        parameters["version"] = API_VERSION
+        parameters["access"] = access
+        parameters["secret"] = secret
+        parameters["version"] = apiVersion
 
         AF.request("\(baseURL)\(operation)",
                    method: .post,
@@ -136,10 +142,14 @@ class APIManager: NSObject {
 
     // Login
     func login(email: String, password: String, completion: @escaping ([String: Any]?) -> Void) {
-        sendDataToService(params: [
-            "email": email,
-            "password": password
-        ], operation: apiLogin, completion: completion)
+        sendDataToService(
+            params: [
+                "email": email,
+                "password": password
+            ],
+            operation: apiLogin,
+            completion: completion
+        )
     }
 
     // Get Account Info
@@ -185,24 +195,25 @@ class APIManager: NSObject {
             "fl[]": "identifier,title,year,downloads,date,creator,description,mediatype"
         ]
 
-        if limit != nil {
-            options["rows"] = "\(limit!)"
+        if let unwrappedLimit = limit {
+            options["rows"] = "\(unwrappedLimit)"
         }
 
-        search(query: "collection:(\(collection)) And mediatype:\(resultType)", options: options) { (data, err) in
-            if data != nil {
-                if limit == nil, let numFound = data!["numFound"] as? Int {
-                    if numFound == 0 {
-                        // API.GetCollections - fail
-                        completion(collection, nil, 0)
-                    } else {
-                        self.getCollections(collection: collection, resultType: resultType, limit: numFound, completion: completion)
-                    }
+        search(query: "collection:(\(collection)) And mediatype:\(resultType)", options: options) { data, err in
+            guard let data = data else {
+                completion(collection, nil, err)
+                return
+            }
+
+            if limit == nil, let numFound = data["numFound"] as? Int {
+                if numFound == 0 {
+                    // API.GetCollections - fail
+                    completion(collection, nil, 0)
                 } else {
-                    completion(collection, data!["docs"] as? [[String: Any]], nil)
+                    self.getCollections(collection: collection, resultType: resultType, limit: numFound, completion: completion)
                 }
             } else {
-                completion(collection, nil, err)
+                completion(collection, data["docs"] as? [[String: Any]], nil)
             }
         }
     }
@@ -242,21 +253,24 @@ class APIManager: NSObject {
             }
     }
 
-    func saveFavoriteItem(email: String, password: String, identifier: String, mediatype: String, title: String, completion: @escaping (_ success: Bool, _ err: Int?) -> Void) {
+    func saveFavoriteItem(email: String, password: String, item: FavoriteItemParams, completion: @escaping (_ success: Bool, _ err: Int?) -> Void) {
 
-        getCookieData(email: email, password: password) { (data) in
-            if data != nil {
+        getCookieData(email: email, password: password) { data in
+            guard let data = data else {
+                completion(false, 301)
+                return
+            }
 
-                guard let loggedInSig = data!["logged-in-sig"] as? HTTPCookie,
-                      let loggedInUser = data!["logged-in-user"] as? HTTPCookie else {
-                    completion(false, 301)
-                    return
-                }
+            guard let loggedInSig = data["logged-in-sig"] as? HTTPCookie,
+                  let loggedInUser = data["logged-in-user"] as? HTTPCookie else {
+                completion(false, 301)
+                return
+            }
 
                 Session.default.session.configuration.httpCookieStorage?.setCookie(loggedInSig)
                 Session.default.session.configuration.httpCookieStorage?.setCookie(loggedInUser)
 
-                let url = "\(self.baseURL)\(self.apiSaveFavorite)&mediatype=\(mediatype)&identifier=\(identifier)&title=\(title)"
+                let url = "\(self.baseURL)\(self.apiSaveFavorite)&mediatype=\(item.mediatype)&identifier=\(item.identifier)&title=\(item.title)"
                 guard let encodedURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
                     completion(false, 0)
                     return
@@ -271,10 +285,6 @@ class APIManager: NSObject {
                             completion(false, response.response?.statusCode)
                         }
                     }
-
-            } else {
-                completion(false, 301)
-            }
         }
     }
 
@@ -282,7 +292,7 @@ class APIManager: NSObject {
 
     /// Register new account (async/await)
     func register(params: [String: Any]) async throws -> [String: Any] {
-        return try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { continuation in
             register(params: params) { data in
                 if let data = data {
                     continuation.resume(returning: data)
@@ -295,7 +305,7 @@ class APIManager: NSObject {
 
     /// Login (async/await)
     func login(email: String, password: String) async throws -> [String: Any] {
-        return try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { continuation in
             login(email: email, password: password) { data in
                 if let data = data {
                     continuation.resume(returning: data)
@@ -308,7 +318,7 @@ class APIManager: NSObject {
 
     /// Get account info (async/await)
     func getAccountInfo(email: String) async throws -> [String: Any] {
-        return try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { continuation in
             getAccountInfo(email: email) { data in
                 if let data = data {
                     continuation.resume(returning: data)
@@ -321,7 +331,7 @@ class APIManager: NSObject {
 
     /// Search (async/await)
     func search(query: String, options: [String: String]) async throws -> [String: Any] {
-        return try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { continuation in
             search(query: query, options: options) { data, err in
                 if let data = data {
                     continuation.resume(returning: data)
@@ -334,7 +344,7 @@ class APIManager: NSObject {
 
     /// Get collections (async/await)
     func getCollections(collection: String, resultType: String, limit: Int? = nil) async throws -> (collection: String, data: [[String: Any]]) {
-        return try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { continuation in
             getCollections(collection: collection, resultType: resultType, limit: limit) { collection, data, err in
                 if let data = data {
                     continuation.resume(returning: (collection, data))
@@ -347,7 +357,7 @@ class APIManager: NSObject {
 
     /// Get metadata (async/await)
     func getMetaData(identifier: String) async throws -> [String: Any] {
-        return try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { continuation in
             getMetaData(identifier: identifier) { data, err in
                 if let data = data {
                     continuation.resume(returning: data)
@@ -360,7 +370,7 @@ class APIManager: NSObject {
 
     /// Get favorite items (async/await)
     func getFavoriteItems(username: String) async throws -> [[String: Any]]? {
-        return try await withCheckedThrowingContinuation { continuation in
+        try await withCheckedThrowingContinuation { continuation in
             getFavoriteItems(username: username) { success, err, items in
                 if success {
                     continuation.resume(returning: items)
@@ -372,9 +382,9 @@ class APIManager: NSObject {
     }
 
     /// Save favorite item (async/await)
-    func saveFavoriteItem(email: String, password: String, identifier: String, mediatype: String, title: String) async throws {
-        return try await withCheckedThrowingContinuation { continuation in
-            saveFavoriteItem(email: email, password: password, identifier: identifier, mediatype: mediatype, title: title) { success, err in
+    func saveFavoriteItem(email: String, password: String, item: FavoriteItemParams) async throws {
+        try await withCheckedThrowingContinuation { continuation in
+            saveFavoriteItem(email: email, password: password, item: item) { success, err in
                 if success {
                     continuation.resume()
                 } else {
@@ -389,15 +399,15 @@ class APIManager: NSObject {
     /// Register new account with typed response (async/await)
     func registerTyped(params: [String: Any]) async throws -> AuthResponse {
         var parameters = params
-        parameters["access"] = ACCESS
-        parameters["secret"] = SECRET
-        parameters["version"] = API_VERSION
+        parameters["access"] = access
+        parameters["secret"] = secret
+        parameters["version"] = apiVersion
 
         return try await AF.request("\(baseURL)\(apiCreate)",
-                                     method: .post,
-                                     parameters: parameters,
-                                     encoding: URLEncoding.default,
-                                     headers: headers)
+                                    method: .post,
+                                    parameters: parameters,
+                                    encoding: URLEncoding.default,
+                                    headers: headers)
             .serializingDecodable(AuthResponse.self)
             .value
     }
@@ -407,16 +417,16 @@ class APIManager: NSObject {
         let params: [String: Any] = [
             "email": email,
             "password": password,
-            "access": ACCESS,
-            "secret": SECRET,
-            "version": API_VERSION
+            "access": access,
+            "secret": secret,
+            "version": apiVersion
         ]
 
         return try await AF.request("\(baseURL)\(apiLogin)",
-                                     method: .post,
-                                     parameters: params,
-                                     encoding: URLEncoding.default,
-                                     headers: headers)
+                                    method: .post,
+                                    parameters: params,
+                                    encoding: URLEncoding.default,
+                                    headers: headers)
             .serializingDecodable(AuthResponse.self)
             .value
     }
@@ -425,16 +435,16 @@ class APIManager: NSObject {
     func getAccountInfoTyped(email: String) async throws -> AccountInfoResponse {
         let params: [String: Any] = [
             "email": email,
-            "access": ACCESS,
-            "secret": SECRET,
-            "version": API_VERSION
+            "access": access,
+            "secret": secret,
+            "version": apiVersion
         ]
 
         return try await AF.request("\(baseURL)\(apiInfo)",
-                                     method: .post,
-                                     parameters: params,
-                                     encoding: URLEncoding.default,
-                                     headers: headers)
+                                    method: .post,
+                                    parameters: params,
+                                    encoding: URLEncoding.default,
+                                    headers: headers)
             .serializingDecodable(AccountInfoResponse.self)
             .value
     }
@@ -453,9 +463,9 @@ class APIManager: NSObject {
         }
 
         return try await AF.request(encodedURL,
-                                     method: .get,
-                                     encoding: URLEncoding.default,
-                                     headers: headers)
+                                    method: .get,
+                                    encoding: URLEncoding.default,
+                                    headers: headers)
             .serializingDecodable(SearchResponse.self)
             .value
     }
@@ -463,7 +473,7 @@ class APIManager: NSObject {
     /// Get collections with typed response (async/await)
     func getCollectionsTyped(collection: String, resultType: String, limit: Int? = nil) async throws -> (collection: String, results: [SearchResult]) {
         var options = [
-            "rows": limit != nil ? "\(limit!)" : "1",
+            "rows": limit.map { "\($0)" } ?? "1",
             "fl[]": "identifier,title,year,downloads,date,creator,description,mediatype"
         ]
 
@@ -483,10 +493,10 @@ class APIManager: NSObject {
 
     /// Get metadata with typed response (async/await)
     func getMetaDataTyped(identifier: String) async throws -> ItemMetadataResponse {
-        return try await AF.request("\(baseURL)\(apiMetadata)\(identifier)",
-                                     method: .get,
-                                     encoding: URLEncoding.default,
-                                     headers: headers)
+        try await AF.request("\(baseURL)\(apiMetadata)\(identifier)",
+                             method: .get,
+                             encoding: URLEncoding.default,
+                             headers: headers)
             .serializingDecodable(ItemMetadataResponse.self)
             .value
     }
@@ -496,8 +506,8 @@ class APIManager: NSObject {
         let url = "\(baseURL)\(apiGetFavorite)\(username.lowercased())"
 
         return try await AF.request(url,
-                                     method: .get,
-                                     encoding: URLEncoding.default)
+                                    method: .get,
+                                    encoding: URLEncoding.default)
             .serializingDecodable(FavoritesResponse.self)
             .value
     }

@@ -56,7 +56,7 @@ class KeychainManager {
     }
 
     /// Retrieve a string value from the keychain
-    func get(forKey key: KeychainKey) -> String? {
+    func getString(forKey key: KeychainKey) -> String? {
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
@@ -79,12 +79,12 @@ class KeychainManager {
 
     /// Save a boolean value to the keychain
     func save(_ value: Bool, forKey key: KeychainKey) -> Bool {
-        return save(value ? "true" : "false", forKey: key)
+        save(value ? "true" : "false", forKey: key)
     }
 
     /// Retrieve a boolean value from the keychain
     func getBool(forKey key: KeychainKey) -> Bool {
-        return get(forKey: key) == "true"
+        getString(forKey: key) == "true"
     }
 
     /// Delete a value from the keychain
@@ -124,24 +124,16 @@ class KeychainManager {
     }
 
     /// Get user email
-    var userEmail: String? {
-        return get(forKey: .userEmail)
-    }
+    var userEmail: String? { getString(forKey: .userEmail) }
 
     /// Get user password
-    var userPassword: String? {
-        return get(forKey: .userPassword)
-    }
+    var userPassword: String? { getString(forKey: .userPassword) }
 
     /// Get username
-    var username: String? {
-        return get(forKey: .username)
-    }
+    var username: String? { getString(forKey: .username) }
 
     /// Check if user is logged in
-    var isLoggedIn: Bool {
-        return getBool(forKey: .isLoggedIn)
-    }
+    var isLoggedIn: Bool { getBool(forKey: .isLoggedIn) }
 
     /// Clear all user credentials (logout)
     func clearUserCredentials() -> Bool {

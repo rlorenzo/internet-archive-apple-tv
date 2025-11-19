@@ -18,11 +18,6 @@ class RegisterVC: UIViewController {
     @IBOutlet weak var txtPassword: UITextField!
     @IBOutlet weak var txtConfirm: UITextField!
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-        // Do any additional setup after loading the view.
-    }
-
     @IBAction func onRegister(_ sender: Any) {
         guard validate() else {
             return

@@ -1,6 +1,0 @@
-framework module TvOSMoreButton {
-  umbrella header "TvOSMoreButton-umbrella.h"
-
-  export *
-  module * { export * }
-}

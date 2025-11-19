@@ -86,11 +86,8 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
         }
     }
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-    }
-
     override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
         clsVideo.isHidden = true
         clsMusic.isHidden = true
         lblMovies.isHidden = true

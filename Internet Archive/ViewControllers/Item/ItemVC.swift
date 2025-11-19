@@ -59,6 +59,7 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
     }
 
     override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
         if let favorites = Global.getFavoriteData(),
            let identifier = iIdentifier,
            favorites.contains(identifier) {
@@ -164,12 +165,15 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
 
         Task {
             do {
-                try await APIManager.sharedManager.saveFavoriteItem(
-                    email: email,
-                    password: password,
+                let itemParams = FavoriteItemParams(
                     identifier: identifier,
                     mediatype: mediaType,
                     title: title
+                )
+                try await APIManager.sharedManager.saveFavoriteItem(
+                    email: email,
+                    password: password,
+                    item: itemParams
                 )
             } catch {
                 // Silently fail for now - favorite state already updated locally
@@ -241,7 +245,7 @@ extension ItemVC: SliderDelegate {
     }
 
     func slider(_ slider: Slider, textWithValue value: Double) -> String {
-        return format(forTime: value)
+        format(forTime: value)
     }
 
     func slider(_ slider: Slider, didChangeValue value: Double) {

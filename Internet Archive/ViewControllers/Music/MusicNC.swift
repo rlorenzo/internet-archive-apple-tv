@@ -12,23 +12,25 @@ class MusicNC: BaseNC {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        
+
         gotoMusicVC()
     }
-    
-    func gotoMusicVC() -> Void {
-        let musicVC = self.storyboard?.instantiateViewController(withIdentifier: "MusicVC") as! MusicVC
+
+    func gotoMusicVC() {
+        guard let musicVC = self.storyboard?.instantiateViewController(withIdentifier: "MusicVC") as? MusicVC else {
+            return
+        }
         self.viewControllers = [musicVC]
     }
 
     /*
-    // MARK: - Navigation
+     // MARK: - Navigation
 
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
+     // In a storyboard-based application, you will often want to do a little preparation before navigation
+     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+     // Get the new view controller using segue.destinationViewController.
+     // Pass the selected object to the new view controller.
+     }
+     */
 
 }

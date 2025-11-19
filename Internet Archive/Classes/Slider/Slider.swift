@@ -17,7 +17,7 @@ public protocol SliderDelegate: class {
 }
 
 public extension SliderDelegate {
-    func slider(_ slider: Slider, textWithValue value: Double) -> String { return "\(Int(value))" }
+    func slider(_ slider: Slider, textWithValue value: Double) -> String { "\(Int(value))" }
 
     func sliderDidTap(_ slider: Slider) {}
     func slider(_ slider: Slider, didChangeValue value: Double) {}
@@ -28,15 +28,14 @@ public extension SliderDelegate {
 public class Slider: UIView {
 
     // MARK: - Public
-    
-    
+
     /**
-      Contains the receiver’s current value.
-     
+     Contains the receiver’s current value.
+
      Setting this property causes the receiver to redraw itself using the new value. To render an animated transition from the current value to the new value, you should use the setValue:animated: method instead.
-     
+
      If you try to set a value that is below the minimum or above the maximum value, the minimum or maximum value is set instead. The default value of this property is 0.0.
-    */
+     */
     @IBInspectable public var value: Double = 0 {
         didSet {
             updateViews()
@@ -70,10 +69,10 @@ public class Slider: UIView {
     public var decelerationRate: CGFloat = 0.92
     public var decelerationMaxVelocity: CGFloat = 1000
 
-    public override var canBecomeFocused: Bool {
-        return true
+    override public var canBecomeFocused: Bool {
+        true
     }
-    
+
     public func set(value: Double, animated: Bool) {
         stopDeceleratingTimer()
         if distance == 0 {
@@ -92,7 +91,7 @@ public class Slider: UIView {
         }
     }
 
-    public override init(frame: CGRect) {
+    override public init(frame: CGRect) {
         super.init(frame: frame)
         commonInit()
         updateViews()
@@ -104,32 +103,32 @@ public class Slider: UIView {
         updateViews()
     }
 
-    public override func layoutSubviews() {
+    override public func layoutSubviews() {
         super.layoutSubviews()
         layoutIfNeeded()
         updateViews()
     }
-    
-    public override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
+
+    override public func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
         super.didUpdateFocus(in: context, with: coordinator)
 
         if context.nextFocusedView == self {
-            coordinator.addCoordinatedAnimations({ () -> Void in
+            coordinator.addCoordinatedAnimations({ () in
                 self.seekerView.transform = CGAffineTransform(translationX: 0, y: -12)
                 self.seekerLabelBackgroundInnerView.backgroundColor = .white
                 self.seekerLabel.textColor = .black
                 self.seekerLabelBackgroundView.layer.shadowOpacity = 0.5
                 self.seekLineView.layer.shadowOpacity = 0.5
-                }, completion: nil)
+            }, completion: nil)
 
         } else if context.previouslyFocusedView == self {
-            coordinator.addCoordinatedAnimations({ () -> Void in
+            coordinator.addCoordinatedAnimations({ () in
                 self.seekerView.transform = .identity
                 self.seekerLabelBackgroundInnerView.backgroundColor = .lightGray
                 self.seekerLabel.textColor = .white
                 self.seekerLabelBackgroundView.layer.shadowOpacity = 0
                 self.seekLineView.layer.shadowOpacity = 0
-                }, completion: nil)
+            }, completion: nil)
         }
     }
 
@@ -145,22 +144,24 @@ public class Slider: UIView {
     private var distance: Double = 100
 
     private func commonInit() {
-        let view = Bundle.main.loadNibNamed("Slider", owner: self, options: nil)?.first as! UIView
+        guard let view = Bundle.main.loadNibNamed("Slider", owner: self, options: nil)?.first as? UIView else {
+            return
+        }
         addSubview(view)
 
         view.translatesAutoresizingMaskIntoConstraints = false
         let bindings = ["view": view]
-        
+
         addConstraints(NSLayoutConstraint.constraints(
-            withVisualFormat: "H:|[view]|",
-            options: .init(rawValue: 0),
-            metrics: nil,
-            views: bindings))
+                        withVisualFormat: "H:|[view]|",
+                        options: .init(rawValue: 0),
+                        metrics: nil,
+                        views: bindings))
         addConstraints(NSLayoutConstraint.constraints(
-            withVisualFormat: "V:|[view]|",
-            options: .init(rawValue: 0),
-            metrics: nil,
-            views: bindings))
+                        withVisualFormat: "V:|[view]|",
+                        options: .init(rawValue: 0),
+                        metrics: nil,
+                        views: bindings))
 
         barView.layer.cornerRadius = 6
 
@@ -239,9 +240,8 @@ public class Slider: UIView {
     }
 }
 
-
 extension Slider: UIGestureRecognizerDelegate {
-    public override func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
+    override public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         if let panGestureRecognizer = gestureRecognizer as? UIPanGestureRecognizer {
             let translation = panGestureRecognizer.translation(in: self)
             if fabs(translation.x) > fabs(translation.y) {
@@ -252,6 +252,6 @@ extension Slider: UIGestureRecognizerDelegate {
     }
 
     public func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer, shouldRecognizeSimultaneouslyWith otherGestureRecognizer: UIGestureRecognizer) -> Bool {
-        return true
+        true
     }
 }
