@@ -60,7 +60,7 @@ class APIManager: NSObject {
 
         // Warn if configuration is not properly set up
         if !AppConfiguration.shared.isConfigured {
-            print("⚠️ Warning: API credentials not configured. Please set up Configuration.plist")
+            NSLog("⚠️ Warning: API credentials not configured. Please set up Configuration.plist")
         }
     }
 

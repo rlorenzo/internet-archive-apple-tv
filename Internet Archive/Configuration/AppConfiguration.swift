@@ -47,12 +47,24 @@ struct AppConfiguration {
 
     /// Internet Archive API access key
     var apiAccessKey: String {
-        configuration[ConfigKey.apiAccessKey.rawValue] as? String ?? ""
+        let key = configuration[ConfigKey.apiAccessKey.rawValue] as? String ?? ""
+        #if DEBUG
+        if key.isEmpty {
+            assertionFailure("API_ACCESS_KEY is not configured. Please set up Configuration.plist")
+        }
+        #endif
+        return key
     }
 
     /// Internet Archive API secret key
     var apiSecretKey: String {
-        configuration[ConfigKey.apiSecretKey.rawValue] as? String ?? ""
+        let secret = configuration[ConfigKey.apiSecretKey.rawValue] as? String ?? ""
+        #if DEBUG
+        if secret.isEmpty {
+            assertionFailure("API_SECRET_KEY is not configured. Please set up Configuration.plist")
+        }
+        #endif
+        return secret
     }
 
     /// API version number
