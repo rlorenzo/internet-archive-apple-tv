@@ -31,9 +31,16 @@ class APIManager: NSObject {
     let apiSaveFavorite = "bookmarks.php?add_bookmark=1"
     let apiGetFavorite = "metadata/fav-"
 
-    // Load API credentials from secure configuration (not hardcoded)
+    /// The API access key used for authenticating requests to Internet Archive's xauthn service.
+    /// Loaded from secure configuration. This credential must be kept confidential and never hardcoded or exposed in logs or source control.
     private let access: String
+
+    /// The API secret key used for signing or authenticating requests to Internet Archive's xauthn service.
+    /// Loaded from secure configuration. This credential must be kept confidential and never hardcoded or exposed in logs or source control.
     private let secret: String
+
+    /// The API version used for requests to ensure compatibility with the backend.
+    /// Loaded from secure configuration.
     private let apiVersion: Int
 
     let headers: HTTPHeaders = [

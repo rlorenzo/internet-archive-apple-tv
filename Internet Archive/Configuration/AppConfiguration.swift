@@ -38,8 +38,8 @@ struct AppConfiguration {
             // Fallback to empty configuration
             // In production, these should be set via environment or build configuration
             self.configuration = [:]
-            print("⚠️ Warning: Configuration.plist not found. API credentials not loaded.")
-            print("⚠️ Please create Configuration.plist from Configuration.plist.template")
+            NSLog("⚠️ Warning: Configuration.plist not found. API credentials not loaded.")
+            NSLog("⚠️ Please create Configuration.plist from Configuration.plist.template")
         }
     }
 

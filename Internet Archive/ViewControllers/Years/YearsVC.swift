@@ -86,7 +86,7 @@ class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
             return UITableViewCell()
         }
         yearCell.lblYear.text = sortedKeys[indexPath.row]
-        yearCell.lblYear.textColor = .black
+        yearCell.lblYear.textColor = .label
 
         return yearCell
     }
@@ -114,7 +114,7 @@ class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
 
         let data = yearData[indexPath.row]
         itemCell.itemTitle.text = data["title"] as? String
-        itemCell.itemTitle.textColor = .black
+        itemCell.itemTitle.textColor = .label
         if let identifier = data["identifier"] as? String,
            let imageURL = URL(string: "https://archive.org/services/get-item-image.php?identifier=\(identifier)") {
             itemCell.itemImage.af_setImage(withURL: imageURL)

@@ -116,7 +116,7 @@ public class Slider: UIView {
             coordinator.addCoordinatedAnimations({ () in
                 self.seekerView.transform = CGAffineTransform(translationX: 0, y: -12)
                 self.seekerLabelBackgroundInnerView.backgroundColor = .white
-                self.seekerLabel.textColor = .black
+                self.seekerLabel.textColor = .label
                 self.seekerLabelBackgroundView.layer.shadowOpacity = 0.5
                 self.seekLineView.layer.shadowOpacity = 0.5
             }, completion: nil)

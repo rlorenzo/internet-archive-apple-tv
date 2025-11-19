@@ -77,12 +77,21 @@ class KeychainManager {
         return value
     }
 
-    /// Save a boolean value to the keychain
+    /// Save a boolean value to the keychain.
+    ///
+    /// - Note: Boolean values are stored as their string representations ("true"/"false") in the keychain.
+    /// - Parameter value: The boolean value to save
+    /// - Parameter key: The keychain key to store the value under
+    /// - Returns: True if the save was successful, false otherwise
     func save(_ value: Bool, forKey key: KeychainKey) -> Bool {
         save(value ? "true" : "false", forKey: key)
     }
 
-    /// Retrieve a boolean value from the keychain
+    /// Retrieve a boolean value from the keychain.
+    ///
+    /// - Note: Boolean values are stored as their string representations ("true"/"false") in the keychain.
+    /// - Parameter key: The keychain key to retrieve the value from
+    /// - Returns: True if the stored value is "true", false otherwise (including when no value is stored)
     func getBool(forKey key: KeychainKey) -> Bool {
         getString(forKey: key) == "true"
     }
