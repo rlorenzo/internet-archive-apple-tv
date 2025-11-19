@@ -44,12 +44,11 @@ class MusicVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
 
             } catch {
                 AppProgressHUD.sharedManager.hide()
-                print("MusicVC Error: \(error)")
+                NSLog("MusicVC Error: \(error)")
                 if let decodingError = error as? DecodingError {
-                    print("Decoding error details: \(decodingError)")
+                    NSLog("Decoding error details: \(decodingError)")
                 }
-                let errorMessage = (error as? NetworkError)?.localizedDescription ?? error.localizedDescription
-                Global.showAlert(title: "Error", message: "MusicVC: \(errorMessage)\n\nFull error: \(error)", target: self)
+                Global.showAlert(title: "Error", message: "Unable to load music collections. Please try again later.", target: self)
             }
         }
     }

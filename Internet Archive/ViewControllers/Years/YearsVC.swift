@@ -35,12 +35,11 @@ class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
 
         AppProgressHUD.sharedManager.show(view: self.view)
 
-        APIManager.sharedManager.getCollections(collection: identifier, resultType: collection, limit: 5000) { _, data, error in
+        APIManager.sharedManager.getCollections(collection: identifier, resultType: collection, limit: 5000) { _, data, _ in
 
             AppProgressHUD.sharedManager.hide()
 
             if let data = data {
-                print("YearsVC: Loaded \(data.count) items")
                 for item in data {
                     var year = "Undated"
 
@@ -59,8 +58,6 @@ class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
                     }
                 }
 
-                print("YearsVC: Grouped into \(self.sortedData.keys.count) years")
-
                 self.sortedKeys = self.sortedData.keys.sorted(by: { year1, year2 -> Bool in
                     year1 > year2
                 })
@@ -69,41 +66,27 @@ class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
                 self.tableView.isHidden = false
                 self.collectionView.isHidden = false
                 self.lblTitle.isHidden = false
-
-                // Debug: Check tableView frame
-                print("YearsVC: tableView frame: \(self.tableView.frame)")
-                print("YearsVC: tableView bounds: \(self.tableView.bounds)")
-                print("YearsVC: collectionView frame: \(self.collectionView.frame)")
             } else {
-                print("YearsVC Error: \(String(describing: error))")
-                Global.showAlert(title: "Error", message: "Error occurred while downloading items. Error: \(String(describing: error))", target: self)
+                Global.showAlert(title: "Error", message: "An error occurred while downloading items. Please try again later.", target: self)
             }
         }
     }
 
     // MARK: - UITableView datasource, delegate
     func numberOfSections(in tableView: UITableView) -> Int {
-        print("YearsVC: numberOfSections called, returning 1")
-        return 1
+        1
     }
 
     func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        let count = sortedKeys.count
-        print("YearsVC: numberOfRowsInSection called, returning \(count) rows")
-        return count
+        sortedKeys.count
     }
 
     func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        print("YearsVC: cellForRowAt called for row \(indexPath.row)")
         guard let yearCell = tableView.dequeueReusableCell(withIdentifier: "YearCell", for: indexPath) as? YearCell else {
-            print("YearsVC: Failed to dequeue YearCell")
             return UITableViewCell()
         }
         yearCell.lblYear.text = sortedKeys[indexPath.row]
         yearCell.lblYear.textColor = .black
-        print("YearsVC: Configured cell with year: \(sortedKeys[indexPath.row])")
-        print("YearsVC: Cell frame: \(yearCell.frame), bounds: \(yearCell.bounds)")
-        print("YearsVC: Cell label frame: \(yearCell.lblYear.frame)")
 
         return yearCell
     }

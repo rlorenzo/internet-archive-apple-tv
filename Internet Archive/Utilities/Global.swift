@@ -27,11 +27,11 @@ class Global: NSObject {
     static func saveFavoriteData(identifier: String) {
         var favorites = getFavoriteData()
 
-        if  favorites == nil {
+        if favorites == nil {
             UserDefaults.standard.set([identifier], forKey: "FavoriteData")
-        } else if let unwrappedFavorites = favorites, !unwrappedFavorites.contains(identifier) {
-            favorites?.append(identifier)
-            UserDefaults.standard.set(favorites, forKey: "FavoriteData")
+        } else if var unwrappedFavorites = favorites, !unwrappedFavorites.contains(identifier) {
+            unwrappedFavorites.append(identifier)
+            UserDefaults.standard.set(unwrappedFavorites, forKey: "FavoriteData")
         }
     }
 
