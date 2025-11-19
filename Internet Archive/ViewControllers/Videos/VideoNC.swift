@@ -16,23 +16,23 @@ class VideoNC: BaseNC {
         gotoVideoVC()
     }
 
-    func gotoVideoVC() -> Void {
-        let videoVC = self.storyboard?.instantiateViewController(withIdentifier: "VideoVC") as! VideoVC
+    func gotoVideoVC() {
+        guard let videoVC = self.storyboard?.instantiateViewController(withIdentifier: "VideoVC") as? VideoVC else {
+            return
+        }
         self.viewControllers = [videoVC]
     }
-    
 
     // MARK: AVPlayerViewControllerDelegate
-    
 
     /*
-    // MARK: - Navigation
+     // MARK: - Navigation
 
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
+     // In a storyboard-based application, you will often want to do a little preparation before navigation
+     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+     // Get the new view controller using segue.destinationViewController.
+     // Pass the selected object to the new view controller.
+     }
+     */
 
 }

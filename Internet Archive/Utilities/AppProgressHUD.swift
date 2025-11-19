@@ -10,16 +10,16 @@ import UIKit
 
 class AppProgressHUD: NSObject {
     static let sharedManager = AppProgressHUD()
-    
-    private var indicator = UIActivityIndicatorView(activityIndicatorStyle: UIActivityIndicatorViewStyle.whiteLarge)
-    
-    func show(view: UIView) -> Void {
+
+    private var indicator = UIActivityIndicatorView(style: .large)
+
+    func show(view: UIView) {
         indicator.center = view.center
         indicator.hidesWhenStopped = true
         indicator.startAnimating()
         view.addSubview(indicator)
     }
-    
+
     func hide() {
         indicator.stopAnimating()
         indicator.removeFromSuperview()

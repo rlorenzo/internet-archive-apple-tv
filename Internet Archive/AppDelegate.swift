@@ -13,21 +13,20 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
 
     var window: UIWindow?
 
-
     func application(_ application: UIApplication, didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?) -> Bool {
         // Override point for customization after application launch.
-        
+
         if let tabController = window?.rootViewController as? UITabBarController {
             tabController.viewControllers?.insert(packagedSearchController(), at: 2)
         }
-        
+
         setTabbarStyle()
-        
+
         return true
     }
-    
+
     // MARK: - Convenience
-    
+
     /*
      A method demonstrating how to encapsulate a `UISearchController` for presentation in, for example, a `UITabBarController`
      */
@@ -36,7 +35,7 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         guard let searchResultVC = UIStoryboard(name: "Main", bundle: nil).instantiateViewController(withIdentifier: "SearchResultVC") as? SearchResultVC else {
             fatalError("Unable to instatiate a SearchResultVC from the storyboard.")
         }
-        
+
         /*
          Create a UISearchController, passing the `searchResultsController` to
          use to display search results.
@@ -44,17 +43,17 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
         let searchController = UISearchController(searchResultsController: searchResultVC)
         searchController.searchResultsUpdater = searchResultVC
         searchController.searchBar.placeholder = NSLocalizedString("Enter keyword", comment: "")
-        
+
         // Contain the `UISearchController` in a `UISearchContainerViewController`.
         let searchContainer = UISearchContainerViewController(searchController: searchController)
         searchContainer.title = NSLocalizedString("Search", comment: "")
-        
+
         // Finally contain the `UISearchContainerViewController` in a `UINavigationController`.
         let searchNavigationController = UINavigationController(rootViewController: searchContainer)
         return searchNavigationController
     }
-    
-    func setTabbarStyle() -> Void {
+
+    func setTabbarStyle() {
         let appearance = UITabBarItem.appearance()
         let attributes = [NSAttributedString.Key.font: UIFont.boldSystemFont(ofSize: 42)]
         appearance.setTitleTextAttributes(attributes, for: .normal)
@@ -81,6 +80,5 @@ class AppDelegate: UIResponder, UIApplicationDelegate {
     func applicationWillTerminate(_ application: UIApplication) {
         // Called when the application is about to terminate. Save data if appropriate. See also applicationDidEnterBackground:.
     }
-    
-}
 
+}

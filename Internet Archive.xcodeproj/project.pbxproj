@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		485A33982ECD1054002A5E07 /* AuthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485A33932ECD1054002A5E07 /* AuthModels.swift */; };
+		485A33992ECD1054002A5E07 /* FavoritesModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485A33942ECD1054002A5E07 /* FavoritesModels.swift */; };
+		485A339A2ECD1054002A5E07 /* MetadataModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485A33952ECD1054002A5E07 /* MetadataModels.swift */; };
+		485A339B2ECD1054002A5E07 /* SearchModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485A33962ECD1054002A5E07 /* SearchModels.swift */; };
+		485A339E2ECD1114002A5E07 /* KeychainManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485A339C2ECD1114002A5E07 /* KeychainManager.swift */; };
+		485A339F2ECD1114002A5E07 /* NetworkError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485A339D2ECD1114002A5E07 /* NetworkError.swift */; };
+		485A33A22ECD114F002A5E07 /* AppConfiguration.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485A33A02ECD114F002A5E07 /* AppConfiguration.swift */; };
 		5D9CC593E69AFDB5CB00FBAC /* Pods_Internet_Archive.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = F5A9BE7BC49086A2EC482C58 /* Pods_Internet_Archive.framework */; };
 		C3186B9920BF074200698EC3 /* FavoriteVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3186B9820BF074200698EC3 /* FavoriteVC.swift */; };
 		C3186B9B20BF07E700698EC3 /* FavoriteNC.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3186B9A20BF07E700698EC3 /* FavoriteNC.swift */; };
@@ -38,6 +45,13 @@
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
+		485A33932ECD1054002A5E07 /* AuthModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModels.swift; sourceTree = "<group>"; };
+		485A33942ECD1054002A5E07 /* FavoritesModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesModels.swift; sourceTree = "<group>"; };
+		485A33952ECD1054002A5E07 /* MetadataModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataModels.swift; sourceTree = "<group>"; };
+		485A33962ECD1054002A5E07 /* SearchModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SearchModels.swift; sourceTree = "<group>"; };
+		485A339C2ECD1114002A5E07 /* KeychainManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = KeychainManager.swift; sourceTree = "<group>"; };
+		485A339D2ECD1114002A5E07 /* NetworkError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkError.swift; sourceTree = "<group>"; };
+		485A33A02ECD114F002A5E07 /* AppConfiguration.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppConfiguration.swift; sourceTree = "<group>"; };
 		80360B5A81BE986F7F398313 /* Pods-Internet Archive.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet Archive.debug.xcconfig"; path = "Pods/Target Support Files/Pods-Internet Archive/Pods-Internet Archive.debug.xcconfig"; sourceTree = "<group>"; };
 		89D5DA2F720D18CD064CEC1E /* Pods-Internet Archive.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet Archive.release.xcconfig"; path = "Pods/Target Support Files/Pods-Internet Archive/Pods-Internet Archive.release.xcconfig"; sourceTree = "<group>"; };
 		C3186B9820BF074200698EC3 /* FavoriteVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteVC.swift; sourceTree = "<group>"; };
@@ -94,6 +108,25 @@
 			name = Frameworks;
 			sourceTree = "<group>";
 		};
+		485A33972ECD1054002A5E07 /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				485A33932ECD1054002A5E07 /* AuthModels.swift */,
+				485A33942ECD1054002A5E07 /* FavoritesModels.swift */,
+				485A33952ECD1054002A5E07 /* MetadataModels.swift */,
+				485A33962ECD1054002A5E07 /* SearchModels.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		485A33A12ECD114F002A5E07 /* Configuration */ = {
+			isa = PBXGroup;
+			children = (
+				485A33A02ECD114F002A5E07 /* AppConfiguration.swift */,
+			);
+			path = Configuration;
+			sourceTree = "<group>";
+		};
 		985960010253E637854E08D3 /* Pods */ = {
 			isa = PBXGroup;
 			children = (
@@ -135,6 +168,8 @@
 		C3260C6820A2287F00C32ACA /* Internet Archive */ = {
 			isa = PBXGroup;
 			children = (
+				485A33A12ECD114F002A5E07 /* Configuration */,
+				485A33972ECD1054002A5E07 /* Models */,
 				C393F4CE20A2CEAC00E58ED9 /* Internet Archive.entitlements */,
 				C3DD649020A24F930056DEC1 /* Classes */,
 				C3DD648B20A237E40056DEC1 /* Utilities */,
@@ -228,6 +263,8 @@
 		C3DD648B20A237E40056DEC1 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				485A339C2ECD1114002A5E07 /* KeychainManager.swift */,
+				485A339D2ECD1114002A5E07 /* NetworkError.swift */,
 				C3DD648C20A238160056DEC1 /* APIManager.swift */,
 				C3DD648E20A2382B0056DEC1 /* AppConstants.swift */,
 				C393F4CC20A2CDE900E58ED9 /* Global.swift */,
@@ -259,7 +296,6 @@
 				C3260C6320A2287F00C32ACA /* Frameworks */,
 				C3260C6420A2287F00C32ACA /* Resources */,
 				AEDB3DA496DBC581E859B8B4 /* [CP] Embed Pods Frameworks */,
-				C7E165C9561790F7E7A3A5A1 /* [CP] Copy Pods Resources */,
 			);
 			buildRules = (
 			);
@@ -282,7 +318,7 @@
 				TargetAttributes = {
 					C3260C6520A2287F00C32ACA = {
 						CreatedOnToolsVersion = 9.2;
-						ProvisioningStyle = Manual;
+						ProvisioningStyle = Automatic;
 						SystemCapabilities = {
 							com.apple.ApplicationGroups.iOS = {
 								enabled = 0;
@@ -329,7 +365,7 @@
 			files = (
 			);
 			inputPaths = (
-				"${SRCROOT}/Pods/Target Support Files/Pods-Internet Archive/Pods-Internet Archive-frameworks.sh",
+				"${PODS_ROOT}/Target Support Files/Pods-Internet Archive/Pods-Internet Archive-frameworks.sh",
 				"${BUILT_PRODUCTS_DIR}/Alamofire/Alamofire.framework",
 				"${BUILT_PRODUCTS_DIR}/AlamofireImage/AlamofireImage.framework",
 				"${BUILT_PRODUCTS_DIR}/MBProgressHUD/MBProgressHUD.framework",
@@ -348,40 +384,7 @@
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Internet Archive/Pods-Internet Archive-frameworks.sh\"\n";
-			showEnvVarsInLog = 0;
-		};
-		SWIFTLINT000000000000001 /* SwiftLint */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputFileListPaths = (
-			);
-			inputPaths = (
-			);
-			name = SwiftLint;
-			outputFileListPaths = (
-			);
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "# Run SwiftLint if available\nif which swiftlint >/dev/null; then\n  swiftlint\nelif [ -f \"${PODS_ROOT}/SwiftLint/swiftlint\" ]; then\n  \"${PODS_ROOT}/SwiftLint/swiftlint\"\nelse\n  echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\nfi\n";
-		};
-		C7E165C9561790F7E7A3A5A1 /* [CP] Copy Pods Resources */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-			);
-			name = "[CP] Copy Pods Resources";
-			outputPaths = (
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${SRCROOT}/Pods/Target Support Files/Pods-Internet Archive/Pods-Internet Archive-resources.sh\"\n";
+			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Internet Archive/Pods-Internet Archive-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		E806C61111DA9AB4C11D4A9C /* [CP] Check Pods Manifest.lock */ = {
@@ -402,6 +405,24 @@
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
 			showEnvVarsInLog = 0;
 		};
+		SWIFTLINT000000000000001 /* SwiftLint */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+			);
+			name = SwiftLint;
+			outputFileListPaths = (
+			);
+			outputPaths = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "# Run SwiftLint if available\nif which swiftlint >/dev/null; then\n  swiftlint\nelif [ -f \"${PODS_ROOT}/SwiftLint/swiftlint\" ]; then\n  \"${PODS_ROOT}/SwiftLint/swiftlint\"\nelse\n  echo \"warning: SwiftLint not installed, download from https://github.com/realm/SwiftLint\"\nfi\n";
+		};
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
@@ -416,12 +437,19 @@
 				C3D372E920D1B7C100DEDF08 /* AppProgressHUD.swift in Sources */,
 				C39588C120BE0C4000BB23C5 /* YearsVC.swift in Sources */,
 				C37377BC20EAD3E7009CBA0F /* Slider.swift in Sources */,
+				485A33982ECD1054002A5E07 /* AuthModels.swift in Sources */,
+				485A33992ECD1054002A5E07 /* FavoritesModels.swift in Sources */,
+				485A339A2ECD1054002A5E07 /* MetadataModels.swift in Sources */,
+				485A339E2ECD1114002A5E07 /* KeychainManager.swift in Sources */,
+				485A339F2ECD1114002A5E07 /* NetworkError.swift in Sources */,
+				485A339B2ECD1054002A5E07 /* SearchModels.swift in Sources */,
 				C3DD648420A22E1A0056DEC1 /* RegisterVC.swift in Sources */,
 				C3260C7D20A22CE300C32ACA /* AccountVC.swift in Sources */,
 				C3DD649220A24FFD0056DEC1 /* ItemCell.swift in Sources */,
 				C3DD648D20A238160056DEC1 /* APIManager.swift in Sources */,
 				C35D0D9E20D29204008E18C9 /* PeopleVC.swift in Sources */,
 				C3DD648220A22DFA0056DEC1 /* LoginVC.swift in Sources */,
+				485A33A22ECD114F002A5E07 /* AppConfiguration.swift in Sources */,
 				C3DD648720A233B20056DEC1 /* AccountNC.swift in Sources */,
 				C3260C6C20A2287F00C32ACA /* VideoVC.swift in Sources */,
 				C393F4CD20A2CDE900E58ED9 /* Global.swift in Sources */,
@@ -568,7 +596,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = archivetv;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Internet Archive/Internet Archive-Bridging-Header.h";
-				SWIFT_VERSION = 6.0;
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 3;
 				TVOS_DEPLOYMENT_TARGET = 26.0;
 			};
@@ -587,7 +615,7 @@
 				PRODUCT_BUNDLE_IDENTIFIER = archivetv;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Internet Archive/Internet Archive-Bridging-Header.h";
-				SWIFT_VERSION = 6.0;
+				SWIFT_VERSION = 5.0;
 				TARGETED_DEVICE_FAMILY = 3;
 				TVOS_DEPLOYMENT_TARGET = 26.0;
 			};

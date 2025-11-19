@@ -23,11 +23,8 @@ class PeopleVC: UIViewController, UICollectionViewDelegate, UICollectionViewData
     var movieItems: [SearchResult] = []
     var musicItems: [SearchResult] = []
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-    }
-
     override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
         self.clsMovies.isHidden = true
         self.clsMusic.isHidden = true
         self.lblMovies.isHidden = true

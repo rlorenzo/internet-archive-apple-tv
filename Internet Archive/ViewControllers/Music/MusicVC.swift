@@ -31,27 +31,30 @@ class MusicVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
                 let result = try await APIManager.sharedManager.getCollectionsTyped(
                     collection: collection,
                     resultType: "collection",
-                    limit: nil
+                    limit: nil as Int?
                 )
 
                 AppProgressHUD.sharedManager.hide()
 
                 self.collection = result.collection
-                self.items = result.results.sorted { (a, b) -> Bool in
-                    return (a.downloads ?? 0) > (b.downloads ?? 0)
+                self.items = result.results.sorted { item1, item2 -> Bool in
+                    (item1.downloads ?? 0) > (item2.downloads ?? 0)
                 }
                 self.collectionView?.reloadData()
 
             } catch {
                 AppProgressHUD.sharedManager.hide()
-                let errorMessage = (error as? NetworkError)?.localizedDescription ?? error.localizedDescription
-                Global.showAlert(title: "Error", message: errorMessage, target: self)
+                NSLog("MusicVC Error: \(error)")
+                if let decodingError = error as? DecodingError {
+                    NSLog("Decoding error details: \(decodingError)")
+                }
+                Global.showAlert(title: "Error", message: "Unable to load music collections. Please try again later.", target: self)
             }
         }
     }
 
     func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        return self.items.count
+        self.items.count
     }
 
     func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {

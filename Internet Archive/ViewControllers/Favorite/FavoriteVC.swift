@@ -24,11 +24,8 @@ class FavoriteVC: UIViewController, UICollectionViewDelegate, UICollectionViewDa
     var musicItems: [SearchResult] = []
     var peoples: [SearchResult] = []
 
-    override func viewDidLoad() {
-        super.viewDidLoad()
-    }
-
     override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
         self.clsMovie.isHidden = true
         self.clsMusic.isHidden = true
         self.clsPeople.isHidden = true

@@ -20,24 +20,28 @@ class AccountNC: UINavigationController {
         }
     }
 
-    func gotoLoginVC() -> Void {
-        let loginVC = self.storyboard?.instantiateViewController(withIdentifier: "LoginVC") as! LoginVC
+    func gotoLoginVC() {
+        guard let loginVC = self.storyboard?.instantiateViewController(withIdentifier: "LoginVC") as? LoginVC else {
+            return
+        }
         self.viewControllers = [loginVC]
     }
-    
-    func gotoAccountVC() -> Void {
-        let accountVC = self.storyboard?.instantiateViewController(withIdentifier: "AccountVC") as! AccountVC
+
+    func gotoAccountVC() {
+        guard let accountVC = self.storyboard?.instantiateViewController(withIdentifier: "AccountVC") as? AccountVC else {
+            return
+        }
         self.viewControllers = [accountVC]
     }
 
     /*
-    // MARK: - Navigation
+     // MARK: - Navigation
 
-    // In a storyboard-based application, you will often want to do a little preparation before navigation
-    override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
-        // Get the new view controller using segue.destinationViewController.
-        // Pass the selected object to the new view controller.
-    }
-    */
+     // In a storyboard-based application, you will often want to do a little preparation before navigation
+     override func prepare(for segue: UIStoryboardSegue, sender: Any?) {
+     // Get the new view controller using segue.destinationViewController.
+     // Pass the selected object to the new view controller.
+     }
+     */
 
 }
