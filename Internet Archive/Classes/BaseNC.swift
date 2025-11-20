@@ -10,6 +10,7 @@ import UIKit
 // import AVKit
 // import AVFoundation
 
+@MainActor
 class BaseNC: UINavigationController {
 
     //    func gotoYearsVC(collection: String, title: String, identifier: String) -> Void {

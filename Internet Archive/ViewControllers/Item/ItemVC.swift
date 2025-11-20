@@ -60,6 +60,13 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
+
+        // Hide favorite button if API credentials are not configured (read-only mode)
+        if !AppConfiguration.shared.isConfigured {
+            btnFavorite.isHidden = true
+            return
+        }
+
         if let favorites = Global.getFavoriteData(),
            let identifier = iIdentifier,
            favorites.contains(identifier) {

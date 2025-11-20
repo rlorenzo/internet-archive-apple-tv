@@ -25,6 +25,7 @@ public extension SliderDelegate {
 }
 
 @IBDesignable
+@MainActor
 public class Slider: UIView {
 
     // MARK: - Public

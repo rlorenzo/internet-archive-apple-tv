@@ -9,14 +9,14 @@
 import Foundation
 
 /// Response from authentication API (login, register)
-public struct AuthResponse: Codable {
+public struct AuthResponse: Codable, Sendable {
     let success: Bool?
     let version: Int?
     let values: AuthValues?
     let error: String?
 
     /// Authentication values returned on success
-    public struct AuthValues: Codable {
+    public struct AuthValues: Codable, Sendable {
         let email: String?
         let itemname: String?
         let screenname: String?
@@ -56,14 +56,14 @@ public struct AuthResponse: Codable {
 }
 
 /// Account information response
-struct AccountInfoResponse: Codable {
+struct AccountInfoResponse: Codable, Sendable {
     let success: Bool?
     let version: Int?
     let values: AccountValues?
     let error: String?
 
     /// Account information values
-    struct AccountValues: Codable {
+    struct AccountValues: Codable, Sendable {
         let email: String?
         let itemname: String?
         let screenname: String?

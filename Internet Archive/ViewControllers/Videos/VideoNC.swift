@@ -8,6 +8,7 @@
 
 import UIKit
 
+@MainActor
 class VideoNC: BaseNC {
 
     override func viewDidLoad() {

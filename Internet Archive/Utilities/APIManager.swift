@@ -19,7 +19,8 @@ struct FavoriteItemParams {
     let title: String
 }
 
-class APIManager: NSObject {
+@MainActor
+final class APIManager: NSObject {
     static let sharedManager = APIManager()
 
     let baseURL = "https://archive.org/"

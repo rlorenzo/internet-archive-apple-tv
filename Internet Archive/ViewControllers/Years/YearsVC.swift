@@ -9,6 +9,7 @@
 import UIKit
 import AlamofireImage
 
+@MainActor
 class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegateFlowLayout {
 
     @IBOutlet weak var tableView: UITableView!
@@ -18,7 +19,7 @@ class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
     var name = ""
     var identifier = ""
     var collection = ""
-    var sortedData: [String: [[String: Any]]] = [:]
+    var sortedData: [String: [SearchResult]] = [:]
     var sortedKeys = [String]()
 
     private var selectedRow = 0
@@ -33,21 +34,32 @@ class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
         self.lblTitle.isHidden = true
         self.lblTitle.text = name
 
+        // Configure table view appearance for proper label rendering
+        self.tableView.backgroundColor = .clear
+        self.view.backgroundColor = .clear
+
+        // Configure collection view for dark mode support
+        self.collectionView.backgroundColor = .clear
+
+        // Add left inset to create spacing from sidebar
+        if let layout = self.collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
+            layout.sectionInset = UIEdgeInsets(top: 20, left: 80, bottom: 20, right: 40)
+        }
+
         AppProgressHUD.sharedManager.show(view: self.view)
 
-        APIManager.sharedManager.getCollections(collection: identifier, resultType: collection, limit: 5000) { _, data, _ in
+        Task {
+            do {
+                let (_, results) = try await APIManager.sharedManager.getCollectionsTyped(collection: identifier, resultType: collection, limit: 5000)
 
-            AppProgressHUD.sharedManager.hide()
+                AppProgressHUD.sharedManager.hide()
 
-            if let data = data {
-                for item in data {
+                for item in results {
                     var year = "Undated"
 
                     // Handle year as either String or Int
-                    if let yearStr = item["year"] as? String {
+                    if let yearStr = item.year {
                         year = yearStr
-                    } else if let yearInt = item["year"] as? Int {
-                        year = String(yearInt)
                     }
 
                     if var yearData = self.sortedData[year] {
@@ -66,8 +78,10 @@ class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
                 self.tableView.isHidden = false
                 self.collectionView.isHidden = false
                 self.lblTitle.isHidden = false
-            } else {
-                Global.showAlert(title: "Error", message: "An error occurred while downloading items. Please try again later.", target: self)
+            } catch {
+                AppProgressHUD.sharedManager.hide()
+                NSLog("YearsVC Error: \(error)")
+                Global.showServiceUnavailableAlert(target: self)
             }
         }
     }
@@ -112,11 +126,10 @@ class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
             return UICollectionViewCell()
         }
 
-        let data = yearData[indexPath.row]
-        itemCell.itemTitle.text = data["title"] as? String
+        let item = yearData[indexPath.row]
+        itemCell.itemTitle.text = item.title
         itemCell.itemTitle.textColor = .label
-        if let identifier = data["identifier"] as? String,
-           let imageURL = URL(string: "https://archive.org/services/get-item-image.php?identifier=\(identifier)") {
+        if let imageURL = URL(string: "https://archive.org/services/get-item-image.php?identifier=\(item.identifier)") {
             itemCell.itemImage.af_setImage(withURL: imageURL)
         }
 
@@ -129,18 +142,14 @@ class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
             return
         }
 
-        let data = yearData[indexPath.row]
-        let identifier = data["identifier"] as? String
-        let title = data["title"] as? String
-        let archivedBy = data["creator"] as? String
-        let date = Global.formatDate(string: data["date"] as? String)
-        let description = data["description"] as? String
-        let mediaType = data["mediatype"] as? String
-
-        var imageURL: URL?
-        if let identifierString = data["identifier"] as? String {
-            imageURL = URL(string: "https://archive.org/services/get-item-image.php?identifier=\(identifierString)")
-        }
+        let item = yearData[indexPath.row]
+        let identifier = item.identifier
+        let title = item.title
+        let archivedBy = item.creator
+        let date = Global.formatDate(string: item.date)
+        let description = item.description
+        let mediaType = item.mediatype
+        let imageURL = URL(string: "https://archive.org/services/get-item-image.php?identifier=\(item.identifier)")
 
         guard let itemVC = self.storyboard?.instantiateViewController(withIdentifier: "ItemVC") as? ItemVC else {
             return

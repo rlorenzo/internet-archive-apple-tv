@@ -10,6 +10,7 @@ import Foundation
 import UIKit
 // import AlamofireImage
 
+@MainActor
 class Global: NSObject {
 
     //    static let downloaderNotCached = ImageDownloader(configuration: URLSessionConfiguration.default, downloadPrioritization: .fifo, maximumActiveDownloads: 10, imageCache: nil)
@@ -67,6 +68,14 @@ class Global: NSObject {
 
         })
         target.present(alertController, animated: true)
+    }
+
+    /// Shows a standardized alert when Internet Archive services are unavailable
+    /// Used for consistent error messaging across VideoVC, MusicVC, and YearsVC
+    static func showServiceUnavailableAlert(target: UIViewController) {
+        showAlert(title: "Service Unavailable",
+                  message: NetworkError.serviceUnavailableMessage,
+                  target: target)
     }
 
     static func formatDate(string: String?) -> String? {

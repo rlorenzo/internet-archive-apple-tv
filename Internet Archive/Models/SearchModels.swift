@@ -9,16 +9,16 @@
 import Foundation
 
 /// Response from the Internet Archive advanced search API
-public struct SearchResponse: Codable {
+public struct SearchResponse: Codable, Sendable {
     let responseHeader: ResponseHeader?
     let response: SearchResults
 
-    public struct ResponseHeader: Codable {
+    public struct ResponseHeader: Codable, Sendable {
         let status: Int
         let QTime: Int?
     }
 
-    public struct SearchResults: Codable {
+    public struct SearchResults: Codable, Sendable {
         let numFound: Int
         let start: Int
         let docs: [SearchResult]
@@ -26,7 +26,7 @@ public struct SearchResponse: Codable {
 }
 
 /// Individual search result item
-public struct SearchResult: Codable {
+public struct SearchResult: Codable, Sendable {
     let identifier: String
     let title: String?
     let mediatype: String?
