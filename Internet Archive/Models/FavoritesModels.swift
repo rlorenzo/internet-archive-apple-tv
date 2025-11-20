@@ -9,7 +9,7 @@
 import Foundation
 
 /// Response from the favorites API (fav-username endpoint)
-struct FavoritesResponse: Codable {
+struct FavoritesResponse: Codable, Sendable {
     let created: Int?
     let d1: String?
     let d2: String?
@@ -32,7 +32,7 @@ struct FavoritesResponse: Codable {
 }
 
 /// Metadata for favorites collection
-struct FavoriteMetadata: Codable {
+struct FavoriteMetadata: Codable, Sendable {
     let identifier: String?
     let mediatype: String?
     let title: String?
@@ -41,7 +41,7 @@ struct FavoriteMetadata: Codable {
 }
 
 /// Individual favorite item
-struct FavoriteItem: Codable {
+struct FavoriteItem: Codable, Sendable {
     let identifier: String
     let mediatype: String?
     let title: String?

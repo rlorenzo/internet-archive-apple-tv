@@ -8,6 +8,7 @@
 
 import UIKit
 
+@MainActor
 class AccountVC: UIViewController {
 
     @IBOutlet weak var txtDescription: UILabel!

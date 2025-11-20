@@ -9,7 +9,7 @@
 import Foundation
 
 /// Response from the Internet Archive metadata API
-struct ItemMetadataResponse: Codable {
+struct ItemMetadataResponse: Codable, Sendable {
     let created: Int?
     let d1: String?
     let d2: String?
@@ -31,7 +31,7 @@ struct ItemMetadataResponse: Codable {
 }
 
 /// Metadata information for an item
-struct ItemMetadata: Codable {
+struct ItemMetadata: Codable, Sendable {
     let identifier: String?
     let title: String?
     let mediatype: String?
@@ -46,7 +46,7 @@ struct ItemMetadata: Codable {
     let uploader: String?
 
     // Subject and collection can be either String or [String]
-    enum SubjectValue: Codable {
+    enum SubjectValue: Codable, Sendable {
         case string(String)
         case array([String])
 
@@ -91,7 +91,7 @@ struct ItemMetadata: Codable {
 }
 
 /// File information from metadata
-struct FileInfo: Codable {
+struct FileInfo: Codable, Sendable {
     let name: String
     let source: String?
     let format: String?

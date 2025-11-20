@@ -8,6 +8,7 @@
 
 import UIKit
 
+@MainActor
 class AppProgressHUD: NSObject {
     static let sharedManager = AppProgressHUD()
 

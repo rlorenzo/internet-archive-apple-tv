@@ -8,6 +8,7 @@
 
 import UIKit
 
+@MainActor
 class FavoriteNC: BaseNC {
 
     override func viewDidLoad() {

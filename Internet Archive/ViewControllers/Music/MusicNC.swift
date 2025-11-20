@@ -8,6 +8,7 @@
 
 import UIKit
 
+@MainActor
 class MusicNC: BaseNC {
 
     override func viewDidLoad() {

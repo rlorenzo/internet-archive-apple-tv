@@ -10,6 +10,7 @@ import Foundation
 import Security
 
 /// Secure keychain storage for sensitive user data
+@MainActor
 class KeychainManager {
 
     // MARK: - Singleton

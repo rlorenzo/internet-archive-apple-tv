@@ -9,7 +9,7 @@
 import Foundation
 
 /// Centralized configuration management for the app
-struct AppConfiguration {
+struct AppConfiguration: @unchecked Sendable {
 
     // MARK: - Configuration Keys
 
@@ -45,26 +45,14 @@ struct AppConfiguration {
 
     // MARK: - Public API
 
-    /// Internet Archive API access key
+    /// Internet Archive API access key (optional - app works in read-only mode without it)
     var apiAccessKey: String {
-        let key = configuration[ConfigKey.apiAccessKey.rawValue] as? String ?? ""
-        #if DEBUG
-        if key.isEmpty {
-            assertionFailure("API_ACCESS_KEY is not configured. Please set up Configuration.plist")
-        }
-        #endif
-        return key
+        configuration[ConfigKey.apiAccessKey.rawValue] as? String ?? ""
     }
 
-    /// Internet Archive API secret key
+    /// Internet Archive API secret key (optional - app works in read-only mode without it)
     var apiSecretKey: String {
-        let secret = configuration[ConfigKey.apiSecretKey.rawValue] as? String ?? ""
-        #if DEBUG
-        if secret.isEmpty {
-            assertionFailure("API_SECRET_KEY is not configured. Please set up Configuration.plist")
-        }
-        #endif
-        return secret
+        configuration[ConfigKey.apiSecretKey.rawValue] as? String ?? ""
     }
 
     /// API version number

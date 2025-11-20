@@ -24,6 +24,10 @@ class VideoVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        // Configure collection view for dark mode support
+        self.collectionView.backgroundColor = .clear
+        self.view.backgroundColor = .clear
+
         AppProgressHUD.sharedManager.show(view: self.view)
 
         Task {
@@ -48,7 +52,7 @@ class VideoVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
                 if let decodingError = error as? DecodingError {
                     NSLog("Decoding error details: \(decodingError)")
                 }
-                Global.showAlert(title: "Error", message: "Unable to load video collections. Please try again later.", target: self)
+                Global.showServiceUnavailableAlert(target: self)
             }
         }
     }
@@ -64,6 +68,7 @@ class VideoVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
 
         let item = items[indexPath.row]
         itemCell.itemTitle.text = item.safeTitle
+        itemCell.itemTitle.textColor = .label
 
         let imageURL = URL(string: "https://archive.org/services/get-item-image.php?identifier=\(item.identifier)")
         if let imageURL = imageURL {

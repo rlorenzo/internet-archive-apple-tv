@@ -8,6 +8,7 @@
 
 import UIKit
 
+@MainActor
 class AccountNC: UINavigationController {
 
     override func viewDidLoad() {

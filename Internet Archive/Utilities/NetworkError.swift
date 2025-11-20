@@ -9,7 +9,7 @@
 import Foundation
 
 /// Comprehensive error types for network operations
-enum NetworkError: Error {
+enum NetworkError: Error, Sendable {
     // Network-related errors
     case noConnection
     case timeout
@@ -70,4 +70,14 @@ enum NetworkError: Error {
             return error?.localizedDescription ?? "Unknown error occurred"
         }
     }
+
+    // MARK: - User-Facing Messages
+
+    /// Standard message shown when Internet Archive services are unavailable
+    /// Used consistently across VideoVC, MusicVC, and YearsVC for maintenance/outage scenarios
+    static let serviceUnavailableMessage = """
+    Internet Archive services are temporarily unavailable.
+
+    Please check archive.org for the latest status, or try again later.
+    """
 }

@@ -59,7 +59,7 @@
                             </view>
                             <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="LDp-3Z-EeP">
                                 <rect key="frame" x="0.0" y="140" width="1920" height="940"/>
-                                <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <collectionViewFlowLayout key="collectionViewLayout" minimumLineSpacing="70" minimumInteritemSpacing="40" id="U5s-1c-a4b">
                                     <size key="itemSize" width="300" height="415"/>
                                     <size key="headerReferenceSize" width="0.0" height="0.0"/>
@@ -358,7 +358,7 @@
                             </view>
                             <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="0P4-zg-VZN">
                                 <rect key="frame" x="0.0" y="140" width="1920" height="940"/>
-                                <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <collectionViewFlowLayout key="collectionViewLayout" minimumLineSpacing="70" minimumInteritemSpacing="40" id="lMc-An-Pls">
                                     <size key="itemSize" width="300" height="415"/>
                                     <size key="headerReferenceSize" width="0.0" height="0.0"/>
@@ -482,7 +482,7 @@
                             </tableView>
                             <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="8jZ-g9-HoW">
                                 <rect key="frame" x="350" y="210" width="1570" height="870"/>
-                                <color key="backgroundColor" white="1" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
+                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                                 <collectionViewFlowLayout key="collectionViewLayout" minimumLineSpacing="70" minimumInteritemSpacing="40" id="xBH-0l-SFF">
                                     <size key="itemSize" width="300" height="415"/>
                                     <size key="headerReferenceSize" width="0.0" height="0.0"/>
