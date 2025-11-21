@@ -5,16 +5,22 @@
 //  Created by Eagle19243 on 5/8/18.
 //  Copyright © 2018 Eagle19243. All rights reserved.
 //
+//  Updated for Sprint 9: Modern UIKit patterns with DiffableDataSource
+//
 
 import UIKit
 import AlamofireImage
 
 @MainActor
-class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, UITableViewDelegate, UITableViewDataSource, UICollectionViewDelegateFlowLayout {
+class YearsVC: UIViewController, UITableViewDelegate, UICollectionViewDelegate {
 
     @IBOutlet weak var tableView: UITableView!
     @IBOutlet weak var collectionView: UICollectionView!
     @IBOutlet weak var lblTitle: UILabel!
+
+    private var tableDataSource: UITableViewDiffableDataSource<Int, String>!
+    private var collectionDataSource: ItemDataSource!
+    private var collectionPrefetcher: ImagePrefetcher!
 
     var name = ""
     var identifier = ""
@@ -41,10 +47,8 @@ class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
         // Configure collection view for dark mode support
         self.collectionView.backgroundColor = .clear
 
-        // Add left inset to create spacing from sidebar
-        if let layout = self.collectionView.collectionViewLayout as? UICollectionViewFlowLayout {
-            layout.sectionInset = UIEdgeInsets(top: 20, left: 80, bottom: 20, right: 40)
-        }
+        configureTableView()
+        configureCollectionView()
 
         AppProgressHUD.sharedManager.show(view: self.view)
 
@@ -74,7 +78,9 @@ class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
                     year1 > year2
                 })
 
-                self.tableView.reloadData()
+                await self.applyTableSnapshot()
+                await self.applyCollectionSnapshot()
+
                 self.tableView.isHidden = false
                 self.collectionView.isHidden = false
                 self.lblTitle.isHidden = false
@@ -86,58 +92,95 @@ class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
         }
     }
 
-    // MARK: - UITableView datasource, delegate
-    func numberOfSections(in tableView: UITableView) -> Int {
-        1
-    }
+    // MARK: - Configuration
 
-    func tableView(_ tableView: UITableView, numberOfRowsInSection section: Int) -> Int {
-        sortedKeys.count
-    }
+    private func configureTableView() {
+        // Configure diffable data source for table view
+        tableDataSource = UITableViewDiffableDataSource<Int, String>(tableView: tableView) { tableView, indexPath, year in
+            guard let yearCell = tableView.dequeueReusableCell(withIdentifier: "YearCell", for: indexPath) as? YearCell else {
+                return UITableViewCell()
+            }
+            yearCell.lblYear.text = year
+            yearCell.lblYear.textColor = .label
 
-    func tableView(_ tableView: UITableView, cellForRowAt indexPath: IndexPath) -> UITableViewCell {
-        guard let yearCell = tableView.dequeueReusableCell(withIdentifier: "YearCell", for: indexPath) as? YearCell else {
-            return UITableViewCell()
+            return yearCell
         }
-        yearCell.lblYear.text = sortedKeys[indexPath.row]
-        yearCell.lblYear.textColor = .label
-
-        return yearCell
     }
+
+    private func configureCollectionView() {
+        // Set up modern compositional layout
+        collectionView.collectionViewLayout = CompositionalLayoutBuilder.standardGrid
+
+        // Register modern cell
+        collectionView.register(
+            ModernItemCell.self,
+            forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
+        )
+
+        // Configure diffable data source
+        collectionDataSource = ItemDataSource(collectionView: collectionView) { collectionView, indexPath, itemViewModel in
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: "ModernItemCell",
+                for: indexPath
+            ) as? ModernItemCell else {
+                return UICollectionViewCell()
+            }
+
+            cell.configure(with: itemViewModel)
+
+            return cell
+        }
+
+        // Set up image prefetching
+        collectionPrefetcher = ImagePrefetcher(collectionView: collectionView, dataSource: collectionDataSource)
+    }
+
+    private func applyTableSnapshot() async {
+        var snapshot = NSDiffableDataSourceSnapshot<Int, String>()
+        snapshot.appendSections([0])
+        snapshot.appendItems(sortedKeys, toSection: 0)
+        await tableDataSource.apply(snapshot, animatingDifferences: true)
+    }
+
+    private func applyCollectionSnapshot() async {
+        guard !sortedKeys.isEmpty, selectedRow < sortedKeys.count else {
+            // Apply empty snapshot
+            var snapshot = ItemSnapshot()
+            snapshot.appendSections([.main])
+            await collectionDataSource.apply(snapshot, animatingDifferences: true)
+            return
+        }
+
+        let selectedYear = sortedKeys[selectedRow]
+        guard let yearData = sortedData[selectedYear] else {
+            var snapshot = ItemSnapshot()
+            snapshot.appendSections([.main])
+            await collectionDataSource.apply(snapshot, animatingDifferences: true)
+            return
+        }
+
+        var snapshot = ItemSnapshot()
+        snapshot.appendSections([.main])
+        let viewModels = yearData.map { ItemViewModel(item: $0, section: .main) }
+        snapshot.appendItems(viewModels, toSection: .main)
+        await collectionDataSource.apply(snapshot, animatingDifferences: true)
+    }
+
+    // MARK: - UITableViewDelegate
 
     func tableView(_ tableView: UITableView, didSelectRowAt indexPath: IndexPath) {
         selectedRow = indexPath.row
-        collectionView.reloadData()
-    }
-
-    // MARK: - UICollectionView datasource, delegate
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        if sortedData.isEmpty {
-            return 0
-        } else {
-            return sortedData[sortedKeys[selectedRow]]?.count ?? 0
+        Task {
+            await applyCollectionSnapshot()
         }
     }
 
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let itemCell = collectionView.dequeueReusableCell(withReuseIdentifier: "ItemCell", for: indexPath) as? ItemCell,
-              let yearData = sortedData[sortedKeys[selectedRow]],
-              indexPath.row < yearData.count else {
-            return UICollectionViewCell()
-        }
-
-        let item = yearData[indexPath.row]
-        itemCell.itemTitle.text = item.title
-        itemCell.itemTitle.textColor = .label
-        if let imageURL = URL(string: "https://archive.org/services/get-item-image.php?identifier=\(item.identifier)") {
-            itemCell.itemImage.af_setImage(withURL: imageURL)
-        }
-
-        return itemCell
-    }
+    // MARK: - UICollectionViewDelegate
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        guard let yearData = sortedData[sortedKeys[selectedRow]],
+        guard !sortedKeys.isEmpty,
+              selectedRow < sortedKeys.count,
+              let yearData = sortedData[sortedKeys[selectedRow]],
               indexPath.row < yearData.count else {
             return
         }
@@ -164,12 +207,5 @@ class YearsVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
         itemVC.iImageURL = imageURL
 
         self.present(itemVC, animated: true, completion: nil)
-    }
-
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let width = (screenSize.width / 4) - 100
-        let height = width + 115
-        let cellSize = CGSize(width: width, height: height)
-        return cellSize
     }
 }

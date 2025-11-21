@@ -6,12 +6,13 @@
 //  Copyright © 2018 mac-admin. All rights reserved.
 //
 //  Updated for Sprint 6: Async/await migration with typed models
+//  Updated for Sprint 9: Modern UIKit patterns with DiffableDataSource
 //
 
 import UIKit
 
 @MainActor
-class FavoriteVC: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+class FavoriteVC: UIViewController, UICollectionViewDelegate {
 
     @IBOutlet weak var clsMovie: UICollectionView!
     @IBOutlet weak var clsMusic: UICollectionView!
@@ -20,9 +21,23 @@ class FavoriteVC: UIViewController, UICollectionViewDelegate, UICollectionViewDa
     @IBOutlet weak var lblMusic: UILabel!
     @IBOutlet weak var lblPeople: UILabel!
 
+    private var movieDataSource: ItemDataSource!
+    private var musicDataSource: ItemDataSource!
+    private var peopleDataSource: ItemDataSource!
+    private var moviePrefetcher: ImagePrefetcher!
+    private var musicPrefetcher: ImagePrefetcher!
+    private var peoplePrefetcher: ImagePrefetcher!
+
     var movieItems: [SearchResult] = []
     var musicItems: [SearchResult] = []
     var peoples: [SearchResult] = []
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        configureMovieCollectionView()
+        configureMusicCollectionView()
+        configurePeopleCollectionView()
+    }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
@@ -92,10 +107,11 @@ class FavoriteVC: UIViewController, UICollectionViewDelegate, UICollectionViewDa
                     }
                 }
 
-                // Reload the collection view to reflect the changes.
-                self.clsMovie.reloadData()
-                self.clsMusic.reloadData()
-                self.clsPeople.reloadData()
+                // Apply snapshots with modern diffable data sources
+                await self.applyMovieSnapshot()
+                await self.applyMusicSnapshot()
+                await self.applyPeopleSnapshot()
+
                 self.clsMovie.isHidden = false
                 self.clsMusic.isHidden = false
                 self.clsPeople.isHidden = false
@@ -113,44 +129,117 @@ class FavoriteVC: UIViewController, UICollectionViewDelegate, UICollectionViewDa
         }
     }
 
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        if collectionView == clsMovie {
-            return movieItems.count
-        } else if collectionView == clsMusic {
-            return musicItems.count
-        } else if collectionView == clsPeople {
-            return peoples.count
-        } else {
-            return 0
+    // MARK: - Configuration
+
+    private func configureMovieCollectionView() {
+        // Set up modern compositional layout
+        clsMovie.collectionViewLayout = CompositionalLayoutBuilder.standardGrid
+
+        // Register modern cell
+        clsMovie.register(
+            ModernItemCell.self,
+            forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
+        )
+
+        // Configure diffable data source
+        movieDataSource = ItemDataSource(collectionView: clsMovie) { collectionView, indexPath, itemViewModel in
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: "ModernItemCell",
+                for: indexPath
+            ) as? ModernItemCell else {
+                return UICollectionViewCell()
+            }
+
+            cell.configure(with: itemViewModel)
+
+            return cell
         }
+
+        // Set up image prefetching
+        moviePrefetcher = ImagePrefetcher(collectionView: clsMovie, dataSource: movieDataSource)
     }
 
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let itemCell = collectionView.dequeueReusableCell(withReuseIdentifier: "ItemCell", for: indexPath) as? ItemCell else {
-            return UICollectionViewCell()
+    private func configureMusicCollectionView() {
+        // Set up modern compositional layout
+        clsMusic.collectionViewLayout = CompositionalLayoutBuilder.standardGrid
+
+        // Register modern cell
+        clsMusic.register(
+            ModernItemCell.self,
+            forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
+        )
+
+        // Configure diffable data source
+        musicDataSource = ItemDataSource(collectionView: clsMusic) { collectionView, indexPath, itemViewModel in
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: "ModernItemCell",
+                for: indexPath
+            ) as? ModernItemCell else {
+                return UICollectionViewCell()
+            }
+
+            cell.configure(with: itemViewModel)
+
+            return cell
         }
 
-        let items: [SearchResult]
-        if collectionView == clsMovie {
-            items = movieItems
-        } else if collectionView == clsMusic {
-            items = musicItems
-        } else if collectionView == clsPeople {
-            items = peoples
-        } else {
-            return itemCell
-        }
-
-        let item = items[indexPath.row]
-        itemCell.itemTitle.text = item.safeTitle
-
-        let imageURL = URL(string: "https://archive.org/services/get-item-image.php?identifier=\(item.identifier)")
-        if let imageURL = imageURL {
-            itemCell.itemImage.af_setImage(withURL: imageURL)
-        }
-
-        return itemCell
+        // Set up image prefetching
+        musicPrefetcher = ImagePrefetcher(collectionView: clsMusic, dataSource: musicDataSource)
     }
+
+    private func configurePeopleCollectionView() {
+        // Set up modern compositional layout
+        clsPeople.collectionViewLayout = CompositionalLayoutBuilder.standardGrid
+
+        // Register modern cell
+        clsPeople.register(
+            ModernItemCell.self,
+            forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
+        )
+
+        // Configure diffable data source
+        peopleDataSource = ItemDataSource(collectionView: clsPeople) { collectionView, indexPath, itemViewModel in
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: "ModernItemCell",
+                for: indexPath
+            ) as? ModernItemCell else {
+                return UICollectionViewCell()
+            }
+
+            cell.configure(with: itemViewModel)
+
+            return cell
+        }
+
+        // Set up image prefetching
+        peoplePrefetcher = ImagePrefetcher(collectionView: clsPeople, dataSource: peopleDataSource)
+    }
+
+    private func applyMovieSnapshot() async {
+        var snapshot = ItemSnapshot()
+        snapshot.appendSections([.videos])
+        let viewModels = movieItems.map { ItemViewModel(item: $0, section: .videos) }
+        snapshot.appendItems(viewModels, toSection: .videos)
+        await movieDataSource.apply(snapshot, animatingDifferences: true)
+    }
+
+    private func applyMusicSnapshot() async {
+        var snapshot = ItemSnapshot()
+        snapshot.appendSections([.music])
+        let viewModels = musicItems.map { ItemViewModel(item: $0, section: .music) }
+        snapshot.appendItems(viewModels, toSection: .music)
+        await musicDataSource.apply(snapshot, animatingDifferences: true)
+    }
+
+    private func applyPeopleSnapshot() async {
+        var snapshot = ItemSnapshot()
+        snapshot.appendSections([.people])
+        let viewModels = peoples.map { ItemViewModel(item: $0, section: .people) }
+        snapshot.appendItems(viewModels, toSection: .people)
+        await peopleDataSource.apply(snapshot, animatingDifferences: true)
+    }
+
+    // MARK: - UICollectionViewDelegate
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         if collectionView == clsPeople {

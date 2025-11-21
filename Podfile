@@ -1,6 +1,7 @@
 # Internet Archive Apple TV
-# Platform: tvOS 26.0 (latest version with newest APIs and features)
-platform :tvos, '26.0'
+# Platform: tvOS 17.0 (minimum deployment target for Sprint 9)
+# Progressive enhancement for tvOS 26.0 Liquid Glass features
+platform :tvos, '17.0'
 
 target 'Internet Archive' do
   # Comment the next line if you're not using Swift and don't want to use dynamic frameworks
@@ -24,8 +25,8 @@ end
 post_install do |installer|
   installer.pods_project.targets.each do |target|
     target.build_configurations.each do |config|
-      # Set minimum deployment target
-      config.build_settings['TVOS_DEPLOYMENT_TARGET'] = '26.0'
+      # Set minimum deployment target to tvOS 17.0
+      config.build_settings['TVOS_DEPLOYMENT_TARGET'] = '17.0'
 
       # Disable library evolution/module stability for faster builds
       # Enable (set to 'YES') only if distributing frameworks

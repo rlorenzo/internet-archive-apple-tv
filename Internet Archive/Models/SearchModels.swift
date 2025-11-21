@@ -66,6 +66,31 @@ public struct SearchResult: Codable, Sendable {
         collection = try? container.decode([String].self, forKey: .collection)
     }
 
+    // Memberwise initializer for creating instances programmatically
+    public init(
+        identifier: String,
+        title: String? = nil,
+        mediatype: String? = nil,
+        creator: String? = nil,
+        description: String? = nil,
+        date: String? = nil,
+        year: String? = nil,
+        downloads: Int? = nil,
+        subject: [String]? = nil,
+        collection: [String]? = nil
+    ) {
+        self.identifier = identifier
+        self.title = title
+        self.mediatype = mediatype
+        self.creator = creator
+        self.description = description
+        self.date = date
+        self.year = year
+        self.downloads = downloads
+        self.subject = subject
+        self.collection = collection
+    }
+
     // Computed property for safe mediatype access
     var safeMediaType: String {
         mediatype ?? "unknown"
