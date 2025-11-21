@@ -6,22 +6,34 @@
 //  Copyright © 2018 mac-admin. All rights reserved.
 //
 //  Updated for Sprint 6: Async/await migration with typed models
+//  Updated for Sprint 9: Modern UIKit patterns with DiffableDataSource
 //
 
 import UIKit
 
 @MainActor
-class PeopleVC: UIViewController, UICollectionViewDelegate, UICollectionViewDataSource, UICollectionViewDelegateFlowLayout {
+class PeopleVC: UIViewController, UICollectionViewDelegate {
 
     @IBOutlet weak var lblMovies: UILabel!
     @IBOutlet weak var lblMusic: UILabel!
     @IBOutlet weak var clsMovies: UICollectionView!
     @IBOutlet weak var clsMusic: UICollectionView!
 
+    private var movieDataSource: ItemDataSource!
+    private var musicDataSource: ItemDataSource!
+    private var moviePrefetcher: ImagePrefetcher!
+    private var musicPrefetcher: ImagePrefetcher!
+
     var identifier: String?
     var name: String?
     var movieItems: [SearchResult] = []
     var musicItems: [SearchResult] = []
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        configureMovieCollectionView()
+        configureMusicCollectionView()
+    }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
@@ -32,6 +44,82 @@ class PeopleVC: UIViewController, UICollectionViewDelegate, UICollectionViewData
 
         loadData()
     }
+
+    // MARK: - Configuration
+
+    private func configureMovieCollectionView() {
+        // Set up modern compositional layout
+        clsMovies.collectionViewLayout = CompositionalLayoutBuilder.standardGrid
+
+        // Register modern cell
+        clsMovies.register(
+            ModernItemCell.self,
+            forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
+        )
+
+        // Configure diffable data source
+        movieDataSource = ItemDataSource(collectionView: clsMovies) { collectionView, indexPath, itemViewModel in
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: "ModernItemCell",
+                for: indexPath
+            ) as? ModernItemCell else {
+                return UICollectionViewCell()
+            }
+
+            cell.configure(with: itemViewModel)
+
+            return cell
+        }
+
+        // Set up image prefetching
+        moviePrefetcher = ImagePrefetcher(collectionView: clsMovies, dataSource: movieDataSource)
+    }
+
+    private func configureMusicCollectionView() {
+        // Set up modern compositional layout
+        clsMusic.collectionViewLayout = CompositionalLayoutBuilder.standardGrid
+
+        // Register modern cell
+        clsMusic.register(
+            ModernItemCell.self,
+            forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
+        )
+
+        // Configure diffable data source
+        musicDataSource = ItemDataSource(collectionView: clsMusic) { collectionView, indexPath, itemViewModel in
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: "ModernItemCell",
+                for: indexPath
+            ) as? ModernItemCell else {
+                return UICollectionViewCell()
+            }
+
+            cell.configure(with: itemViewModel)
+
+            return cell
+        }
+
+        // Set up image prefetching
+        musicPrefetcher = ImagePrefetcher(collectionView: clsMusic, dataSource: musicDataSource)
+    }
+
+    private func applyMovieSnapshot() async {
+        var snapshot = ItemSnapshot()
+        snapshot.appendSections([.videos])
+        let viewModels = movieItems.map { ItemViewModel(item: $0, section: .videos) }
+        snapshot.appendItems(viewModels, toSection: .videos)
+        await movieDataSource.apply(snapshot, animatingDifferences: true)
+    }
+
+    private func applyMusicSnapshot() async {
+        var snapshot = ItemSnapshot()
+        snapshot.appendSections([.music])
+        let viewModels = musicItems.map { ItemViewModel(item: $0, section: .music) }
+        snapshot.appendItems(viewModels, toSection: .music)
+        await musicDataSource.apply(snapshot, animatingDifferences: true)
+    }
+
+    // MARK: - Data Loading
 
     private func loadData() {
         guard let identifier = identifier else { return }
@@ -87,9 +175,10 @@ class PeopleVC: UIViewController, UICollectionViewDelegate, UICollectionViewData
                     }
                 }
 
-                // Reload the collection view to reflect the changes.
-                self.clsMovies.reloadData()
-                self.clsMusic.reloadData()
+                // Apply snapshots with modern diffable data sources
+                await self.applyMovieSnapshot()
+                await self.applyMusicSnapshot()
+
                 self.clsMovies.isHidden = false
                 self.clsMusic.isHidden = false
                 self.lblMovies.isHidden = false
@@ -105,33 +194,7 @@ class PeopleVC: UIViewController, UICollectionViewDelegate, UICollectionViewData
         }
     }
 
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        if collectionView == clsMovies {
-            return movieItems.count
-        } else if collectionView == clsMusic {
-            return musicItems.count
-        } else {
-            return 0
-        }
-    }
-
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let itemCell = collectionView.dequeueReusableCell(withReuseIdentifier: "ItemCell", for: indexPath) as? ItemCell else {
-            return UICollectionViewCell()
-        }
-
-        let items: [SearchResult] = (collectionView == clsMovies) ? movieItems : musicItems
-        let item = items[indexPath.row]
-
-        itemCell.itemTitle.text = item.safeTitle
-
-        let imageURL = URL(string: "https://archive.org/services/get-item-image.php?identifier=\(item.identifier)")
-        if let imageURL = imageURL {
-            itemCell.itemImage.af_setImage(withURL: imageURL)
-        }
-
-        return itemCell
-    }
+    // MARK: - UICollectionViewDelegate
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let items: [SearchResult] = (collectionView == clsMovies) ? movieItems : musicItems

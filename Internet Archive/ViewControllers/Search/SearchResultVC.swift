@@ -6,18 +6,24 @@
 //  Copyright © 2018 Eagle19243. All rights reserved.
 //
 //  Updated for Sprint 6: Async/await migration with typed models
+//  Updated for Sprint 9: Modern UIKit patterns with DiffableDataSource
 //
 
 import UIKit
 import AVKit
 
 @MainActor
-class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout, AVPlayerViewControllerDelegate {
+class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionViewDelegate, AVPlayerViewControllerDelegate {
 
     @IBOutlet weak var clsVideo: UICollectionView!
     @IBOutlet weak var clsMusic: UICollectionView!
     @IBOutlet weak var lblMovies: UILabel!
     @IBOutlet weak var lblMusic: UILabel!
+
+    private var videoDataSource: ItemDataSource!
+    private var musicDataSource: ItemDataSource!
+    private var videoPrefetcher: ImagePrefetcher!
+    private var musicPrefetcher: ImagePrefetcher!
 
     var videoItems: [SearchResult] = []
     var musicItems: [SearchResult] = []
@@ -30,9 +36,10 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
             if trimedQuery.isEmpty {
                 videoItems.removeAll()
                 musicItems.removeAll()
-                self.clsVideo.reloadData()
-                self.clsMusic.reloadData()
-
+                Task {
+                    await applyVideoSnapshot()
+                    await applyMusicSnapshot()
+                }
                 return
             }
             // Apply the filter or show all items if the filter string is empty.
@@ -71,9 +78,9 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
                         }
                     }
 
-                    // Reload the collection view to reflect the changes.
-                    self.clsVideo.reloadData()
-                    self.clsMusic.reloadData()
+                    // Apply snapshots with modern diffable data sources
+                    await self.applyVideoSnapshot()
+                    await self.applyMusicSnapshot()
 
                     AppProgressHUD.sharedManager.hide()
 
@@ -86,6 +93,12 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
         }
     }
 
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        configureVideoCollectionView()
+        configureMusicCollectionView()
+    }
+
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
         clsVideo.isHidden = true
@@ -94,35 +107,87 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
         lblMusic.isHidden = true
     }
 
+    // MARK: - Configuration
+
+    private func configureVideoCollectionView() {
+        // Set up modern compositional layout
+        clsVideo.collectionViewLayout = CompositionalLayoutBuilder.standardGrid
+
+        // Register modern cell
+        clsVideo.register(
+            ModernItemCell.self,
+            forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
+        )
+
+        // Configure diffable data source
+        videoDataSource = ItemDataSource(collectionView: clsVideo) { collectionView, indexPath, itemViewModel in
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: "ModernItemCell",
+                for: indexPath
+            ) as? ModernItemCell else {
+                return UICollectionViewCell()
+            }
+
+            cell.configure(with: itemViewModel)
+
+            return cell
+        }
+
+        // Set up image prefetching
+        videoPrefetcher = ImagePrefetcher(collectionView: clsVideo, dataSource: videoDataSource)
+    }
+
+    private func configureMusicCollectionView() {
+        // Set up modern compositional layout
+        clsMusic.collectionViewLayout = CompositionalLayoutBuilder.standardGrid
+
+        // Register modern cell
+        clsMusic.register(
+            ModernItemCell.self,
+            forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
+        )
+
+        // Configure diffable data source
+        musicDataSource = ItemDataSource(collectionView: clsMusic) { collectionView, indexPath, itemViewModel in
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: "ModernItemCell",
+                for: indexPath
+            ) as? ModernItemCell else {
+                return UICollectionViewCell()
+            }
+
+            cell.configure(with: itemViewModel)
+
+            return cell
+        }
+
+        // Set up image prefetching
+        musicPrefetcher = ImagePrefetcher(collectionView: clsMusic, dataSource: musicDataSource)
+    }
+
+    private func applyVideoSnapshot() async {
+        var snapshot = ItemSnapshot()
+        snapshot.appendSections([.videos])
+        let viewModels = videoItems.map { ItemViewModel(item: $0, section: .videos) }
+        snapshot.appendItems(viewModels, toSection: .videos)
+        await videoDataSource.apply(snapshot, animatingDifferences: true)
+    }
+
+    private func applyMusicSnapshot() async {
+        var snapshot = ItemSnapshot()
+        snapshot.appendSections([.music])
+        let viewModels = musicItems.map { ItemViewModel(item: $0, section: .music) }
+        snapshot.appendItems(viewModels, toSection: .music)
+        await musicDataSource.apply(snapshot, animatingDifferences: true)
+    }
+
+    // MARK: - UISearchResultsUpdating
+
     func updateSearchResults(for searchController: UISearchController) {
         query = searchController.searchBar.text ?? ""
     }
 
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        if collectionView == clsVideo {
-            return videoItems.count
-        } else {
-            return musicItems.count
-        }
-    }
-
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let itemCell = collectionView.dequeueReusableCell(withReuseIdentifier: "ItemCell", for: indexPath) as? ItemCell else {
-            return UICollectionViewCell()
-        }
-
-        let items = (collectionView == clsVideo) ? videoItems : musicItems
-        let item = items[indexPath.row]
-
-        itemCell.itemTitle.text = "\(item.safeTitle) (\(item.downloads ?? 0))"
-
-        let imageURL = URL(string: "https://archive.org/services/get-item-image.php?identifier=\(item.identifier)")
-        if let imageURL = imageURL {
-            itemCell.itemImage.af_setImage(withURL: imageURL)
-        }
-
-        return itemCell
-    }
+    // MARK: - UICollectionViewDelegate
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         let items = (collectionView == clsVideo) ? videoItems : musicItems

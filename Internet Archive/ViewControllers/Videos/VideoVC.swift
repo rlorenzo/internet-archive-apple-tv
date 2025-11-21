@@ -6,29 +6,101 @@
 //  Copyright © 2018 Eagle19243. All rights reserved.
 //
 //  Updated for Sprint 6: Async/await migration with typed models
+//  Updated for Sprint 9: Modern UIKit with DiffableDataSource and CompositionalLayout
 //
 
 import UIKit
 import AlamofireImage
 
 @MainActor
-class VideoVC: UIViewController, UICollectionViewDataSource, UICollectionViewDelegate, UICollectionViewDelegateFlowLayout {
+class VideoVC: UIViewController {
+
+    // MARK: - Properties
 
     @IBOutlet weak var collectionView: UICollectionView!
 
-    var items: [SearchResult] = []
     var collection = "movies"
 
-    private let screenSize = UIScreen.main.bounds.size
+    private var dataSource: ItemDataSource!
+    private var imagePrefetcher: ImagePrefetcher!
+    private var items: [SearchResult] = []
+    private var isLoading = false
+
+    // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
-        // Configure collection view for dark mode support
-        self.collectionView.backgroundColor = .clear
-        self.view.backgroundColor = .clear
+        configureCollectionView()
+        configureDataSource()
+        configureImagePrefetching()
+        loadData()
+    }
 
-        AppProgressHUD.sharedManager.show(view: self.view)
+    // MARK: - Configuration
+
+    private func configureCollectionView() {
+        // Configure appearance
+        collectionView.backgroundColor = .clear
+        view.backgroundColor = .clear
+
+        // Set modern compositional layout
+        collectionView.collectionViewLayout = CompositionalLayoutBuilder.standardGrid
+
+        // Register modern cell
+        collectionView.register(
+            ModernItemCell.self,
+            forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
+        )
+
+        // Register skeleton cell for loading
+        collectionView.register(
+            SkeletonItemCell.self,
+            forCellWithReuseIdentifier: SkeletonItemCell.reuseIdentifier
+        )
+
+        // Set delegate for selection
+        collectionView.delegate = self
+    }
+
+    private func configureDataSource() {
+        dataSource = ItemDataSource(
+            collectionView: collectionView
+        ) { [weak self] collectionView, indexPath, itemViewModel in
+            // Return skeleton cell if loading
+            if self?.isLoading == true {
+                guard let cell = collectionView.dequeueReusableCell(
+                    withReuseIdentifier: SkeletonItemCell.reuseIdentifier,
+                    for: indexPath
+                ) as? SkeletonItemCell else {
+                    return UICollectionViewCell()
+                }
+                cell.startAnimating()
+                return cell
+            }
+
+            // Return normal cell with data
+            guard let cell = collectionView.dequeueReusableCell(
+                withReuseIdentifier: ModernItemCell.reuseIdentifier,
+                for: indexPath
+            ) as? ModernItemCell else {
+                return UICollectionViewCell()
+            }
+
+            cell.configure(with: itemViewModel)
+            return cell
+        }
+    }
+
+    private func configureImagePrefetching() {
+        imagePrefetcher = ImagePrefetcher(collectionView: collectionView, dataSource: dataSource)
+    }
+
+    // MARK: - Data Loading
+
+    private func loadData() {
+        isLoading = true
+        showSkeletonLoading()
 
         Task {
             do {
@@ -38,63 +110,108 @@ class VideoVC: UIViewController, UICollectionViewDataSource, UICollectionViewDel
                     limit: nil as Int?
                 )
 
-                AppProgressHUD.sharedManager.hide()
-
+                // Update collection name
                 self.collection = result.collection
-                self.items = result.results.sorted { item1, item2 -> Bool in
+
+                // Sort by downloads
+                self.items = result.results.sorted { item1, item2 in
                     (item1.downloads ?? 0) > (item2.downloads ?? 0)
                 }
-                self.collectionView?.reloadData()
+
+                // Update data source
+                isLoading = false
+                await applySnapshot()
+
+                // Show empty state if no items
+                if items.isEmpty {
+                    displayEmptyState(.noItems())
+                }
 
             } catch {
-                AppProgressHUD.sharedManager.hide()
+                isLoading = false
                 NSLog("VideoVC Error: \(error)")
                 if let decodingError = error as? DecodingError {
                     NSLog("Decoding error details: \(decodingError)")
                 }
+
+                // Show error empty state
+                displayEmptyState(.networkError())
                 Global.showServiceUnavailableAlert(target: self)
             }
         }
     }
 
-    func collectionView(_ collectionView: UICollectionView, numberOfItemsInSection section: Int) -> Int {
-        self.items.count
+    // MARK: - Snapshot Management
+
+    private func applySnapshot() async {
+        var snapshot = ItemSnapshot()
+        snapshot.appendSections([.main])
+
+        let viewModels = items.map { ItemViewModel(item: $0, section: .main) }
+        snapshot.appendItems(viewModels, toSection: .main)
+
+        await dataSource.apply(snapshot, animatingDifferences: true)
     }
 
-    func collectionView(_ collectionView: UICollectionView, cellForItemAt indexPath: IndexPath) -> UICollectionViewCell {
-        guard let itemCell = collectionView.dequeueReusableCell(withReuseIdentifier: "ItemCell", for: indexPath) as? ItemCell else {
-            return UICollectionViewCell()
+    private func showSkeletonLoading() {
+        var snapshot = ItemSnapshot()
+        snapshot.appendSections([.main])
+
+        // Create 20 placeholder items for skeleton
+        let placeholders = (0..<20).map { index -> ItemViewModel in
+            // Create placeholder SearchResult
+            let placeholder = SearchResult(
+                identifier: "skeleton-\(index)",
+                title: "",
+                mediatype: "",
+                creator: "",
+                description: "",
+                date: "",
+                year: "",
+                downloads: 0,
+                subject: [],
+                collection: []
+            )
+            return ItemViewModel(item: placeholder, section: .main)
         }
+        snapshot.appendItems(placeholders, toSection: .main)
 
-        let item = items[indexPath.row]
-        itemCell.itemTitle.text = item.safeTitle
-        itemCell.itemTitle.textColor = .label
-
-        let imageURL = URL(string: "https://archive.org/services/get-item-image.php?identifier=\(item.identifier)")
-        if let imageURL = imageURL {
-            itemCell.itemImage.af_setImage(withURL: imageURL)
+        Task { @MainActor in
+            await dataSource.apply(snapshot, animatingDifferences: false)
         }
-
-        return itemCell
     }
+
+    // MARK: - Empty State
+
+    private func displayEmptyState(_ emptyStateView: EmptyStateView) {
+        hideEmptyState()
+        showEmptyState(emptyStateView)
+    }
+}
+
+// MARK: - UICollectionViewDelegate
+
+extension VideoVC: UICollectionViewDelegate {
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
-        guard let yearsVC = self.storyboard?.instantiateViewController(withIdentifier: "YearsVC") as? YearsVC else {
+        // Don't allow selection while loading
+        guard !isLoading else { return }
+
+        // Get the selected item
+        guard indexPath.item < items.count else { return }
+        let item = items[indexPath.item]
+
+        // Navigate to YearsVC
+        guard let yearsVC = storyboard?.instantiateViewController(
+            withIdentifier: "YearsVC"
+        ) as? YearsVC else {
             return
         }
 
-        let item = items[indexPath.row]
         yearsVC.collection = collection
         yearsVC.name = item.title ?? item.identifier
         yearsVC.identifier = item.identifier
 
-        self.present(yearsVC, animated: true, completion: nil)
-    }
-
-    func collectionView(_ collectionView: UICollectionView, layout collectionViewLayout: UICollectionViewLayout, sizeForItemAt indexPath: IndexPath) -> CGSize {
-        let width = (screenSize.width / 5) - 100
-        let height = width + 115
-        let cellSize = CGSize(width: width, height: height)
-        return cellSize
+        present(yearsVC, animated: true, completion: nil)
     }
 }
