@@ -5,8 +5,6 @@
 //  Created by mac-admin on 6/14/18.
 //  Copyright © 2018 mac-admin. All rights reserved.
 //
-//  Updated for Sprint 6: Async/await migration with typed models
-//  Updated for Sprint 9: Modern UIKit patterns with DiffableDataSource
 //
 
 import UIKit

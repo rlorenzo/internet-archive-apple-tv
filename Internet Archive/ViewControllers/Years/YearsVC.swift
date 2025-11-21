@@ -5,7 +5,6 @@
 //  Created by Eagle19243 on 5/8/18.
 //  Copyright © 2018 Eagle19243. All rights reserved.
 //
-//  Updated for Sprint 9: Modern UIKit patterns with DiffableDataSource
 //
 
 import UIKit

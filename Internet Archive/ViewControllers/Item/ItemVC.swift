@@ -5,7 +5,6 @@
 //  Created by mac-admin on 5/29/18.
 //  Copyright © 2018 mac-admin. All rights reserved.
 //
-//  Updated for Sprint 6: Async/await migration with typed models
 //
 
 import UIKit
@@ -93,11 +92,24 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
 
         Task {
             do {
-                let metadataResponse = try await APIManager.sharedManager.getMetaDataTyped(identifier: identifier)
+                // Use retry for metadata loading
+                let metadataResponse = try await RetryMechanism.execute(config: .single) {
+                    try await APIManager.sharedManager.getMetaDataTyped(identifier: identifier)
+                }
+
                 AppProgressHUD.sharedManager.hide()
 
                 guard let files = metadataResponse.files else {
-                    Global.showAlert(title: "Error", message: "No files found", target: self)
+                    let context = ErrorContext(
+                        operation: .loadMedia,
+                        userFacingTitle: "Playback Error",
+                        additionalInfo: ["identifier": identifier]
+                    )
+                    ErrorPresenter.shared.present(
+                        NetworkError.resourceNotFound,
+                        context: context,
+                        on: self
+                    )
                     return
                 }
 
@@ -112,14 +124,32 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
                 }
 
                 guard !filesToPlay.isEmpty else {
-                    Global.showAlert(title: "Error", message: "There is no playable content", target: self)
+                    let context = ErrorContext(
+                        operation: .loadMedia,
+                        userFacingTitle: "Playback Error",
+                        additionalInfo: ["identifier": identifier, "mediaType": mediaType]
+                    )
+                    ErrorPresenter.shared.present(
+                        NetworkError.resourceNotFound,
+                        context: context,
+                        on: self
+                    )
                     return
                 }
 
                 let filename = filesToPlay[0].name
                 guard let encodedFilename = filename.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                       let mediaURL = URL(string: "https://archive.org/download/\(identifier)/\(encodedFilename)") else {
-                    Global.showAlert(title: "Error", message: "Invalid media URL", target: self)
+                    let context = ErrorContext(
+                        operation: .loadMedia,
+                        userFacingTitle: "Playback Error",
+                        additionalInfo: ["identifier": identifier, "filename": filename]
+                    )
+                    ErrorPresenter.shared.present(
+                        NetworkError.invalidParameters,
+                        context: context,
+                        on: self
+                    )
                     return
                 }
 
@@ -135,14 +165,35 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
                     self.present(playerViewController, animated: true) {
                         self.player.play()
                     }
+
+                    ErrorLogger.shared.logSuccess(
+                        operation: .playVideo,
+                        info: ["identifier": identifier, "filename": filename]
+                    )
                 } else if mediaType == "etree" {
                     self.startPlaying()
+
+                    ErrorLogger.shared.logSuccess(
+                        operation: .playAudio,
+                        info: ["identifier": identifier, "filename": filename]
+                    )
                 }
 
             } catch {
-                AppProgressHUD.sharedManager.hide()
-                let errorMessage = (error as? NetworkError)?.localizedDescription ?? error.localizedDescription
-                Global.showAlert(title: "Error", message: errorMessage, target: self)
+                let context = ErrorContext(
+                    operation: .loadMedia,
+                    userFacingTitle: "Playback Error",
+                    additionalInfo: ["identifier": identifier, "mediaType": mediaType]
+                )
+
+                ErrorPresenter.shared.present(
+                    error,
+                    context: context,
+                    on: self,
+                    retry: { [weak self] in
+                        self?.onPlay(sender)
+                    }
+                )
             }
         }
     }
@@ -177,14 +228,45 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
                     mediatype: mediaType,
                     title: title
                 )
-                try await APIManager.sharedManager.saveFavoriteItem(
-                    email: email,
-                    password: password,
-                    item: itemParams
+
+                // Use retry for favorite save (non-critical, single retry)
+                try await RetryMechanism.execute(config: .single) {
+                    try await APIManager.sharedManager.saveFavoriteItem(
+                        email: email,
+                        password: password,
+                        item: itemParams
+                    )
+                }
+
+                ErrorLogger.shared.logSuccess(
+                    operation: .saveFavorite,
+                    info: ["identifier": identifier, "action": btnFavorite.tag == 1 ? "add" : "remove"]
                 )
+
             } catch {
-                // Silently fail for now - favorite state already updated locally
-                print("Failed to save favorite item: \(error)")
+                // Revert UI state on failure
+                if btnFavorite.tag == 1 {
+                    btnFavorite.setImage(UIImage(named: "favorite.png"), for: .normal)
+                    btnFavorite.tag = 0
+                    Global.removeFavoriteData(identifier: identifier)
+                } else {
+                    btnFavorite.setImage(UIImage(named: "favorited.png"), for: .normal)
+                    btnFavorite.tag = 1
+                    Global.saveFavoriteData(identifier: identifier)
+                }
+
+                // Show user-friendly error
+                let context = ErrorContext(
+                    operation: .saveFavorite,
+                    userFacingTitle: "Favorite Update Failed",
+                    additionalInfo: ["identifier": identifier]
+                )
+
+                ErrorPresenter.shared.present(
+                    error,
+                    context: context,
+                    on: self
+                )
             }
         }
     }

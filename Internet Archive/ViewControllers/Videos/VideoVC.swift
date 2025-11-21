@@ -5,8 +5,6 @@
 //  Created by Eagle19243 on 5/8/18.
 //  Copyright © 2018 Eagle19243. All rights reserved.
 //
-//  Updated for Sprint 6: Async/await migration with typed models
-//  Updated for Sprint 9: Modern UIKit with DiffableDataSource and CompositionalLayout
 //
 
 import UIKit
@@ -104,11 +102,14 @@ class VideoVC: UIViewController {
 
         Task {
             do {
-                let result = try await APIManager.sharedManager.getCollectionsTyped(
-                    collection: collection,
-                    resultType: "collection",
-                    limit: nil as Int?
-                )
+                // Use retry mechanism for network resilience
+                let result = try await RetryMechanism.execute(config: .standard) {
+                    try await APIManager.sharedManager.getCollectionsTyped(
+                        collection: self.collection,
+                        resultType: "collection",
+                        limit: nil as Int?
+                    )
+                }
 
                 // Update collection name
                 self.collection = result.collection
@@ -127,16 +128,34 @@ class VideoVC: UIViewController {
                     displayEmptyState(.noItems())
                 }
 
+                // Log success
+                ErrorLogger.shared.logSuccess(
+                    operation: .getCollections,
+                    info: ["count": items.count, "collection": collection]
+                )
+
             } catch {
                 isLoading = false
-                NSLog("VideoVC Error: \(error)")
-                if let decodingError = error as? DecodingError {
-                    NSLog("Decoding error details: \(decodingError)")
-                }
+
+                // Log error with context
+                let context = ErrorContext(
+                    operation: .getCollections,
+                    userFacingTitle: "Unable to Load Videos",
+                    additionalInfo: ["collection": collection]
+                )
 
                 // Show error empty state
                 displayEmptyState(.networkError())
-                Global.showServiceUnavailableAlert(target: self)
+
+                // Present error with retry option
+                ErrorPresenter.shared.present(
+                    error,
+                    context: context,
+                    on: self,
+                    retry: { [weak self] in
+                        self?.loadData()
+                    }
+                )
             }
         }
     }

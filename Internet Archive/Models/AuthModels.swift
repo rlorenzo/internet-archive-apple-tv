@@ -2,7 +2,7 @@
 //  AuthModels.swift
 //  Internet Archive
 //
-//  Created for Sprint 5: Data Models & Codable
+//
 //  Type-safe models for Internet Archive authentication API
 //
 

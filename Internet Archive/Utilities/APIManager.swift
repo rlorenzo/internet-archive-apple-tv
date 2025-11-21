@@ -5,9 +5,6 @@
 //  Created by Eagle19243 on 5/8/18.
 //  Copyright © 2018 Eagle19243. All rights reserved.
 //
-//  Updated for Sprint 4: Alamofire 5.x migration with async/await support
-//  Updated for Sprint 5: Added Codable model support
-//  Updated for Sprint 7: Removed hardcoded credentials, using secure configuration
 //
 
 import Foundation

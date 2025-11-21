@@ -2,7 +2,7 @@
 //  KeychainManager.swift
 //  Internet Archive
 //
-//  Created for Sprint 7: Security & Configuration
+//
 //  Secure storage for user credentials and sensitive data
 //
 
