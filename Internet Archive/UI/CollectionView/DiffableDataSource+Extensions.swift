@@ -2,7 +2,7 @@
 //  DiffableDataSource+Extensions.swift
 //  Internet Archive
 //
-//  Created by Sprint 9: UI Modernization
+//
 //  Copyright © 2025 Internet Archive. All rights reserved.
 //
 

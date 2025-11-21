@@ -5,7 +5,7 @@
 //  Created by Eagle19243 on 5/8/18.
 //  Copyright © 2018 Eagle19243. All rights reserved.
 //
-//  Updated for Sprint 6: Async/await migration with typed models
+//
 //
 
 import UIKit

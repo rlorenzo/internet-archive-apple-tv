@@ -2,7 +2,6 @@
 //  NetworkError.swift
 //  Internet Archive
 //
-//  Created for Sprint 4: Networking Layer Rewrite
 //  Modern error handling for async/await API calls
 //
 

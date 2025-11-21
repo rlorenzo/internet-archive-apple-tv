@@ -21,6 +21,10 @@
 		48AC817F2ECFA89C004C9F77 /* ModernItemCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48AC81722ECFA89C004C9F77 /* ModernItemCell.swift */; };
 		48AC81802ECFA89C004C9F77 /* CompositionalLayoutBuilder.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48AC81702ECFA89C004C9F77 /* CompositionalLayoutBuilder.swift */; };
 		48AC81812ECFA89C004C9F77 /* DiffableDataSource+Extensions.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48AC81712ECFA89C004C9F77 /* DiffableDataSource+Extensions.swift */; };
+		48AC81932ECFF231004C9F77 /* ErrorPresenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48AC818F2ECFF231004C9F77 /* ErrorPresenter.swift */; };
+		48AC81942ECFF231004C9F77 /* RetryMechanism.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48AC81912ECFF231004C9F77 /* RetryMechanism.swift */; };
+		48AC81952ECFF231004C9F77 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48AC81902ECFF231004C9F77 /* NetworkMonitor.swift */; };
+		48AC81962ECFF231004C9F77 /* ErrorLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48AC818E2ECFF231004C9F77 /* ErrorLogger.swift */; };
 		8EB4EEC2C65BDA268D44DD6B /* Pods_Internet_Archive.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ACF558E0B6CB8477B99F92DB /* Pods_Internet_Archive.framework */; };
 		C3186B9920BF074200698EC3 /* FavoriteVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3186B9820BF074200698EC3 /* FavoriteVC.swift */; };
 		C3186B9B20BF07E700698EC3 /* FavoriteNC.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3186B9A20BF07E700698EC3 /* FavoriteNC.swift */; };
@@ -66,6 +70,10 @@
 		48AC81752ECFA89C004C9F77 /* ImagePrefetcher.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImagePrefetcher.swift; sourceTree = "<group>"; };
 		48AC81772ECFA89C004C9F77 /* EmptyStateView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = EmptyStateView.swift; sourceTree = "<group>"; };
 		48AC81782ECFA89C004C9F77 /* SkeletonView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonView.swift; sourceTree = "<group>"; };
+		48AC818E2ECFF231004C9F77 /* ErrorLogger.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorLogger.swift; sourceTree = "<group>"; };
+		48AC818F2ECFF231004C9F77 /* ErrorPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorPresenter.swift; sourceTree = "<group>"; };
+		48AC81902ECFF231004C9F77 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
+		48AC81912ECFF231004C9F77 /* RetryMechanism.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetryMechanism.swift; sourceTree = "<group>"; };
 		508928117E97EAD89FDE1405 /* Pods-Internet Archive.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet Archive.release.xcconfig"; path = "Target Support Files/Pods-Internet Archive/Pods-Internet Archive.release.xcconfig"; sourceTree = "<group>"; };
 		6A1A8F581F04FACC7FC1013E /* Pods-Internet Archive.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet Archive.debug.xcconfig"; path = "Target Support Files/Pods-Internet Archive/Pods-Internet Archive.debug.xcconfig"; sourceTree = "<group>"; };
 		ACF558E0B6CB8477B99F92DB /* Pods_Internet_Archive.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Internet_Archive.framework; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -120,7 +128,6 @@
 				6A1A8F581F04FACC7FC1013E /* Pods-Internet Archive.debug.xcconfig */,
 				508928117E97EAD89FDE1405 /* Pods-Internet Archive.release.xcconfig */,
 			);
-			name = Pods;
 			path = Pods;
 			sourceTree = "<group>";
 		};
@@ -179,6 +186,17 @@
 				48AC81792ECFA89C004C9F77 /* Loading */,
 			);
 			path = UI;
+			sourceTree = "<group>";
+		};
+		48AC81922ECFF231004C9F77 /* ErrorHandling */ = {
+			isa = PBXGroup;
+			children = (
+				48AC818E2ECFF231004C9F77 /* ErrorLogger.swift */,
+				48AC818F2ECFF231004C9F77 /* ErrorPresenter.swift */,
+				48AC81902ECFF231004C9F77 /* NetworkMonitor.swift */,
+				48AC81912ECFF231004C9F77 /* RetryMechanism.swift */,
+			);
+			path = ErrorHandling;
 			sourceTree = "<group>";
 		};
 		BED981DE3D6E0327775214EC /* Frameworks */ = {
@@ -317,6 +335,7 @@
 		C3DD648B20A237E40056DEC1 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				48AC81922ECFF231004C9F77 /* ErrorHandling */,
 				485A339C2ECD1114002A5E07 /* KeychainManager.swift */,
 				485A339D2ECD1114002A5E07 /* NetworkError.swift */,
 				C3DD648C20A238160056DEC1 /* APIManager.swift */,
@@ -502,6 +521,10 @@
 				C3D372E920D1B7C100DEDF08 /* AppProgressHUD.swift in Sources */,
 				C39588C120BE0C4000BB23C5 /* YearsVC.swift in Sources */,
 				C37377BC20EAD3E7009CBA0F /* Slider.swift in Sources */,
+				48AC81932ECFF231004C9F77 /* ErrorPresenter.swift in Sources */,
+				48AC81942ECFF231004C9F77 /* RetryMechanism.swift in Sources */,
+				48AC81952ECFF231004C9F77 /* NetworkMonitor.swift in Sources */,
+				48AC81962ECFF231004C9F77 /* ErrorLogger.swift in Sources */,
 				485A33982ECD1054002A5E07 /* AuthModels.swift in Sources */,
 				485A33992ECD1054002A5E07 /* FavoritesModels.swift in Sources */,
 				485A339A2ECD1054002A5E07 /* MetadataModels.swift in Sources */,

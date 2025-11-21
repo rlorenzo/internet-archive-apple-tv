@@ -5,8 +5,6 @@
 //  Created by Eagle19243 on 5/8/18.
 //  Copyright © 2018 Eagle19243. All rights reserved.
 //
-//  Updated for Sprint 6: Async/await migration with typed models
-//  Updated for Sprint 9: Modern UIKit patterns with DiffableDataSource
 //
 
 import UIKit
@@ -55,15 +53,18 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
 
             Task {
                 do {
-                    let options = [
-                        "rows": "50",
-                        "fl[]": "identifier,title,downloads,mediatype"
-                    ]
+                    // Use retry mechanism for network resilience
+                    let searchResponse = try await RetryMechanism.execute(config: .standard) {
+                        let options = [
+                            "rows": "50",
+                            "fl[]": "identifier,title,downloads,mediatype"
+                        ]
 
-                    let searchResponse = try await APIManager.sharedManager.searchTyped(
-                        query: "\(trimedQuery) AND mediatype:(etree OR movies)",
-                        options: options
-                    )
+                        return try await APIManager.sharedManager.searchTyped(
+                            query: "\(trimedQuery) AND mediatype:(etree OR movies)",
+                            options: options
+                        )
+                    }
 
                     self.clsVideo.isHidden = false
                     self.clsMusic.isHidden = false
@@ -84,10 +85,28 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
 
                     AppProgressHUD.sharedManager.hide()
 
+                    // Log success
+                    ErrorLogger.shared.logSuccess(
+                        operation: .search,
+                        info: ["query": trimedQuery, "results": searchResponse.response.docs.count]
+                    )
+
                 } catch {
-                    AppProgressHUD.sharedManager.hide()
-                    let errorMessage = (error as? NetworkError)?.localizedDescription ?? error.localizedDescription
-                    Global.showAlert(title: "Error", message: errorMessage, target: self)
+                    // Use centralized error presenter
+                    let context = ErrorContext(
+                        operation: .search,
+                        userFacingTitle: "Search Failed",
+                        additionalInfo: ["query": trimedQuery]
+                    )
+
+                    ErrorPresenter.shared.present(
+                        error,
+                        context: context,
+                        on: self,
+                        retry: { [weak self] in
+                            self?.query = trimedQuery
+                        }
+                    )
                 }
             }
         }
@@ -197,11 +216,24 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
 
         Task {
             do {
-                let metadataResponse = try await APIManager.sharedManager.getMetaDataTyped(identifier: identifier)
+                // Use retry for metadata loading
+                let metadataResponse = try await RetryMechanism.execute(config: .single) {
+                    try await APIManager.sharedManager.getMetaDataTyped(identifier: identifier)
+                }
+
                 AppProgressHUD.sharedManager.hide()
 
                 guard let files = metadataResponse.files else {
-                    Global.showAlert(title: "Error", message: "No files found", target: self)
+                    let context = ErrorContext(
+                        operation: .loadMedia,
+                        userFacingTitle: "Playback Error",
+                        additionalInfo: ["identifier": identifier]
+                    )
+                    ErrorPresenter.shared.present(
+                        NetworkError.resourceNotFound,
+                        context: context,
+                        on: self
+                    )
                     return
                 }
 
@@ -211,14 +243,32 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
                 }
 
                 guard !filesToPlay.isEmpty else {
-                    Global.showAlert(title: "Error", message: "There is no playable content", target: self)
+                    let context = ErrorContext(
+                        operation: .loadMedia,
+                        userFacingTitle: "Playback Error",
+                        additionalInfo: ["identifier": identifier, "reason": "no_playable_files"]
+                    )
+                    ErrorPresenter.shared.present(
+                        NetworkError.resourceNotFound,
+                        context: context,
+                        on: self
+                    )
                     return
                 }
 
                 let filename = filesToPlay[0].name
                 guard let encodedFilename = filename.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed),
                       let mediaURL = URL(string: "https://archive.org/download/\(identifier)/\(encodedFilename)") else {
-                    Global.showAlert(title: "Error", message: "Invalid media URL", target: self)
+                    let context = ErrorContext(
+                        operation: .loadMedia,
+                        userFacingTitle: "Playback Error",
+                        additionalInfo: ["identifier": identifier, "filename": filename]
+                    )
+                    ErrorPresenter.shared.present(
+                        NetworkError.invalidParameters,
+                        context: context,
+                        on: self
+                    )
                     return
                 }
 
@@ -234,10 +284,26 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
                     player.play()
                 }
 
+                ErrorLogger.shared.logSuccess(
+                    operation: .playVideo,
+                    info: ["identifier": identifier, "filename": filename]
+                )
+
             } catch {
-                AppProgressHUD.sharedManager.hide()
-                let errorMessage = (error as? NetworkError)?.localizedDescription ?? error.localizedDescription
-                Global.showAlert(title: "Error", message: errorMessage, target: self)
+                let context = ErrorContext(
+                    operation: .loadMedia,
+                    userFacingTitle: "Playback Error",
+                    additionalInfo: ["identifier": identifier]
+                )
+
+                ErrorPresenter.shared.present(
+                    error,
+                    context: context,
+                    on: self,
+                    retry: { [weak self] in
+                        self?.collectionView(collectionView, didSelectItemAt: indexPath)
+                    }
+                )
             }
         }
     }
