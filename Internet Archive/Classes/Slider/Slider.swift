@@ -8,7 +8,7 @@
 
 import UIKit
 
-public protocol SliderDelegate: class {
+public protocol SliderDelegate: AnyObject {
     func slider(_ slider: Slider, textWithValue value: Double) -> String
 
     func sliderDidTap(_ slider: Slider)
@@ -201,7 +201,7 @@ public class Slider: UIView {
             seekerViewLeadingConstraintConstant = seekerViewLeadingConstraint.constant
 
             let direction: CGFloat = velocity.x > 0 ? 1 : -1
-            deceleratingVelocity = fabs(velocity.x) > decelerationMaxVelocity ? decelerationMaxVelocity * direction : velocity.x
+            deceleratingVelocity = abs(velocity.x) > decelerationMaxVelocity ? decelerationMaxVelocity * direction : velocity.x
             deceleratingTimer = Timer.scheduledTimer(timeInterval: 0.01, target: self, selector: #selector(handleDeceleratingTimer(timer:)), userInfo: nil, repeats: true)
         default:
             break
@@ -219,7 +219,7 @@ public class Slider: UIView {
         seekerViewLeadingConstraintConstant = seekerViewLeadingConstraint.constant
 
         deceleratingVelocity *= decelerationRate
-        if !isFocused || fabs(deceleratingVelocity) < 1 {
+        if !isFocused || abs(deceleratingVelocity) < 1 {
             stopDeceleratingTimer()
         }
     }
@@ -245,7 +245,7 @@ extension Slider: UIGestureRecognizerDelegate {
     override public func gestureRecognizerShouldBegin(_ gestureRecognizer: UIGestureRecognizer) -> Bool {
         if let panGestureRecognizer = gestureRecognizer as? UIPanGestureRecognizer {
             let translation = panGestureRecognizer.translation(in: self)
-            if fabs(translation.x) > fabs(translation.y) {
+            if abs(translation.x) > abs(translation.y) {
                 return isFocused
             }
         }

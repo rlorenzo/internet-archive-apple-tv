@@ -76,7 +76,7 @@ final class ImageCacheManager {
     /// - Parameters:
     ///   - url: Image URL
     ///   - completion: Completion handler with image result
-    func loadImage(from url: URL, completion: @escaping (Result<UIImage, Error>) -> Void) {
+    func loadImage(from url: URL, completion: @escaping @Sendable (Result<UIImage, Error>) -> Void) {
         // Check cache first
         if let cachedImage = imageCache.image(withIdentifier: url.absoluteString) {
             completion(.success(cachedImage))
@@ -85,17 +85,24 @@ final class ImageCacheManager {
 
         // Download image
         let urlRequest = URLRequest(url: url)
-        imageDownloader.download(urlRequest) { response in
-            switch response.result {
-            case .success(let image):
-                // Cache the image
-                self.imageCache.add(image, withIdentifier: url.absoluteString)
-                completion(.success(image))
+        let urlString = url.absoluteString
 
-            case .failure(let error):
-                completion(.failure(error))
+        imageDownloader.download(
+            urlRequest,
+            completion: { [weak self] (response: AFIDataResponse<Image>) in
+                Task { @MainActor in
+                    switch response.result {
+                    case .success(let image):
+                        // Cache the image
+                        self?.imageCache.add(image, withIdentifier: urlString)
+                        completion(.success(image))
+
+                    case .failure(let error):
+                        completion(.failure(error))
+                    }
+                }
             }
-        }
+        )
     }
 
     /// Prefetch images for URLs
@@ -109,11 +116,18 @@ final class ImageCacheManager {
 
             // Download with low priority
             let urlRequest = URLRequest(url: url)
-            imageDownloader.download(urlRequest, completion: { [weak self] response in
-                if case .success(let image) = response.result {
-                    self?.imageCache.add(image, withIdentifier: url.absoluteString)
+            let urlString = url.absoluteString
+
+            imageDownloader.download(
+                urlRequest,
+                completion: { [weak self] (response: AFIDataResponse<Image>) in
+                    Task { @MainActor in
+                        if case .success(let image) = response.result {
+                            self?.imageCache.add(image, withIdentifier: urlString)
+                        }
+                    }
                 }
-            })
+            )
         }
     }
 
@@ -152,6 +166,7 @@ extension UIImageView {
     /// - Parameters:
     ///   - url: Image URL
     ///   - placeholder: Placeholder image
+    @MainActor
     func loadImage(from url: URL?, placeholder: UIImage? = nil) {
         // Set placeholder
         self.image = placeholder

@@ -1,0 +1,89 @@
+name: Tests
+
+on:
+  push:
+    branches: [ master, main, develop, sprint* ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: macos-latest
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Select Xcode version
+      run: |
+        # Use latest available Xcode
+        sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+
+    - name: Show Xcode version
+      run: xcodebuild -version
+
+    - name: Cache CocoaPods
+      uses: actions/cache@v4
+      with:
+        path: Pods
+        key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+        restore-keys: |
+          ${{ runner.os }}-pods-
+
+    - name: Set up CocoaPods
+      run: |
+        gem install cocoapods
+        pod --version
+
+    - name: Install dependencies
+      run: |
+        cd "${GITHUB_WORKSPACE}"
+        pod install --repo-update
+
+    - name: Run tests
+      run: |
+        xcodebuild test \
+          -workspace "Internet Archive.xcworkspace" \
+          -scheme "Internet Archive" \
+          -destination "platform=tvOS Simulator,OS=latest,name=Apple TV" \
+          -enableCodeCoverage YES \
+          -resultBundlePath TestResults.xcresult
+
+    - name: Generate code coverage report
+      if: success()
+      run: |
+        xcrun xccov view --report --json TestResults.xcresult > coverage.json
+        echo "Code Coverage:"
+        xcrun xccov view --report TestResults.xcresult
+
+    - name: Upload test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: test-results
+        path: TestResults.xcresult
+
+    - name: Upload coverage report
+      if: success()
+      uses: actions/upload-artifact@v4
+      with:
+        name: coverage-report
+        path: coverage.json
+
+    - name: Check coverage threshold
+      if: success()
+      run: |
+        coverage=$(xcrun xccov view --report TestResults.xcresult | grep -E '\.app' | head -1 | awk '{print $2}' | sed 's/%//')
+        if [ -z "$coverage" ]; then
+          echo "⚠️ Could not extract coverage percentage"
+          exit 1
+        fi
+        echo "Code coverage: ${coverage}%"
+        threshold=70
+        if awk "BEGIN {exit !($coverage < $threshold)}"; then
+          echo "❌ Code coverage ${coverage}% is below threshold ${threshold}%"
+          exit 1
+        else
+          echo "✅ Code coverage ${coverage}% meets threshold ${threshold}%"
+        fi

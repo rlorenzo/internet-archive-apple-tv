@@ -11,6 +11,11 @@ import UIKit
 @MainActor
 class TabbarController: UITabBarController {
 
+    /// Check if running in test environment
+    private static var isRunningTests: Bool {
+        NSClassFromString("XCTestCase") != nil
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -24,7 +29,10 @@ class TabbarController: UITabBarController {
                 }
             }
 
-            NSLog("ℹ️ Running in read-only mode. Account and Favorites features disabled (no API credentials).")
+            // Suppress log during tests
+            if !Self.isRunningTests {
+                NSLog("ℹ️ Running in read-only mode. Account and Favorites features disabled (no API credentials).")
+            }
             return
         }
 

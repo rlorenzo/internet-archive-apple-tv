@@ -27,6 +27,11 @@ struct AppConfiguration: @unchecked Sendable {
 
     private let configuration: [String: Any]
 
+    /// Check if running in test environment
+    private static var isRunningTests: Bool {
+        NSClassFromString("XCTestCase") != nil
+    }
+
     // MARK: - Initialization
 
     private init() {
@@ -38,8 +43,11 @@ struct AppConfiguration: @unchecked Sendable {
             // Fallback to empty configuration
             // In production, these should be set via environment or build configuration
             self.configuration = [:]
-            NSLog("⚠️ Warning: Configuration.plist not found. API credentials not loaded.")
-            NSLog("⚠️ Please create Configuration.plist from Configuration.plist.template")
+            // Suppress warnings during tests
+            if !Self.isRunningTests {
+                NSLog("⚠️ Warning: Configuration.plist not found. API credentials not loaded.")
+                NSLog("⚠️ Please create Configuration.plist from Configuration.plist.template")
+            }
         }
     }
 

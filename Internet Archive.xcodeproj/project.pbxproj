@@ -3,10 +3,11 @@
 	archiveVersion = 1;
 	classes = {
 	};
-	objectVersion = 48;
+	objectVersion = 60;
 	objects = {
 
 /* Begin PBXBuildFile section */
+		1690D8B88836415BCC8D12CF /* RequestModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79728E0BC82FA53973F1E113 /* RequestModels.swift */; };
 		485A33982ECD1054002A5E07 /* AuthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485A33932ECD1054002A5E07 /* AuthModels.swift */; };
 		485A33992ECD1054002A5E07 /* FavoritesModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485A33942ECD1054002A5E07 /* FavoritesModels.swift */; };
 		485A339A2ECD1054002A5E07 /* MetadataModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485A33952ECD1054002A5E07 /* MetadataModels.swift */; };
@@ -25,12 +26,16 @@
 		48AC81942ECFF231004C9F77 /* RetryMechanism.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48AC81912ECFF231004C9F77 /* RetryMechanism.swift */; };
 		48AC81952ECFF231004C9F77 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48AC81902ECFF231004C9F77 /* NetworkMonitor.swift */; };
 		48AC81962ECFF231004C9F77 /* ErrorLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48AC818E2ECFF231004C9F77 /* ErrorLogger.swift */; };
+		48AC81DC2ED11962004C9F77 /* NetworkServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48AC81DA2ED11962004C9F77 /* NetworkServiceProtocol.swift */; };
 		8EB4EEC2C65BDA268D44DD6B /* Pods_Internet_Archive.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ACF558E0B6CB8477B99F92DB /* Pods_Internet_Archive.framework */; };
+		8FE025E39EC28B7909B5AE59 /* Pods_Internet_ArchiveUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 47A7E9347D68A32FD0D61723 /* Pods_Internet_ArchiveUITests.framework */; };
+		BB608F6A2E7F134CAF800A0F /* Pods_Internet_ArchiveTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 435E5970557BD30BCCF789B6 /* Pods_Internet_ArchiveTests.framework */; };
 		C3186B9920BF074200698EC3 /* FavoriteVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3186B9820BF074200698EC3 /* FavoriteVC.swift */; };
 		C3186B9B20BF07E700698EC3 /* FavoriteNC.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3186B9A20BF07E700698EC3 /* FavoriteNC.swift */; };
 		C3260C6A20A2287F00C32ACA /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3260C6920A2287F00C32ACA /* AppDelegate.swift */; };
 		C3260C6C20A2287F00C32ACA /* VideoVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3260C6B20A2287F00C32ACA /* VideoVC.swift */; };
 		C3260C6F20A2287F00C32ACA /* Main.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = C3260C6D20A2287F00C32ACA /* Main.storyboard */; };
+		LAUNCH000000000000001 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = LAUNCH000000000000002 /* LaunchScreen.storyboard */; };
 		C3260C7B20A22CE300C32ACA /* SearchResultVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3260C7820A22CE200C32ACA /* SearchResultVC.swift */; };
 		C3260C7C20A22CE300C32ACA /* MusicVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3260C7920A22CE200C32ACA /* MusicVC.swift */; };
 		C3260C7D20A22CE300C32ACA /* AccountVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3260C7A20A22CE300C32ACA /* AccountVC.swift */; };
@@ -55,7 +60,29 @@
 		C3F7738120A4F47D002A3BD2 /* Asses.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C3F7738020A4F47D002A3BD2 /* Asses.xcassets */; };
 /* End PBXBuildFile section */
 
+/* Begin PBXContainerItemProxy section */
+		48AC819F2ED1179F004C9F77 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C3260C5E20A2287E00C32ACA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C3260C6520A2287F00C32ACA;
+			remoteInfo = "Internet Archive";
+		};
+		48AC81CC2ED1181A004C9F77 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = C3260C5E20A2287E00C32ACA /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = C3260C6520A2287F00C32ACA;
+			remoteInfo = "Internet Archive";
+		};
+/* End PBXContainerItemProxy section */
+
 /* Begin PBXFileReference section */
+		1B659067B3F48E30893CC3B9 /* Pods-Internet ArchiveTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet ArchiveTests.release.xcconfig"; path = "Target Support Files/Pods-Internet ArchiveTests/Pods-Internet ArchiveTests.release.xcconfig"; sourceTree = "<group>"; };
+		281514CA691502DFDBF8A81C /* Pods-Internet Archive-Internet ArchiveUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet Archive-Internet ArchiveUITests.release.xcconfig"; path = "Target Support Files/Pods-Internet Archive-Internet ArchiveUITests/Pods-Internet Archive-Internet ArchiveUITests.release.xcconfig"; sourceTree = "<group>"; };
+		2ADF52F0E018B6676452E765 /* Pods-Internet ArchiveTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet ArchiveTests.debug.xcconfig"; path = "Target Support Files/Pods-Internet ArchiveTests/Pods-Internet ArchiveTests.debug.xcconfig"; sourceTree = "<group>"; };
+		435E5970557BD30BCCF789B6 /* Pods_Internet_ArchiveTests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Internet_ArchiveTests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		47A7E9347D68A32FD0D61723 /* Pods_Internet_ArchiveUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Internet_ArchiveUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		485A33932ECD1054002A5E07 /* AuthModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AuthModels.swift; sourceTree = "<group>"; };
 		485A33942ECD1054002A5E07 /* FavoritesModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesModels.swift; sourceTree = "<group>"; };
 		485A33952ECD1054002A5E07 /* MetadataModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetadataModels.swift; sourceTree = "<group>"; };
@@ -74,15 +101,21 @@
 		48AC818F2ECFF231004C9F77 /* ErrorPresenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ErrorPresenter.swift; sourceTree = "<group>"; };
 		48AC81902ECFF231004C9F77 /* NetworkMonitor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkMonitor.swift; sourceTree = "<group>"; };
 		48AC81912ECFF231004C9F77 /* RetryMechanism.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RetryMechanism.swift; sourceTree = "<group>"; };
+		48AC819B2ED1179F004C9F77 /* Internet ArchiveTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Internet ArchiveTests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		48AC81C62ED1181A004C9F77 /* Internet ArchiveUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = "Internet ArchiveUITests.xctest"; sourceTree = BUILT_PRODUCTS_DIR; };
+		48AC81DA2ED11962004C9F77 /* NetworkServiceProtocol.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NetworkServiceProtocol.swift; sourceTree = "<group>"; };
 		508928117E97EAD89FDE1405 /* Pods-Internet Archive.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet Archive.release.xcconfig"; path = "Target Support Files/Pods-Internet Archive/Pods-Internet Archive.release.xcconfig"; sourceTree = "<group>"; };
 		6A1A8F581F04FACC7FC1013E /* Pods-Internet Archive.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet Archive.debug.xcconfig"; path = "Target Support Files/Pods-Internet Archive/Pods-Internet Archive.debug.xcconfig"; sourceTree = "<group>"; };
+		79728E0BC82FA53973F1E113 /* RequestModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RequestModels.swift; sourceTree = "<group>"; };
 		ACF558E0B6CB8477B99F92DB /* Pods_Internet_Archive.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Internet_Archive.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		B14660AC6723CAC75EDB331E /* Pods-Internet ArchiveUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet ArchiveUITests.release.xcconfig"; path = "Target Support Files/Pods-Internet ArchiveUITests/Pods-Internet ArchiveUITests.release.xcconfig"; sourceTree = "<group>"; };
 		C3186B9820BF074200698EC3 /* FavoriteVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteVC.swift; sourceTree = "<group>"; };
 		C3186B9A20BF07E700698EC3 /* FavoriteNC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteNC.swift; sourceTree = "<group>"; };
 		C3260C6620A2287F00C32ACA /* Internet Archive.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Internet Archive.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 		C3260C6920A2287F00C32ACA /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppDelegate.swift; sourceTree = "<group>"; };
 		C3260C6B20A2287F00C32ACA /* VideoVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoVC.swift; sourceTree = "<group>"; };
 		C3260C6E20A2287F00C32ACA /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/Main.storyboard; sourceTree = "<group>"; };
+		LAUNCH000000000000003 /* Base */ = {isa = PBXFileReference; lastKnownFileType = file.storyboard; name = Base; path = Base.lproj/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		C3260C7220A2287F00C32ACA /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
 		C3260C7820A22CE200C32ACA /* SearchResultVC.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = SearchResultVC.swift; sourceTree = "<group>"; };
 		C3260C7920A22CE200C32ACA /* MusicVC.swift */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = sourcecode.swift; path = MusicVC.swift; sourceTree = "<group>"; };
@@ -108,9 +141,63 @@
 		C3DD649120A24FFD0056DEC1 /* ItemCell.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ItemCell.swift; sourceTree = "<group>"; };
 		C3DF722820E936CC00AA4FA4 /* Internet Archive-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; name = "Internet Archive-Bridging-Header.h"; path = "Internet Archive/Internet Archive-Bridging-Header.h"; sourceTree = "<group>"; };
 		C3F7738020A4F47D002A3BD2 /* Asses.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Asses.xcassets; sourceTree = "<group>"; };
+		D97EE183C57A11AC62165093 /* Pods-Internet ArchiveUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet ArchiveUITests.debug.xcconfig"; path = "Target Support Files/Pods-Internet ArchiveUITests/Pods-Internet ArchiveUITests.debug.xcconfig"; sourceTree = "<group>"; };
+		EAB61CA1208E9048153FC7C2 /* Pods-Internet Archive-Internet ArchiveUITests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet Archive-Internet ArchiveUITests.debug.xcconfig"; path = "Target Support Files/Pods-Internet Archive-Internet ArchiveUITests/Pods-Internet Archive-Internet ArchiveUITests.debug.xcconfig"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		48AC81DE2ED11B3A004C9F77 /* Exceptions for "Internet ArchiveTests" folder in "Internet ArchiveTests" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = 48AC819A2ED1179F004C9F77 /* Internet ArchiveTests */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
+/* Begin PBXFileSystemSynchronizedRootGroup section */
+		48AC819C2ED1179F004C9F77 /* Internet ArchiveTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				48AC81DE2ED11B3A004C9F77 /* Exceptions for "Internet ArchiveTests" folder in "Internet ArchiveTests" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "Internet ArchiveTests";
+			sourceTree = "<group>";
+		};
+		48AC81C72ED1181A004C9F77 /* Internet ArchiveUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "Internet ArchiveUITests";
+			sourceTree = "<group>";
+		};
+/* End PBXFileSystemSynchronizedRootGroup section */
+
 /* Begin PBXFrameworksBuildPhase section */
+		48AC81982ED1179F004C9F77 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				BB608F6A2E7F134CAF800A0F /* Pods_Internet_ArchiveTests.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		48AC81C32ED1181A004C9F77 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				8FE025E39EC28B7909B5AE59 /* Pods_Internet_ArchiveUITests.framework in Frameworks */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C3260C6320A2287F00C32ACA /* Frameworks */ = {
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
@@ -127,6 +214,12 @@
 			children = (
 				6A1A8F581F04FACC7FC1013E /* Pods-Internet Archive.debug.xcconfig */,
 				508928117E97EAD89FDE1405 /* Pods-Internet Archive.release.xcconfig */,
+				EAB61CA1208E9048153FC7C2 /* Pods-Internet Archive-Internet ArchiveUITests.debug.xcconfig */,
+				281514CA691502DFDBF8A81C /* Pods-Internet Archive-Internet ArchiveUITests.release.xcconfig */,
+				2ADF52F0E018B6676452E765 /* Pods-Internet ArchiveTests.debug.xcconfig */,
+				1B659067B3F48E30893CC3B9 /* Pods-Internet ArchiveTests.release.xcconfig */,
+				D97EE183C57A11AC62165093 /* Pods-Internet ArchiveUITests.debug.xcconfig */,
+				B14660AC6723CAC75EDB331E /* Pods-Internet ArchiveUITests.release.xcconfig */,
 			);
 			path = Pods;
 			sourceTree = "<group>";
@@ -138,6 +231,7 @@
 				485A33942ECD1054002A5E07 /* FavoritesModels.swift */,
 				485A33952ECD1054002A5E07 /* MetadataModels.swift */,
 				485A33962ECD1054002A5E07 /* SearchModels.swift */,
+				79728E0BC82FA53973F1E113 /* RequestModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -199,10 +293,20 @@
 			path = ErrorHandling;
 			sourceTree = "<group>";
 		};
+		48AC81DB2ED11962004C9F77 /* Protocols */ = {
+			isa = PBXGroup;
+			children = (
+				48AC81DA2ED11962004C9F77 /* NetworkServiceProtocol.swift */,
+			);
+			path = Protocols;
+			sourceTree = "<group>";
+		};
 		BED981DE3D6E0327775214EC /* Frameworks */ = {
 			isa = PBXGroup;
 			children = (
 				ACF558E0B6CB8477B99F92DB /* Pods_Internet_Archive.framework */,
+				435E5970557BD30BCCF789B6 /* Pods_Internet_ArchiveTests.framework */,
+				47A7E9347D68A32FD0D61723 /* Pods_Internet_ArchiveUITests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -222,6 +326,8 @@
 			children = (
 				C3DF722820E936CC00AA4FA4 /* Internet Archive-Bridging-Header.h */,
 				C3260C6820A2287F00C32ACA /* Internet Archive */,
+				48AC819C2ED1179F004C9F77 /* Internet ArchiveTests */,
+				48AC81C72ED1181A004C9F77 /* Internet ArchiveUITests */,
 				C3260C6720A2287F00C32ACA /* Products */,
 				07C583477699DFBB924862A3 /* Pods */,
 				BED981DE3D6E0327775214EC /* Frameworks */,
@@ -232,6 +338,8 @@
 			isa = PBXGroup;
 			children = (
 				C3260C6620A2287F00C32ACA /* Internet Archive.app */,
+				48AC819B2ED1179F004C9F77 /* Internet ArchiveTests.xctest */,
+				48AC81C62ED1181A004C9F77 /* Internet ArchiveUITests.xctest */,
 			);
 			name = Products;
 			sourceTree = "<group>";
@@ -239,6 +347,7 @@
 		C3260C6820A2287F00C32ACA /* Internet Archive */ = {
 			isa = PBXGroup;
 			children = (
+				48AC81DB2ED11962004C9F77 /* Protocols */,
 				48AC817A2ECFA89C004C9F77 /* UI */,
 				485A33A12ECD114F002A5E07 /* Configuration */,
 				485A33972ECD1054002A5E07 /* Models */,
@@ -248,6 +357,7 @@
 				C3260C7E20A22CF100C32ACA /* ViewControllers */,
 				C3260C6920A2287F00C32ACA /* AppDelegate.swift */,
 				C3260C6D20A2287F00C32ACA /* Main.storyboard */,
+				LAUNCH000000000000002 /* LaunchScreen.storyboard */,
 				C3F7738020A4F47D002A3BD2 /* Asses.xcassets */,
 				C3260C7220A2287F00C32ACA /* Info.plist */,
 			);
@@ -359,6 +469,50 @@
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
+		48AC819A2ED1179F004C9F77 /* Internet ArchiveTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 48AC81A32ED1179F004C9F77 /* Build configuration list for PBXNativeTarget "Internet ArchiveTests" */;
+			buildPhases = (
+				F6DED952F3F4AF3466FF5CDF /* [CP] Check Pods Manifest.lock */,
+				48AC81972ED1179F004C9F77 /* Sources */,
+				48AC81982ED1179F004C9F77 /* Frameworks */,
+				48AC81992ED1179F004C9F77 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				48AC81A02ED1179F004C9F77 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				48AC819C2ED1179F004C9F77 /* Internet ArchiveTests */,
+			);
+			name = "Internet ArchiveTests";
+			productName = "Internet ArchiveTests";
+			productReference = 48AC819B2ED1179F004C9F77 /* Internet ArchiveTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		48AC81C52ED1181A004C9F77 /* Internet ArchiveUITests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 48AC81CE2ED1181A004C9F77 /* Build configuration list for PBXNativeTarget "Internet ArchiveUITests" */;
+			buildPhases = (
+				1505DB7840B9253EAA3FB5B3 /* [CP] Check Pods Manifest.lock */,
+				48AC81C22ED1181A004C9F77 /* Sources */,
+				48AC81C32ED1181A004C9F77 /* Frameworks */,
+				48AC81C42ED1181A004C9F77 /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				48AC81CD2ED1181A004C9F77 /* PBXTargetDependency */,
+			);
+			fileSystemSynchronizedGroups = (
+				48AC81C72ED1181A004C9F77 /* Internet ArchiveUITests */,
+			);
+			name = "Internet ArchiveUITests";
+			productName = "Internet ArchiveUITests";
+			productReference = 48AC81C62ED1181A004C9F77 /* Internet ArchiveUITests.xctest */;
+			productType = "com.apple.product-type.bundle.ui-testing";
+		};
 		C3260C6520A2287F00C32ACA /* Internet Archive */ = {
 			isa = PBXNativeTarget;
 			buildConfigurationList = C3260C7520A2287F00C32ACA /* Build configuration list for PBXNativeTarget "Internet Archive" */;
@@ -385,10 +539,18 @@
 		C3260C5E20A2287E00C32ACA /* Project object */ = {
 			isa = PBXProject;
 			attributes = {
-				LastSwiftUpdateCheck = 0920;
+				LastSwiftUpdateCheck = 2610;
 				LastUpgradeCheck = 0920;
 				ORGANIZATIONNAME = "mac-admin";
 				TargetAttributes = {
+					48AC819A2ED1179F004C9F77 = {
+						CreatedOnToolsVersion = 26.1.1;
+						TestTargetID = C3260C6520A2287F00C32ACA;
+					};
+					48AC81C52ED1181A004C9F77 = {
+						CreatedOnToolsVersion = 26.1.1;
+						TestTargetID = C3260C6520A2287F00C32ACA;
+					};
 					C3260C6520A2287F00C32ACA = {
 						CreatedOnToolsVersion = 9.2;
 						ProvisioningStyle = Automatic;
@@ -414,16 +576,33 @@
 			projectRoot = "";
 			targets = (
 				C3260C6520A2287F00C32ACA /* Internet Archive */,
+				48AC819A2ED1179F004C9F77 /* Internet ArchiveTests */,
+				48AC81C52ED1181A004C9F77 /* Internet ArchiveUITests */,
 			);
 		};
 /* End PBXProject section */
 
 /* Begin PBXResourcesBuildPhase section */
+		48AC81992ED1179F004C9F77 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		48AC81C42ED1181A004C9F77 /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C3260C6420A2287F00C32ACA /* Resources */ = {
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
 				C3260C6F20A2287F00C32ACA /* Main.storyboard in Resources */,
+				LAUNCH000000000000001 /* LaunchScreen.storyboard in Resources */,
 				C3F7738120A4F47D002A3BD2 /* Asses.xcassets in Resources */,
 				C37377BB20EAD3E7009CBA0F /* Slider.xib in Resources */,
 			);
@@ -432,6 +611,28 @@
 /* End PBXResourcesBuildPhase section */
 
 /* Begin PBXShellScriptBuildPhase section */
+		1505DB7840B9253EAA3FB5B3 /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Internet ArchiveUITests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
 		88B5898C9B1825E01AC9404D /* [CP] Check Pods Manifest.lock */ = {
 			isa = PBXShellScriptBuildPhase;
 			buildActionMask = 2147483647;
@@ -482,8 +683,31 @@
 			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Internet Archive/Pods-Internet Archive-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
+		F6DED952F3F4AF3466FF5CDF /* [CP] Check Pods Manifest.lock */ = {
+			isa = PBXShellScriptBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			inputFileListPaths = (
+			);
+			inputPaths = (
+				"${PODS_PODFILE_DIR_PATH}/Podfile.lock",
+				"${PODS_ROOT}/Manifest.lock",
+			);
+			name = "[CP] Check Pods Manifest.lock";
+			outputFileListPaths = (
+			);
+			outputPaths = (
+				"$(DERIVED_FILE_DIR)/Pods-Internet ArchiveTests-checkManifestLockResult.txt",
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+			shellPath = /bin/sh;
+			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
+			showEnvVarsInLog = 0;
+		};
 		SWIFTLINT000000000000001 /* SwiftLint */ = {
 			isa = PBXShellScriptBuildPhase;
+			alwaysOutOfDate = 1;
 			buildActionMask = 2147483647;
 			files = (
 			);
@@ -503,6 +727,20 @@
 /* End PBXShellScriptBuildPhase section */
 
 /* Begin PBXSourcesBuildPhase section */
+		48AC81972ED1179F004C9F77 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		48AC81C22ED1181A004C9F77 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
 		C3260C6220A2287F00C32ACA /* Sources */ = {
 			isa = PBXSourcesBuildPhase;
 			buildActionMask = 2147483647;
@@ -545,14 +783,29 @@
 				C3827AEF20A4738A000D4780 /* MusicNC.swift in Sources */,
 				C3260C7C20A22CE300C32ACA /* MusicVC.swift in Sources */,
 				C3827AF120A47392000D4780 /* VideoNC.swift in Sources */,
+				48AC81DC2ED11962004C9F77 /* NetworkServiceProtocol.swift in Sources */,
 				C3260C6A20A2287F00C32ACA /* AppDelegate.swift in Sources */,
 				C3DD648F20A2382B0056DEC1 /* AppConstants.swift in Sources */,
 				C3186B9920BF074200698EC3 /* FavoriteVC.swift in Sources */,
 				C39588C620BE35A200BB23C5 /* ItemVC.swift in Sources */,
+				1690D8B88836415BCC8D12CF /* RequestModels.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
 /* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		48AC81A02ED1179F004C9F77 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C3260C6520A2287F00C32ACA /* Internet Archive */;
+			targetProxy = 48AC819F2ED1179F004C9F77 /* PBXContainerItemProxy */;
+		};
+		48AC81CD2ED1181A004C9F77 /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = C3260C6520A2287F00C32ACA /* Internet Archive */;
+			targetProxy = 48AC81CC2ED1181A004C9F77 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
 
 /* Begin PBXVariantGroup section */
 		C3260C6D20A2287F00C32ACA /* Main.storyboard */ = {
@@ -563,9 +816,187 @@
 			name = Main.storyboard;
 			sourceTree = "<group>";
 		};
+		LAUNCH000000000000002 /* LaunchScreen.storyboard */ = {
+			isa = PBXVariantGroup;
+			children = (
+				LAUNCH000000000000003 /* Base */,
+			);
+			name = LaunchScreen.storyboard;
+			sourceTree = "<group>";
+		};
 /* End PBXVariantGroup section */
 
 /* Begin XCBuildConfiguration section */
+		48AC81A12ED1179F004C9F77 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 2ADF52F0E018B6676452E765 /* Pods-Internet ArchiveTests.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"${PODS_CONFIGURATION_BUILD_DIR}/Alamofire",
+					"${PODS_CONFIGURATION_BUILD_DIR}/AlamofireImage",
+					"${PODS_CONFIGURATION_BUILD_DIR}/MBProgressHUD",
+					"${PODS_CONFIGURATION_BUILD_DIR}/SVProgressHUD",
+					"${PODS_CONFIGURATION_BUILD_DIR}/TvOSMoreButton",
+					"${PODS_CONFIGURATION_BUILD_DIR}/TvOSTextViewer",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 11.5;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "rlorenzo.Internet-ArchiveTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Internet Archive.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Internet Archive";
+				TVOS_DEPLOYMENT_TARGET = 26.1;
+			};
+			name = Debug;
+		};
+		48AC81A22ED1179F004C9F77 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = 1B659067B3F48E30893CC3B9 /* Pods-Internet ArchiveTests.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"${PODS_CONFIGURATION_BUILD_DIR}/Alamofire",
+					"${PODS_CONFIGURATION_BUILD_DIR}/AlamofireImage",
+					"${PODS_CONFIGURATION_BUILD_DIR}/MBProgressHUD",
+					"${PODS_CONFIGURATION_BUILD_DIR}/SVProgressHUD",
+					"${PODS_CONFIGURATION_BUILD_DIR}/TvOSMoreButton",
+					"${PODS_CONFIGURATION_BUILD_DIR}/TvOSTextViewer",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 11.5;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "rlorenzo.Internet-ArchiveTests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/Internet Archive.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/Internet Archive";
+				TVOS_DEPLOYMENT_TARGET = 26.1;
+			};
+			name = Release;
+		};
+		48AC81CF2ED1181A004C9F77 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = D97EE183C57A11AC62165093 /* Pods-Internet ArchiveUITests.debug.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"${PODS_CONFIGURATION_BUILD_DIR}/Alamofire",
+					"${PODS_CONFIGURATION_BUILD_DIR}/AlamofireImage",
+					"${PODS_CONFIGURATION_BUILD_DIR}/MBProgressHUD",
+					"${PODS_CONFIGURATION_BUILD_DIR}/SVProgressHUD",
+					"${PODS_CONFIGURATION_BUILD_DIR}/TvOSMoreButton",
+					"${PODS_CONFIGURATION_BUILD_DIR}/TvOSTextViewer",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 11.5;
+				MARKETING_VERSION = 1.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "rlorenzo.Internet-ArchiveUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TEST_TARGET_NAME = "Internet Archive";
+				TVOS_DEPLOYMENT_TARGET = 26.1;
+			};
+			name = Debug;
+		};
+		48AC81D02ED1181A004C9F77 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = B14660AC6723CAC75EDB331E /* Pods-Internet ArchiveUITests.release.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				FRAMEWORK_SEARCH_PATHS = (
+					"$(inherited)",
+					"${PODS_CONFIGURATION_BUILD_DIR}/Alamofire",
+					"${PODS_CONFIGURATION_BUILD_DIR}/AlamofireImage",
+					"${PODS_CONFIGURATION_BUILD_DIR}/MBProgressHUD",
+					"${PODS_CONFIGURATION_BUILD_DIR}/SVProgressHUD",
+					"${PODS_CONFIGURATION_BUILD_DIR}/TvOSMoreButton",
+					"${PODS_CONFIGURATION_BUILD_DIR}/TvOSTextViewer",
+				);
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GENERATE_INFOPLIST_FILE = YES;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MACOSX_DEPLOYMENT_TARGET = 11.5;
+				MARKETING_VERSION = 1.0;
+				MTL_FAST_MATH = YES;
+				PRODUCT_BUNDLE_IDENTIFIER = "rlorenzo.Internet-ArchiveUITests";
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				STRING_CATALOG_GENERATE_SYMBOLS = NO;
+				SWIFT_APPROACHABLE_CONCURRENCY = YES;
+				SWIFT_EMIT_LOC_STRINGS = NO;
+				SWIFT_UPCOMING_FEATURE_MEMBER_IMPORT_VISIBILITY = YES;
+				SWIFT_VERSION = 6.0;
+				TARGETED_DEVICE_FAMILY = 3;
+				TEST_TARGET_NAME = "Internet Archive";
+				TVOS_DEPLOYMENT_TARGET = 26.1;
+			};
+			name = Release;
+		};
 		C3260C7320A2287F00C32ACA /* Debug */ = {
 			isa = XCBuildConfiguration;
 			buildSettings = {
@@ -665,7 +1096,8 @@
 				GCC_WARN_UNUSED_VARIABLE = YES;
 				MTL_ENABLE_DEBUG_INFO = NO;
 				SDKROOT = appletvos;
-				SWIFT_OPTIMIZATION_LEVEL = "-Owholemodule";
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
 				TVOS_DEPLOYMENT_TARGET = 17.0;
 				VALIDATE_PRODUCT = YES;
 			};
@@ -680,12 +1112,15 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = "Internet Archive/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = archivetv;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Internet Archive/Internet Archive-Bridging-Header.h";
 				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 3;
 				TVOS_DEPLOYMENT_TARGET = 17.0;
 			};
@@ -700,12 +1135,15 @@
 				CODE_SIGN_STYLE = Automatic;
 				DEVELOPMENT_TEAM = "";
 				INFOPLIST_FILE = "Internet Archive/Info.plist";
-				LD_RUNPATH_SEARCH_PATHS = "$(inherited) @executable_path/Frameworks";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
 				PRODUCT_BUNDLE_IDENTIFIER = archivetv;
 				PRODUCT_NAME = "$(TARGET_NAME)";
 				SWIFT_OBJC_BRIDGING_HEADER = "Internet Archive/Internet Archive-Bridging-Header.h";
 				SWIFT_STRICT_CONCURRENCY = complete;
-				SWIFT_VERSION = 5.0;
+				SWIFT_VERSION = 6.0;
 				TARGETED_DEVICE_FAMILY = 3;
 				TVOS_DEPLOYMENT_TARGET = 17.0;
 			};
@@ -714,6 +1152,24 @@
 /* End XCBuildConfiguration section */
 
 /* Begin XCConfigurationList section */
+		48AC81A32ED1179F004C9F77 /* Build configuration list for PBXNativeTarget "Internet ArchiveTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				48AC81A12ED1179F004C9F77 /* Debug */,
+				48AC81A22ED1179F004C9F77 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		48AC81CE2ED1181A004C9F77 /* Build configuration list for PBXNativeTarget "Internet ArchiveUITests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				48AC81CF2ED1181A004C9F77 /* Debug */,
+				48AC81D02ED1181A004C9F77 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
 		C3260C6120A2287E00C32ACA /* Build configuration list for PBXProject "Internet Archive" */ = {
 			isa = XCConfigurationList;
 			buildConfigurations = (

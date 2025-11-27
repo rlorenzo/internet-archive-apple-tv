@@ -30,10 +30,6 @@
         <scene sceneID="QwS-gT-Qrh">
             <objects>
                 <viewController storyboardIdentifier="MusicVC" id="7rE-s8-QZs" customClass="MusicVC" customModule="Internet_Archive" customModuleProvider="target" sceneMemberID="viewController">
-                    <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="lMv-3e-gdh"/>
-                        <viewControllerLayoutGuide type="bottom" id="JOt-gT-iHl"/>
-                    </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="Knz-bW-U8I">
                         <rect key="frame" x="0.0" y="0.0" width="1920" height="1080"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -130,105 +126,10 @@
             </objects>
             <point key="canvasLocation" x="-4774" y="3289"/>
         </scene>
-        <!--View Controller-->
-        <scene sceneID="pfn-J0-dht">
-            <objects>
-                <viewController id="8Nv-8d-lbh" sceneMemberID="viewController">
-                    <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="e6H-Yi-3Qp"/>
-                        <viewControllerLayoutGuide type="bottom" id="eVo-QD-Wdh"/>
-                    </layoutGuides>
-                    <view key="view" contentMode="scaleToFill" id="3pO-c1-lPs">
-                        <rect key="frame" x="0.0" y="0.0" width="1920" height="1080"/>
-                        <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
-                        <subviews>
-                            <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="natural" lineBreakMode="tailTruncation" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="i2G-Sg-ZvA">
-                                <rect key="frame" x="960" y="130" width="0.0" height="0.0"/>
-                                <fontDescription key="fontDescription" type="system" weight="semibold" pointSize="42"/>
-                                <nil key="textColor"/>
-                                <nil key="highlightedColor"/>
-                            </label>
-                            <collectionView clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="scaleToFill" dataMode="prototypes" translatesAutoresizingMaskIntoConstraints="NO" id="En2-w2-dS3">
-                                <rect key="frame" x="110" y="200" width="1700" height="420"/>
-                                <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                <constraints>
-                                    <constraint firstAttribute="height" constant="420" id="laA-dy-xtS"/>
-                                </constraints>
-                                <collectionViewFlowLayout key="collectionViewLayout" scrollDirection="horizontal" minimumLineSpacing="70" minimumInteritemSpacing="10" id="4cl-ng-klC">
-                                    <size key="itemSize" width="300" height="380"/>
-                                    <size key="headerReferenceSize" width="0.0" height="0.0"/>
-                                    <size key="footerReferenceSize" width="0.0" height="0.0"/>
-                                    <inset key="sectionInset" minX="0.0" minY="40" maxX="0.0" maxY="0.0"/>
-                                </collectionViewFlowLayout>
-                                <cells>
-                                    <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" restorationIdentifier="ItemCell" reuseIdentifier="ItemCell" id="7qE-nG-bFb" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
-                                        <rect key="frame" x="0.0" y="40" width="300" height="380"/>
-                                        <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
-                                        <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO">
-                                            <rect key="frame" x="0.0" y="0.0" width="300" height="380"/>
-                                            <autoresizingMask key="autoresizingMask"/>
-                                            <subviews>
-                                                <imageView userInteractionEnabled="NO" contentMode="scaleToFill" horizontalHuggingPriority="251" verticalHuggingPriority="251" translatesAutoresizingMaskIntoConstraints="NO" id="lEj-6X-kRM">
-                                                    <rect key="frame" x="0.0" y="0.0" width="300" height="265"/>
-                                                </imageView>
-                                                <label opaque="NO" userInteractionEnabled="NO" contentMode="left" horizontalHuggingPriority="251" verticalHuggingPriority="251" text="" textAlignment="center" lineBreakMode="tailTruncation" numberOfLines="0" baselineAdjustment="alignBaselines" adjustsFontSizeToFit="NO" translatesAutoresizingMaskIntoConstraints="NO" id="Y97-zM-u8t">
-                                                    <rect key="frame" x="0.0" y="300" width="300" height="80"/>
-                                                    <constraints>
-                                                        <constraint firstAttribute="height" constant="80" id="59O-dE-l32"/>
-                                                    </constraints>
-                                                    <fontDescription key="fontDescription" type="system" pointSize="24"/>
-                                                    <color key="textColor" white="0.33333333329999998" alpha="1" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
-                                                    <nil key="highlightedColor"/>
-                                                </label>
-                                            </subviews>
-                                        </view>
-                                        <constraints>
-                                            <constraint firstAttribute="bottom" secondItem="Y97-zM-u8t" secondAttribute="bottom" id="0mJ-F4-WDb"/>
-                                            <constraint firstAttribute="trailing" secondItem="Y97-zM-u8t" secondAttribute="trailing" id="1dE-z9-rOh"/>
-                                            <constraint firstItem="lEj-6X-kRM" firstAttribute="top" secondItem="7qE-nG-bFb" secondAttribute="top" id="3sB-dw-0vf"/>
-                                            <constraint firstItem="Y97-zM-u8t" firstAttribute="leading" secondItem="7qE-nG-bFb" secondAttribute="leading" id="KqR-Vc-esD"/>
-                                            <constraint firstAttribute="trailing" secondItem="lEj-6X-kRM" secondAttribute="trailing" id="NQZ-jU-yab"/>
-                                            <constraint firstItem="Y97-zM-u8t" firstAttribute="top" secondItem="lEj-6X-kRM" secondAttribute="bottom" constant="35" id="QfJ-gV-9F8"/>
-                                            <constraint firstItem="lEj-6X-kRM" firstAttribute="leading" secondItem="7qE-nG-bFb" secondAttribute="leading" id="ZUz-uw-wNJ"/>
-                                        </constraints>
-                                        <connections>
-                                            <outlet property="itemImage" destination="lEj-6X-kRM" id="Nnl-mn-Laj"/>
-                                            <outlet property="itemTitle" destination="Y97-zM-u8t" id="5ll-NG-3c6"/>
-                                        </connections>
-                                    </collectionViewCell>
-                                </cells>
-                                <connections>
-                                    <outlet property="dataSource" destination="8Nv-8d-lbh" id="hnM-Ve-6eF"/>
-                                    <outlet property="delegate" destination="8Nv-8d-lbh" id="BHV-sG-4lC"/>
-                                </connections>
-                            </collectionView>
-                        </subviews>
-                        <constraints>
-                            <constraint firstItem="i2G-Sg-ZvA" firstAttribute="top" secondItem="e6H-Yi-3Qp" secondAttribute="bottom" constant="70" id="57d-rw-K36"/>
-                            <constraint firstItem="i2G-Sg-ZvA" firstAttribute="centerX" secondItem="bF9-HV-e5R" secondAttribute="centerX" id="P4k-3l-L9b"/>
-                            <constraint firstItem="bF9-HV-e5R" firstAttribute="trailing" secondItem="En2-w2-dS3" secondAttribute="trailing" constant="20" id="lhP-bd-j01"/>
-                            <constraint firstItem="En2-w2-dS3" firstAttribute="leading" secondItem="bF9-HV-e5R" secondAttribute="leading" constant="20" id="taJ-gi-JBx"/>
-                            <constraint firstItem="En2-w2-dS3" firstAttribute="top" secondItem="i2G-Sg-ZvA" secondAttribute="bottom" constant="70" id="yIg-4m-yNQ"/>
-                        </constraints>
-                        <viewLayoutGuide key="safeArea" id="bF9-HV-e5R"/>
-                    </view>
-                    <connections>
-                        <outlet property="collectionView" destination="En2-w2-dS3" id="lTB-ht-aDY"/>
-                        <outlet property="txtTitle" destination="i2G-Sg-ZvA" id="cwj-Tp-rT0"/>
-                    </connections>
-                </viewController>
-                <placeholder placeholderIdentifier="IBFirstResponder" id="ZvQ-sV-jmI" userLabel="First Responder" sceneMemberID="firstResponder"/>
-            </objects>
-            <point key="canvasLocation" x="-9357" y="4746"/>
-        </scene>
         <!--Year ItemsVC-->
         <scene sceneID="sp6-hq-iwD">
             <objects>
                 <viewController storyboardIdentifier="YearItemsVC" id="CPN-FP-C8j" customClass="YearItemsVC" customModule="Internet_Archive" customModuleProvider="target" sceneMemberID="viewController">
-                    <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="Iby-HP-ta8"/>
-                        <viewControllerLayoutGuide type="bottom" id="FMr-H7-V8X"/>
-                    </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="iBz-Ng-efm">
                         <rect key="frame" x="0.0" y="0.0" width="1920" height="1080"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -252,7 +153,7 @@
                                     <inset key="sectionInset" minX="0.0" minY="40" maxX="0.0" maxY="0.0"/>
                                 </collectionViewFlowLayout>
                                 <cells>
-                                    <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" restorationIdentifier="ItemCell" reuseIdentifier="ItemCell" id="4M3-Xw-2fs" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
+                                    <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="ItemCell" id="4M3-Xw-2fs" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
                                         <rect key="frame" x="0.0" y="40" width="300" height="380"/>
                                         <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                         <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO">
@@ -296,7 +197,7 @@
                         </subviews>
                         <constraints>
                             <constraint firstItem="5eA-X3-hcD" firstAttribute="trailing" secondItem="jxZ-VW-7w8" secondAttribute="trailing" constant="20" id="Vjk-4Q-fhJ"/>
-                            <constraint firstItem="lzZ-0j-Vmo" firstAttribute="top" secondItem="Iby-HP-ta8" secondAttribute="bottom" constant="70" id="fko-9a-CxG"/>
+                            <constraint firstItem="lzZ-0j-Vmo" firstAttribute="top" secondItem="5eA-X3-hcD" secondAttribute="top" constant="70" id="fko-9a-CxG"/>
                             <constraint firstItem="lzZ-0j-Vmo" firstAttribute="centerX" secondItem="5eA-X3-hcD" secondAttribute="centerX" id="oXJ-tJ-bJW"/>
                             <constraint firstItem="jxZ-VW-7w8" firstAttribute="top" secondItem="lzZ-0j-Vmo" secondAttribute="bottom" constant="70" id="qaJ-lJ-vxh"/>
                             <constraint firstItem="jxZ-VW-7w8" firstAttribute="leading" secondItem="5eA-X3-hcD" secondAttribute="leading" constant="20" id="xDi-J7-8WU"/>
@@ -330,10 +231,6 @@
         <scene sceneID="GSq-Ic-NbC">
             <objects>
                 <viewController storyboardIdentifier="VideoVC" id="R0T-Gh-Ogb" customClass="VideoVC" customModule="Internet_Archive" customModuleProvider="target" sceneMemberID="viewController">
-                    <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="xkJ-Aq-NyB"/>
-                        <viewControllerLayoutGuide type="bottom" id="38k-gD-tds"/>
-                    </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="djo-PG-806">
                         <rect key="frame" x="0.0" y="0.0" width="1920" height="1080"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -433,10 +330,6 @@
         <scene sceneID="HcU-V0-02n">
             <objects>
                 <viewController storyboardIdentifier="YearsVC" id="8Ap-Ca-4pE" customClass="YearsVC" customModule="Internet_Archive" customModuleProvider="target" sceneMemberID="viewController">
-                    <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="yIX-zF-zHA"/>
-                        <viewControllerLayoutGuide type="bottom" id="qY2-lQ-UU8"/>
-                    </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="EdD-lH-UmW">
                         <rect key="frame" x="0.0" y="0.0" width="1920" height="1080"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -593,10 +486,6 @@
         <scene sceneID="2GE-a1-tae">
             <objects>
                 <viewController storyboardIdentifier="ItemVC" id="IlL-F0-NG9" customClass="ItemVC" customModule="Internet_Archive" customModuleProvider="target" sceneMemberID="viewController">
-                    <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="IhD-YN-uBa"/>
-                        <viewControllerLayoutGuide type="bottom" id="Qpi-cn-5hZ"/>
-                    </layoutGuides>
                     <view key="view" alpha="0.59999999999999998" contentMode="scaleToFill" id="swD-4Z-bcL">
                         <rect key="frame" x="0.0" y="0.0" width="1920" height="1080"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -723,10 +612,6 @@
         <scene sceneID="2Gt-fg-QRd">
             <objects>
                 <viewController storyboardIdentifier="SearchResultVC" id="L50-VG-Bgc" customClass="SearchResultVC" customModule="Internet_Archive" customModuleProvider="target" sceneMemberID="viewController">
-                    <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="GWA-rb-1aX"/>
-                        <viewControllerLayoutGuide type="bottom" id="IXG-dp-wJp"/>
-                    </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="VG2-RP-j8W">
                         <rect key="frame" x="0.0" y="0.0" width="1920" height="1080"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -753,7 +638,7 @@
                                             <inset key="sectionInset" minX="0.0" minY="40" maxX="0.0" maxY="0.0"/>
                                         </collectionViewFlowLayout>
                                         <cells>
-                                            <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" restorationIdentifier="ItemCell" reuseIdentifier="ItemCell" id="H3G-Bb-nrm" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
+                                            <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="ItemCell" id="H3G-Bb-nrm" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
                                                 <rect key="frame" x="0.0" y="40" width="270" height="380"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO">
@@ -812,7 +697,7 @@
                                             <inset key="sectionInset" minX="0.0" minY="40" maxX="0.0" maxY="0.0"/>
                                         </collectionViewFlowLayout>
                                         <cells>
-                                            <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" restorationIdentifier="ItemCell" reuseIdentifier="ItemCell" id="4x2-2W-QKi" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
+                                            <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="ItemCell" id="4x2-2W-QKi" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
                                                 <rect key="frame" x="0.0" y="40" width="270" height="380"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO">
@@ -880,8 +765,8 @@
                         <color key="backgroundColor" white="0.0" alpha="0.0" colorSpace="custom" customColorSpace="genericGamma22GrayColorSpace"/>
                         <constraints>
                             <constraint firstItem="Aag-HP-xee" firstAttribute="trailing" secondItem="UHJ-Qu-ybf" secondAttribute="trailing" id="5NU-kU-YM0"/>
-                            <constraint firstItem="IXG-dp-wJp" firstAttribute="top" secondItem="UHJ-Qu-ybf" secondAttribute="bottom" id="P5V-Se-KEE"/>
-                            <constraint firstItem="UHJ-Qu-ybf" firstAttribute="top" secondItem="GWA-rb-1aX" secondAttribute="bottom" id="WaO-Pm-Oko"/>
+                            <constraint firstItem="Aag-HP-xee" firstAttribute="bottom" secondItem="UHJ-Qu-ybf" secondAttribute="bottom" id="P5V-Se-KEE"/>
+                            <constraint firstItem="UHJ-Qu-ybf" firstAttribute="top" secondItem="Aag-HP-xee" secondAttribute="top" id="WaO-Pm-Oko"/>
                             <constraint firstItem="UHJ-Qu-ybf" firstAttribute="leading" secondItem="Aag-HP-xee" secondAttribute="leading" id="fma-St-7Nf"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="Aag-HP-xee"/>
@@ -915,10 +800,6 @@
         <scene sceneID="s2c-ZP-HEE">
             <objects>
                 <viewController storyboardIdentifier="FavoriteVC" id="iG5-1V-80c" customClass="FavoriteVC" customModule="Internet_Archive" customModuleProvider="target" sceneMemberID="viewController">
-                    <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="VEj-Nl-PAu"/>
-                        <viewControllerLayoutGuide type="bottom" id="8WE-XV-nN8"/>
-                    </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="FaI-kx-S2o">
                         <rect key="frame" x="0.0" y="0.0" width="1920" height="1080"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -949,7 +830,7 @@
                                             <inset key="sectionInset" minX="50" minY="40" maxX="0.0" maxY="0.0"/>
                                         </collectionViewFlowLayout>
                                         <cells>
-                                            <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" restorationIdentifier="ItemCell" reuseIdentifier="ItemCell" id="9V0-Jm-KwH" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
+                                            <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="ItemCell" id="9V0-Jm-KwH" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
                                                 <rect key="frame" x="50" y="40" width="270" height="380"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO">
@@ -1012,7 +893,7 @@
                                             <inset key="sectionInset" minX="50" minY="40" maxX="0.0" maxY="0.0"/>
                                         </collectionViewFlowLayout>
                                         <cells>
-                                            <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" restorationIdentifier="ItemCell" reuseIdentifier="ItemCell" id="pfp-NV-LVO" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
+                                            <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="ItemCell" id="pfp-NV-LVO" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
                                                 <rect key="frame" x="50" y="40" width="270" height="380"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO">
@@ -1076,7 +957,7 @@
                                             <inset key="sectionInset" minX="50" minY="40" maxX="0.0" maxY="0.0"/>
                                         </collectionViewFlowLayout>
                                         <cells>
-                                            <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" restorationIdentifier="ItemCell" reuseIdentifier="ItemCell" id="QVd-9l-7Vk" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
+                                            <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="ItemCell" id="QVd-9l-7Vk" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
                                                 <rect key="frame" x="50" y="40" width="270" height="380"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO">
@@ -1194,10 +1075,6 @@
         <scene sceneID="hUa-PT-2xA">
             <objects>
                 <viewController storyboardIdentifier="PeopleVC" id="YSf-yq-I4T" customClass="PeopleVC" customModule="Internet_Archive" customModuleProvider="target" sceneMemberID="viewController">
-                    <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="e5O-9i-bpr"/>
-                        <viewControllerLayoutGuide type="bottom" id="OHm-1E-SRv"/>
-                    </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="inb-Y0-C7Z">
                         <rect key="frame" x="0.0" y="0.0" width="1920" height="1080"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -1228,7 +1105,7 @@
                                             <inset key="sectionInset" minX="50" minY="40" maxX="0.0" maxY="0.0"/>
                                         </collectionViewFlowLayout>
                                         <cells>
-                                            <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" restorationIdentifier="ItemCell" reuseIdentifier="ItemCell" id="hVN-Go-wfY" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
+                                            <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="ItemCell" id="hVN-Go-wfY" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
                                                 <rect key="frame" x="50" y="40" width="270" height="380"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO">
@@ -1291,7 +1168,7 @@
                                             <inset key="sectionInset" minX="50" minY="40" maxX="0.0" maxY="0.0"/>
                                         </collectionViewFlowLayout>
                                         <cells>
-                                            <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" restorationIdentifier="ItemCell" reuseIdentifier="ItemCell" id="OtJ-m5-mos" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
+                                            <collectionViewCell opaque="NO" multipleTouchEnabled="YES" contentMode="center" reuseIdentifier="ItemCell" id="OtJ-m5-mos" customClass="ItemCell" customModule="Internet_Archive" customModuleProvider="target">
                                                 <rect key="frame" x="50" y="40" width="270" height="380"/>
                                                 <autoresizingMask key="autoresizingMask" flexibleMaxX="YES" flexibleMaxY="YES"/>
                                                 <view key="contentView" opaque="NO" clipsSubviews="YES" multipleTouchEnabled="YES" contentMode="center" insetsLayoutMarginsFromSafeArea="NO">
@@ -1400,10 +1277,6 @@
         <scene sceneID="sMI-ZU-WYX">
             <objects>
                 <viewController storyboardIdentifier="AccountVC" id="dPM-Q9-RSs" customClass="AccountVC" customModule="Internet_Archive" customModuleProvider="target" sceneMemberID="viewController">
-                    <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="Tpp-u4-Yy3"/>
-                        <viewControllerLayoutGuide type="bottom" id="Q3h-Fw-qzN"/>
-                    </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="wd9-my-uIN">
                         <rect key="frame" x="0.0" y="0.0" width="1920" height="1080"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -1432,7 +1305,7 @@
                             <constraint firstItem="K1l-GE-1BL" firstAttribute="top" secondItem="JkB-Eq-7dt" secondAttribute="bottom" constant="100" id="0lz-n3-Tie"/>
                             <constraint firstItem="JkB-Eq-7dt" firstAttribute="width" secondItem="wd9-my-uIN" secondAttribute="width" multiplier="0.7" id="1ok-Ek-Zgo"/>
                             <constraint firstItem="JkB-Eq-7dt" firstAttribute="centerX" secondItem="6oj-cq-QtQ" secondAttribute="centerX" id="5xk-wE-MEM"/>
-                            <constraint firstItem="JkB-Eq-7dt" firstAttribute="top" secondItem="Tpp-u4-Yy3" secondAttribute="bottom" constant="120" id="VJ3-tB-1zp"/>
+                            <constraint firstItem="JkB-Eq-7dt" firstAttribute="top" secondItem="6oj-cq-QtQ" secondAttribute="top" constant="120" id="VJ3-tB-1zp"/>
                             <constraint firstItem="K1l-GE-1BL" firstAttribute="centerX" secondItem="6oj-cq-QtQ" secondAttribute="centerX" id="hZ9-v1-D8k"/>
                         </constraints>
                         <viewLayoutGuide key="safeArea" id="6oj-cq-QtQ"/>
@@ -1450,10 +1323,6 @@
         <scene sceneID="M3u-FR-QUc">
             <objects>
                 <viewController storyboardIdentifier="LoginVC" id="iyS-dP-CqL" customClass="LoginVC" customModule="Internet_Archive" customModuleProvider="target" sceneMemberID="viewController">
-                    <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="kO7-bS-ijZ"/>
-                        <viewControllerLayoutGuide type="bottom" id="Aly-MY-3Qt"/>
-                    </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="SO8-Vu-IpU">
                         <rect key="frame" x="0.0" y="0.0" width="1920" height="1080"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -1500,7 +1369,7 @@
                         </subviews>
                         <constraints>
                             <constraint firstItem="Vxb-3C-Bnl" firstAttribute="top" secondItem="ZXD-Qh-Esu" secondAttribute="bottom" constant="100" id="01s-5f-fjq"/>
-                            <constraint firstItem="VVI-Xw-aU7" firstAttribute="top" secondItem="kO7-bS-ijZ" secondAttribute="bottom" constant="120" id="0LV-q6-MDz"/>
+                            <constraint firstItem="VVI-Xw-aU7" firstAttribute="top" secondItem="lzA-oc-b6I" secondAttribute="top" constant="120" id="0LV-q6-MDz"/>
                             <constraint firstItem="ZXD-Qh-Esu" firstAttribute="top" secondItem="VVI-Xw-aU7" secondAttribute="bottom" constant="30" id="3CO-5E-Be0"/>
                             <constraint firstItem="Vxb-3C-Bnl" firstAttribute="width" secondItem="SO8-Vu-IpU" secondAttribute="width" multiplier="0.25" id="A8g-Ba-V0y"/>
                             <constraint firstItem="I4J-1v-P51" firstAttribute="width" secondItem="SO8-Vu-IpU" secondAttribute="width" multiplier="0.25" id="CAY-eH-onG"/>
@@ -1528,10 +1397,6 @@
         <scene sceneID="SeG-2Z-v1o">
             <objects>
                 <viewController id="KgG-Ik-XM2" customClass="RegisterVC" customModule="Internet_Archive" customModuleProvider="target" sceneMemberID="viewController">
-                    <layoutGuides>
-                        <viewControllerLayoutGuide type="top" id="EBX-xj-Buy"/>
-                        <viewControllerLayoutGuide type="bottom" id="ytT-0Z-ibL"/>
-                    </layoutGuides>
                     <view key="view" contentMode="scaleToFill" id="HyT-Yw-gyK">
                         <rect key="frame" x="0.0" y="0.0" width="1920" height="1080"/>
                         <autoresizingMask key="autoresizingMask" widthSizable="YES" heightSizable="YES"/>
@@ -1602,7 +1467,7 @@
                             <constraint firstItem="nbY-HL-udO" firstAttribute="width" secondItem="HyT-Yw-gyK" secondAttribute="width" multiplier="0.5" id="T2A-iq-RHE"/>
                             <constraint firstItem="Kce-tZ-ZCK" firstAttribute="top" secondItem="je4-eS-8ta" secondAttribute="bottom" constant="30" id="TUI-ZG-YBi"/>
                             <constraint firstItem="Kce-tZ-ZCK" firstAttribute="width" secondItem="HyT-Yw-gyK" secondAttribute="width" multiplier="0.5" id="UJN-Zj-deU"/>
-                            <constraint firstItem="je4-eS-8ta" firstAttribute="top" secondItem="EBX-xj-Buy" secondAttribute="bottom" constant="120" id="Ufa-j3-8Vu"/>
+                            <constraint firstItem="je4-eS-8ta" firstAttribute="top" secondItem="0bV-jF-bMf" secondAttribute="top" constant="120" id="Ufa-j3-8Vu"/>
                             <constraint firstItem="owR-83-TLb" firstAttribute="centerX" secondItem="0bV-jF-bMf" secondAttribute="centerX" id="YfY-1n-xfD"/>
                             <constraint firstItem="owR-83-TLb" firstAttribute="width" secondItem="HyT-Yw-gyK" secondAttribute="width" multiplier="0.25" id="Zn6-ZR-Cup"/>
                             <constraint firstItem="je4-eS-8ta" firstAttribute="width" secondItem="HyT-Yw-gyK" secondAttribute="width" multiplier="0.5" id="b9c-5q-z2U"/>

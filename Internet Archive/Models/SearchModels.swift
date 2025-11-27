@@ -15,12 +15,31 @@ public struct SearchResponse: Codable, Sendable {
     public struct ResponseHeader: Codable, Sendable {
         let status: Int
         let QTime: Int?
+
+        /// Memberwise initializer for testing
+        public init(status: Int, QTime: Int? = nil) {
+            self.status = status
+            self.QTime = QTime
+        }
     }
 
     public struct SearchResults: Codable, Sendable {
         let numFound: Int
         let start: Int
         let docs: [SearchResult]
+
+        /// Memberwise initializer for testing
+        public init(numFound: Int, start: Int, docs: [SearchResult]) {
+            self.numFound = numFound
+            self.start = start
+            self.docs = docs
+        }
+    }
+
+    /// Memberwise initializer for testing
+    public init(responseHeader: ResponseHeader? = nil, response: SearchResults) {
+        self.responseHeader = responseHeader
+        self.response = response
     }
 }
 

@@ -23,15 +23,17 @@ class ItemCell: UICollectionViewCell {
 
     override func awakeFromNib() {
         super.awakeFromNib()
-        itemImage.adjustsImageWhenAncestorFocused = true
-        itemImage.clipsToBounds = false
+        Task { @MainActor in
+            itemImage.adjustsImageWhenAncestorFocused = true
+            itemImage.clipsToBounds = false
 
-        // Ensure transparent background to inherit from parent
-        self.backgroundColor = .clear
-        self.contentView.backgroundColor = .clear
+            // Ensure transparent background to inherit from parent
+            self.backgroundColor = .clear
+            self.contentView.backgroundColor = .clear
 
-        // Ensure label uses adaptive color
-        itemTitle.textColor = .label
+            // Ensure label uses adaptive color
+            itemTitle.textColor = .label
+        }
     }
 
     override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
