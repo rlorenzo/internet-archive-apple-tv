@@ -20,6 +20,11 @@ final class NetworkMonitor: ObservableObject {
     private let monitor = NWPathMonitor()
     private let queue = DispatchQueue(label: "NetworkMonitor")
 
+    /// Check if running in test environment
+    private static var isRunningTests: Bool {
+        NSClassFromString("XCTestCase") != nil
+    }
+
     enum ConnectionType {
         case wifi
         case cellular
@@ -52,10 +57,13 @@ final class NetworkMonitor: ObservableObject {
                 }
 
                 #if DEBUG
-                if self.isConnected {
-                    print("🌐 Network connected (\(self.connectionType))")
-                } else {
-                    print("🔴 Network disconnected")
+                // Suppress logging during tests
+                if !Self.isRunningTests {
+                    if self.isConnected {
+                        print("🌐 Network connected (\(self.connectionType))")
+                    } else {
+                        print("🔴 Network disconnected")
+                    }
                 }
                 #endif
             }

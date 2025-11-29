@@ -11,7 +11,7 @@ import UIKit
 import AVKit
 
 @MainActor
-class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionViewDelegate, AVPlayerViewControllerDelegate {
+class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionViewDelegate {
 
     @IBOutlet weak var clsVideo: UICollectionView!
     @IBOutlet weak var clsMusic: UICollectionView!
@@ -308,6 +308,11 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
         }
     }
 
+}
+
+// MARK: - AVPlayerViewControllerDelegate
+@MainActor
+extension SearchResultVC: @preconcurrency AVPlayerViewControllerDelegate {
     func playerViewControllerShouldDismiss(_ playerViewController: AVPlayerViewController) -> Bool {
         UIApplication.shared.isIdleTimerDisabled = false
         return true

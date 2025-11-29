@@ -28,6 +28,36 @@ public struct AuthResponse: Codable, Sendable {
         var isVerified: Bool {
             verified ?? false
         }
+
+        /// Memberwise initializer for testing
+        init(
+            email: String? = nil,
+            itemname: String? = nil,
+            screenname: String? = nil,
+            verified: Bool? = nil,
+            privs: [String]? = nil,
+            signedin: String? = nil
+        ) {
+            self.email = email
+            self.itemname = itemname
+            self.screenname = screenname
+            self.verified = verified
+            self.privs = privs
+            self.signedin = signedin
+        }
+    }
+
+    /// Memberwise initializer for testing
+    init(
+        success: Bool? = nil,
+        version: Int? = nil,
+        values: AuthValues? = nil,
+        error: String? = nil
+    ) {
+        self.success = success
+        self.version = version
+        self.values = values
+        self.error = error
     }
 
     // Computed property to check if auth was successful
@@ -69,6 +99,34 @@ struct AccountInfoResponse: Codable, Sendable {
         let screenname: String?
         let verified: Bool?
         let privs: [String]?
+
+        /// Memberwise initializer for testing
+        init(
+            email: String? = nil,
+            itemname: String? = nil,
+            screenname: String? = nil,
+            verified: Bool? = nil,
+            privs: [String]? = nil
+        ) {
+            self.email = email
+            self.itemname = itemname
+            self.screenname = screenname
+            self.verified = verified
+            self.privs = privs
+        }
+    }
+
+    /// Memberwise initializer for testing
+    init(
+        success: Bool? = nil,
+        version: Int? = nil,
+        values: AccountValues? = nil,
+        error: String? = nil
+    ) {
+        self.success = success
+        self.version = version
+        self.values = values
+        self.error = error
     }
 
     // Convert to dictionary for backward compatibility (temporary)

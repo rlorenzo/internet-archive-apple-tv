@@ -694,13 +694,106 @@ Production-ready, well-documented codebase
 
 ## Optional Future Sprints
 
-### Sprint 13: SwiftUI Migration (Optional)
+### Sprint 13: Closed Captioning Support
+**Estimated Time:** 15-20 hours
+**PR Title:** `feat: Add closed captioning/subtitle support for video playback`
+
+#### Goals
+- Enable closed captions for videos that have subtitle files
+- Improve accessibility for deaf/hard-of-hearing users
+- Support industry-standard subtitle formats
+
+#### Background
+Internet Archive supports closed captions/subtitles in two formats:
+- **WebVTT (.vtt)** - Web Video Text Tracks format (supported since 2018)
+- **SubRip (.srt)** - Classic subtitle format (supported since 2009)
+
+Subtitle files are stored alongside video files with matching names:
+- Single language: `IDENTIFIER.srt` or `IDENTIFIER.vtt`
+- Multiple languages: `IDENTIFIER_english.srt`, `IDENTIFIER_spanish.srt`, etc.
+
+#### Tasks
+- [ ] Detect subtitle files in metadata response (`FileInfo` with `.srt` or `.vtt` format)
+- [ ] Parse subtitle file names to extract language information
+- [ ] Create subtitle URL builder using server/identifier pattern
+- [ ] Integrate AVPlayer subtitle support (native WebVTT support)
+- [ ] Convert SRT to WebVTT if needed (AVPlayer prefers WebVTT)
+- [ ] Add subtitle track selection UI in video player
+- [ ] Store user's subtitle preference in UserDefaults
+- [ ] Add accessibility labels for subtitle controls
+- [ ] Test with various Internet Archive videos that have captions
+
+#### Technical Notes
+- AVPlayer on tvOS natively supports WebVTT subtitles via `AVMediaSelectionGroup`
+- Subtitle URL pattern: `https://{server}/download/{identifier}/{subtitle_filename}`
+- Consider using `AVPlayerItem.externalMetadata` for subtitle tracks
+- May need to implement SRT→WebVTT converter for legacy files
+
+#### Deliverable
+Video player with optional closed caption support, language selection for multi-language content, and persistent user preferences.
+
+---
+
+### Sprint 14: Content Filtering & Parental Controls
+**Estimated Time:** 20-30 hours
+**PR Title:** `feat: Add content filtering and parental controls for App Store compliance`
+
+#### Goals
+- Filter adult/mature content to comply with App Store guidelines
+- Implement parental controls using tvOS built-in restrictions
+- Ensure app is suitable for all audiences by default
+
+#### Background
+Internet Archive hosts adult content categories (e.g., "Hentai", mature media) that would violate Apple's App Store guidelines if displayed without proper filtering. Apps must either:
+1. Filter out adult content entirely, or
+2. Implement proper age-gating with parental controls
+
+#### Tasks
+- [ ] **Research Internet Archive Content Ratings:**
+  - [ ] Investigate if Internet Archive API provides content ratings/maturity flags
+  - [ ] Identify all adult/mature collection identifiers to filter
+  - [ ] Document which media types may contain mature content
+- [ ] **Implement Content Filtering:**
+  - [ ] Create `ContentFilter` service to check items against blocklist
+  - [ ] Filter search results to exclude mature collections by default
+  - [ ] Filter browse/discovery screens to exclude adult content
+  - [ ] Handle edge cases (user-uploaded content, mislabeled items)
+- [ ] **Parental Controls Integration:**
+  - [ ] Use Screen Time API or content rating entitlements for restrictions
+  - [ ] Check system parental control settings via device capabilities
+  - [ ] Implement age-appropriate content tiers (if ratings available)
+  - [ ] Consider AVPlayerItem content ratings for video playback
+- [ ] **Settings UI:**
+  - [ ] Add content filter toggle in Settings (default: ON/filtered)
+  - [ ] Require PIN or restriction override to disable filter
+  - [ ] Persist filter preference securely
+- [ ] **Testing:**
+  - [ ] Verify filtered content doesn't appear in any UI
+  - [ ] Test parental control integration
+  - [ ] Audit search to ensure no bypass methods exist
+
+#### Known Adult Collections to Filter
+- `hentai`
+- `adult` / `adults_only`
+- Any collection with explicit maturity ratings
+
+#### Technical Notes
+- Internet Archive's Advanced Search API supports collection filtering
+- May need to maintain client-side blocklist for collections without ratings
+- Consider using `NSPredicate` for efficient local filtering
+
+#### Deliverable
+App filters adult/mature content by default with optional parental control integration, ensuring App Store compliance.
+
+---
+
+### Sprint 15: SwiftUI Migration (Optional)
 **Estimated Time:** 80-120 hours
 **PR Title:** `feat: Migrate to SwiftUI for tvOS`
 
 Full UI rewrite using SwiftUI, recommended for long-term maintainability.
 
-### Sprint 14: Additional Features
+### Sprint 16: Additional Features
 - Implement new Internet Archive APIs
 - Add search filters
 - Improve media player

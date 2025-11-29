@@ -1,0 +1,11 @@
+// Configuration for test targets to access CocoaPods frameworks
+// Apply this to both Internet ArchiveTests and Internet ArchiveUITests targets
+
+// Include the main target's CocoaPods configuration (dynamic based on build configuration)
+#include "../Pods/Target Support Files/Pods-Internet Archive/Pods-Internet Archive.$(CONFIGURATION:lower).xcconfig"
+
+// Framework search paths for CocoaPods dependencies
+FRAMEWORK_SEARCH_PATHS = $(inherited) "${PODS_CONFIGURATION_BUILD_DIR}/Alamofire" "${PODS_CONFIGURATION_BUILD_DIR}/AlamofireImage" "${PODS_CONFIGURATION_BUILD_DIR}/MBProgressHUD" "${PODS_CONFIGURATION_BUILD_DIR}/SVProgressHUD" "${PODS_CONFIGURATION_BUILD_DIR}/TvOSMoreButton" "${PODS_CONFIGURATION_BUILD_DIR}/TvOSTextViewer"
+
+// Other module verifier flags
+OTHER_MODULE_VERIFIER_FLAGS = $(inherited) "-F${PODS_CONFIGURATION_BUILD_DIR}/Alamofire" "-F${PODS_CONFIGURATION_BUILD_DIR}/AlamofireImage" "-F${PODS_CONFIGURATION_BUILD_DIR}/MBProgressHUD" "-F${PODS_CONFIGURATION_BUILD_DIR}/SVProgressHUD" "-F${PODS_CONFIGURATION_BUILD_DIR}/TvOSMoreButton" "-F${PODS_CONFIGURATION_BUILD_DIR}/TvOSTextViewer"

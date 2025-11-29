@@ -26,7 +26,7 @@ class Global: NSObject {
     }
 
     static func saveFavoriteData(identifier: String) {
-        var favorites = getFavoriteData()
+        let favorites = getFavoriteData()
 
         if favorites == nil {
             UserDefaults.standard.set([identifier], forKey: "FavoriteData")

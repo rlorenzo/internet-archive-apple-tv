@@ -16,6 +16,14 @@ final class ErrorLogger {
 
     private let logger = Logger(subsystem: "org.archive.InternetArchive", category: "Errors")
 
+    /// Controls whether console output is enabled (can be disabled during tests)
+    nonisolated(unsafe) static var isConsoleOutputEnabled: Bool = true
+
+    /// Check if running in test environment
+    nonisolated private static var isRunningTests: Bool {
+        NSClassFromString("XCTestCase") != nil
+    }
+
     private init() {}
 
     // MARK: - Logging
@@ -41,11 +49,13 @@ final class ErrorLogger {
             logger.info("\(message)")
         }
 
-        // Also log to console for development
+        // Also log to console for development (suppressed during tests)
         #if DEBUG
-        print("🔴 Error [\(context.operation.rawValue)]: \(errorDescription)")
-        if let additionalInfo = context.additionalInfo {
-            print("   Additional info: \(additionalInfo)")
+        if Self.isConsoleOutputEnabled && !Self.isRunningTests {
+            print("🔴 Error [\(context.operation.rawValue)]: \(errorDescription)")
+            if let additionalInfo = context.additionalInfo {
+                print("   Additional info: \(additionalInfo)")
+            }
         }
         #endif
     }
@@ -53,9 +63,11 @@ final class ErrorLogger {
     /// Log a successful operation (for debugging)
     nonisolated func logSuccess(operation: ErrorOperation, info: [String: Any]? = nil) {
         #if DEBUG
-        print("✅ Success [\(operation.rawValue)]")
-        if let info = info {
-            print("   Info: \(info)")
+        if Self.isConsoleOutputEnabled && !Self.isRunningTests {
+            print("✅ Success [\(operation.rawValue)]")
+            if let info = info {
+                print("   Info: \(info)")
+            }
         }
         #endif
 
@@ -67,7 +79,9 @@ final class ErrorLogger {
         logger.warning("[\(operation.rawValue)] \(message)")
 
         #if DEBUG
-        print("⚠️ Warning [\(operation.rawValue)]: \(message)")
+        if Self.isConsoleOutputEnabled && !Self.isRunningTests {
+            print("⚠️ Warning [\(operation.rawValue)]: \(message)")
+        }
         #endif
     }
 

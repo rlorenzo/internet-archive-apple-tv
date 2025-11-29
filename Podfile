@@ -19,6 +19,19 @@ target 'Internet Archive' do
 
   # Development tools
   pod 'SwiftLint', :configurations => ['Debug']
+
+  # Test targets
+  target 'Internet ArchiveTests' do
+    inherit! :search_paths
+    # Pods for testing
+  end
+
+end
+
+# UI tests are kept separate - they don't need pod dependencies
+# since they test the app via XCUIApplication which already has frameworks embedded
+target 'Internet ArchiveUITests' do
+  use_frameworks!
 end
 
 # Post install hook to configure build settings

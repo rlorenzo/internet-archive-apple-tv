@@ -10,6 +10,11 @@ import Foundation
 /// Provides automatic retry logic for async operations
 struct RetryMechanism {
 
+    /// Check if running in test environment
+    private static var isRunningTests: Bool {
+        NSClassFromString("XCTestCase") != nil
+    }
+
     /// Retry configuration
     struct RetryConfig {
         let maxAttempts: Int
@@ -53,7 +58,7 @@ struct RetryMechanism {
     static func execute<T>(
         config: RetryConfig = .standard,
         shouldRetry: ((Error) -> Bool)? = nil,
-        operation: @escaping () async throws -> T
+        operation: @escaping @Sendable () async throws -> T
     ) async throws -> T {
         var lastError: Error?
         var delay = config.initialDelay
@@ -68,8 +73,8 @@ struct RetryMechanism {
                 // Execute the operation
                 let result = try await operation()
 
-                // Log success on retry
-                if attempt > 1 {
+                // Log success on retry (suppressed during tests)
+                if attempt > 1 && !isRunningTests {
                     await ErrorLogger.shared.logWarning(
                         "Succeeded on attempt \(attempt)",
                         operation: .unknown
@@ -96,11 +101,13 @@ struct RetryMechanism {
                     break
                 }
 
-                // Log retry attempt
-                await ErrorLogger.shared.logWarning(
-                    "Attempt \(attempt) failed, retrying in \(String(format: "%.1f", delay))s: \(error.localizedDescription)",
-                    operation: .unknown
-                )
+                // Log retry attempt (suppressed during tests)
+                if !isRunningTests {
+                    await ErrorLogger.shared.logWarning(
+                        "Attempt \(attempt) failed, retrying in \(String(format: "%.1f", delay))s: \(error.localizedDescription)",
+                        operation: .unknown
+                    )
+                }
 
                 // Wait before retrying with exponential backoff
                 try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))

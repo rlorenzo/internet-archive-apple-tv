@@ -147,7 +147,7 @@ final class ModernItemCell: UICollectionViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
-        imageView.af_cancelImageRequest()
+        imageView.af.cancelImageRequest()
         imageView.image = nil
         titleLabel.text = nil
         accessibilityLabel = nil

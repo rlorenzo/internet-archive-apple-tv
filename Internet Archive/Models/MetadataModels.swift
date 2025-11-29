@@ -28,6 +28,33 @@ struct ItemMetadataResponse: Codable, Sendable {
         case itemSize = "item_size"
         case workableServers = "workable_servers"
     }
+
+    /// Memberwise initializer for testing
+    init(
+        created: Int? = nil,
+        d1: String? = nil,
+        d2: String? = nil,
+        dir: String? = nil,
+        files: [FileInfo]? = nil,
+        filesCount: Int? = nil,
+        itemSize: Int? = nil,
+        metadata: ItemMetadata? = nil,
+        server: String? = nil,
+        uniq: Int? = nil,
+        workableServers: [String]? = nil
+    ) {
+        self.created = created
+        self.d1 = d1
+        self.d2 = d2
+        self.dir = dir
+        self.files = files
+        self.filesCount = filesCount
+        self.itemSize = itemSize
+        self.metadata = metadata
+        self.server = server
+        self.uniq = uniq
+        self.workableServers = workableServers
+    }
 }
 
 /// Metadata information for an item
@@ -44,6 +71,35 @@ struct ItemMetadata: Codable, Sendable {
     let publicdate: String?
     let addeddate: String?
     let uploader: String?
+
+    /// Memberwise initializer for testing
+    init(
+        identifier: String? = nil,
+        title: String? = nil,
+        mediatype: String? = nil,
+        creator: String? = nil,
+        description: String? = nil,
+        date: String? = nil,
+        year: String? = nil,
+        subject: SubjectValue? = nil,
+        collection: CollectionValue? = nil,
+        publicdate: String? = nil,
+        addeddate: String? = nil,
+        uploader: String? = nil
+    ) {
+        self.identifier = identifier
+        self.title = title
+        self.mediatype = mediatype
+        self.creator = creator
+        self.description = description
+        self.date = date
+        self.year = year
+        self.subject = subject
+        self.collection = collection
+        self.publicdate = publicdate
+        self.addeddate = addeddate
+        self.uploader = uploader
+    }
 
     // Subject and collection can be either String or [String]
     enum SubjectValue: Codable, Sendable {
@@ -104,6 +160,35 @@ struct FileInfo: Codable, Sendable {
     let length: String?
     let height: String?
     let width: String?
+
+    /// Memberwise initializer for testing
+    init(
+        name: String,
+        source: String? = nil,
+        format: String? = nil,
+        original: String? = nil,
+        size: String? = nil,
+        md5: String? = nil,
+        crc32: String? = nil,
+        sha1: String? = nil,
+        mtime: String? = nil,
+        length: String? = nil,
+        height: String? = nil,
+        width: String? = nil
+    ) {
+        self.name = name
+        self.source = source
+        self.format = format
+        self.original = original
+        self.size = size
+        self.md5 = md5
+        self.crc32 = crc32
+        self.sha1 = sha1
+        self.mtime = mtime
+        self.length = length
+        self.height = height
+        self.width = width
+    }
 
     // Computed properties for type-safe access
     var sizeInBytes: Int64? {
