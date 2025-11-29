@@ -175,21 +175,23 @@ extension UIImageView {
         guard let url = url else { return }
 
         ImageCacheManager.shared.loadImage(from: url) { [weak self] result in
-            guard let self = self else { return }
+            Task { @MainActor in
+                guard let self = self else { return }
 
-            switch result {
-            case .success(let image):
-                UIView.transition(
-                    with: self,
-                    duration: 0.3,
-                    options: .transitionCrossDissolve,
-                    animations: {
-                        self.image = image
-                    }
-                )
+                switch result {
+                case .success(let image):
+                    UIView.transition(
+                        with: self,
+                        duration: 0.3,
+                        options: .transitionCrossDissolve,
+                        animations: {
+                            self.image = image
+                        }
+                    )
 
-            case .failure(let error):
-                print("Failed to load image: \(error.localizedDescription)")
+                case .failure(let error):
+                    print("Failed to load image: \(error.localizedDescription)")
+                }
             }
         }
     }
