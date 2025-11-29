@@ -27,8 +27,7 @@ target 'Internet Archive' do
   end
 
   target 'Internet ArchiveUITests' do
-    inherit! :search_paths
-    # Pods for UI testing - inherits search paths to access main target's dependencies
+    # UI tests need full framework access since they launch and test the app
   end
 end
 
