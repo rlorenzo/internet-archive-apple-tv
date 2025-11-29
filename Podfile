@@ -26,9 +26,12 @@ target 'Internet Archive' do
     # Pods for testing
   end
 
-  target 'Internet ArchiveUITests' do
-    # UI tests need full framework access since they launch and test the app
-  end
+end
+
+# UI tests are kept separate - they don't need pod dependencies
+# since they test the app via XCUIApplication which already has frameworks embedded
+target 'Internet ArchiveUITests' do
+  use_frameworks!
 end
 
 # Post install hook to configure build settings

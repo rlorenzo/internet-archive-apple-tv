@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		1690D8B88836415BCC8D12CF /* RequestModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79728E0BC82FA53973F1E113 /* RequestModels.swift */; };
+		2FD27FEB1FC9F69BFEE84841 /* Pods_Internet_ArchiveUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1789A7600134709E74AA21B /* Pods_Internet_ArchiveUITests.framework */; };
 		485A33982ECD1054002A5E07 /* AuthModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485A33932ECD1054002A5E07 /* AuthModels.swift */; };
 		485A33992ECD1054002A5E07 /* FavoritesModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485A33942ECD1054002A5E07 /* FavoritesModels.swift */; };
 		485A339A2ECD1054002A5E07 /* MetadataModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 485A33952ECD1054002A5E07 /* MetadataModels.swift */; };
@@ -27,7 +28,6 @@
 		48AC81952ECFF231004C9F77 /* NetworkMonitor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48AC81902ECFF231004C9F77 /* NetworkMonitor.swift */; };
 		48AC81962ECFF231004C9F77 /* ErrorLogger.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48AC818E2ECFF231004C9F77 /* ErrorLogger.swift */; };
 		48AC81DC2ED11962004C9F77 /* NetworkServiceProtocol.swift in Sources */ = {isa = PBXBuildFile; fileRef = 48AC81DA2ED11962004C9F77 /* NetworkServiceProtocol.swift */; };
-		49264B4291BCB358828217C3 /* Pods_Internet_Archive_Internet_ArchiveUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 8C8DEAAE9C6A174D0951C532 /* Pods_Internet_Archive_Internet_ArchiveUITests.framework */; };
 		8EB4EEC2C65BDA268D44DD6B /* Pods_Internet_Archive.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = ACF558E0B6CB8477B99F92DB /* Pods_Internet_Archive.framework */; };
 		BB608F6A2E7F134CAF800A0F /* Pods_Internet_ArchiveTests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = 435E5970557BD30BCCF789B6 /* Pods_Internet_ArchiveTests.framework */; };
 		C3186B9920BF074200698EC3 /* FavoriteVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3186B9820BF074200698EC3 /* FavoriteVC.swift */; };
@@ -106,7 +106,7 @@
 		508928117E97EAD89FDE1405 /* Pods-Internet Archive.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet Archive.release.xcconfig"; path = "Target Support Files/Pods-Internet Archive/Pods-Internet Archive.release.xcconfig"; sourceTree = "<group>"; };
 		6A1A8F581F04FACC7FC1013E /* Pods-Internet Archive.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet Archive.debug.xcconfig"; path = "Target Support Files/Pods-Internet Archive/Pods-Internet Archive.debug.xcconfig"; sourceTree = "<group>"; };
 		79728E0BC82FA53973F1E113 /* RequestModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RequestModels.swift; sourceTree = "<group>"; };
-		8C8DEAAE9C6A174D0951C532 /* Pods_Internet_Archive_Internet_ArchiveUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Internet_Archive_Internet_ArchiveUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
+		A1789A7600134709E74AA21B /* Pods_Internet_ArchiveUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Internet_ArchiveUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		ACF558E0B6CB8477B99F92DB /* Pods_Internet_Archive.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Internet_Archive.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B14660AC6723CAC75EDB331E /* Pods-Internet ArchiveUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet ArchiveUITests.release.xcconfig"; path = "Target Support Files/Pods-Internet ArchiveUITests/Pods-Internet ArchiveUITests.release.xcconfig"; sourceTree = "<group>"; };
 		C3186B9820BF074200698EC3 /* FavoriteVC.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoriteVC.swift; sourceTree = "<group>"; };
@@ -194,7 +194,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				49264B4291BCB358828217C3 /* Pods_Internet_Archive_Internet_ArchiveUITests.framework in Frameworks */,
+				2FD27FEB1FC9F69BFEE84841 /* Pods_Internet_ArchiveUITests.framework in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -306,7 +306,7 @@
 			children = (
 				ACF558E0B6CB8477B99F92DB /* Pods_Internet_Archive.framework */,
 				435E5970557BD30BCCF789B6 /* Pods_Internet_ArchiveTests.framework */,
-				8C8DEAAE9C6A174D0951C532 /* Pods_Internet_Archive_Internet_ArchiveUITests.framework */,
+				A1789A7600134709E74AA21B /* Pods_Internet_ArchiveUITests.framework */,
 			);
 			name = Frameworks;
 			sourceTree = "<group>";
@@ -499,7 +499,6 @@
 				48AC81C22ED1181A004C9F77 /* Sources */,
 				48AC81C32ED1181A004C9F77 /* Frameworks */,
 				48AC81C42ED1181A004C9F77 /* Resources */,
-				392709BC87D6B12DFC1C4342 /* [CP] Embed Pods Frameworks */,
 			);
 			buildRules = (
 			);
@@ -627,39 +626,11 @@
 			outputFileListPaths = (
 			);
 			outputPaths = (
-				"$(DERIVED_FILE_DIR)/Pods-Internet Archive-Internet ArchiveUITests-checkManifestLockResult.txt",
+				"$(DERIVED_FILE_DIR)/Pods-Internet ArchiveUITests-checkManifestLockResult.txt",
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 			shellPath = /bin/sh;
 			shellScript = "diff \"${PODS_PODFILE_DIR_PATH}/Podfile.lock\" \"${PODS_ROOT}/Manifest.lock\" > /dev/null\nif [ $? != 0 ] ; then\n    # print error to STDERR\n    echo \"error: The sandbox is not in sync with the Podfile.lock. Run 'pod install' or update your CocoaPods installation.\" >&2\n    exit 1\nfi\n# This output is used by Xcode 'outputs' to avoid re-running this script phase.\necho \"SUCCESS\" > \"${SCRIPT_OUTPUT_FILE_0}\"\n";
-			showEnvVarsInLog = 0;
-		};
-		392709BC87D6B12DFC1C4342 /* [CP] Embed Pods Frameworks */ = {
-			isa = PBXShellScriptBuildPhase;
-			buildActionMask = 2147483647;
-			files = (
-			);
-			inputPaths = (
-				"${PODS_ROOT}/Target Support Files/Pods-Internet Archive-Internet ArchiveUITests/Pods-Internet Archive-Internet ArchiveUITests-frameworks.sh",
-				"${BUILT_PRODUCTS_DIR}/Alamofire/Alamofire.framework",
-				"${BUILT_PRODUCTS_DIR}/AlamofireImage/AlamofireImage.framework",
-				"${BUILT_PRODUCTS_DIR}/MBProgressHUD/MBProgressHUD.framework",
-				"${BUILT_PRODUCTS_DIR}/SVProgressHUD/SVProgressHUD.framework",
-				"${BUILT_PRODUCTS_DIR}/TvOSMoreButton/TvOSMoreButton.framework",
-				"${BUILT_PRODUCTS_DIR}/TvOSTextViewer/TvOSTextViewer.framework",
-			);
-			name = "[CP] Embed Pods Frameworks";
-			outputPaths = (
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/Alamofire.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/AlamofireImage.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/MBProgressHUD.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/SVProgressHUD.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/TvOSMoreButton.framework",
-				"${TARGET_BUILD_DIR}/${FRAMEWORKS_FOLDER_PATH}/TvOSTextViewer.framework",
-			);
-			runOnlyForDeploymentPostprocessing = 0;
-			shellPath = /bin/sh;
-			shellScript = "\"${PODS_ROOT}/Target Support Files/Pods-Internet Archive-Internet ArchiveUITests/Pods-Internet Archive-Internet ArchiveUITests-frameworks.sh\"\n";
 			showEnvVarsInLog = 0;
 		};
 		88B5898C9B1825E01AC9404D /* [CP] Check Pods Manifest.lock */ = {
@@ -944,7 +915,7 @@
 		};
 		48AC81CF2ED1181A004C9F77 /* Debug */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = EAB61CA1208E9048153FC7C2 /* Pods-Internet Archive-Internet ArchiveUITests.debug.xcconfig */;
+			baseConfigurationReference = D97EE183C57A11AC62165093 /* Pods-Internet ArchiveUITests.debug.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
@@ -987,7 +958,7 @@
 		};
 		48AC81D02ED1181A004C9F77 /* Release */ = {
 			isa = XCBuildConfiguration;
-			baseConfigurationReference = 281514CA691502DFDBF8A81C /* Pods-Internet Archive-Internet ArchiveUITests.release.xcconfig */;
+			baseConfigurationReference = B14660AC6723CAC75EDB331E /* Pods-Internet ArchiveUITests.release.xcconfig */;
 			buildSettings = {
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
