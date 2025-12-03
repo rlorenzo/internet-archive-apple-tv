@@ -37,9 +37,10 @@ final class MockNetworkService: NetworkServiceProtocol {
     var mockAuthResponse: AuthResponse?
     var mockAccountInfoResponse: AccountInfoResponse?
     var mockSearchResponse: SearchResponse?
-    var mockCollectionsResults: [SearchResult] = []
+    var mockCollectionsResponse: (collection: String, results: [SearchResult])?
     var mockMetadataResponse: ItemMetadataResponse?
     var mockFavoritesResponse: FavoritesResponse?
+    var getAccountInfoCalled = false
 
     // MARK: - NetworkServiceProtocol Implementation
 
@@ -72,6 +73,8 @@ final class MockNetworkService: NetworkServiceProtocol {
     }
 
     func getAccountInfo(email: String) async throws -> AccountInfoResponse {
+        getAccountInfoCalled = true
+
         if shouldThrowError {
             throw errorToThrow
         }
@@ -107,7 +110,11 @@ final class MockNetworkService: NetworkServiceProtocol {
             throw errorToThrow
         }
 
-        return (collection, mockCollectionsResults)
+        guard let response = mockCollectionsResponse else {
+            return (collection, [])
+        }
+
+        return response
     }
 
     func getMetadata(identifier: String) async throws -> ItemMetadataResponse {
@@ -169,8 +176,9 @@ final class MockNetworkService: NetworkServiceProtocol {
         mockAuthResponse = nil
         mockAccountInfoResponse = nil
         mockSearchResponse = nil
-        mockCollectionsResults = []
+        mockCollectionsResponse = nil
         mockMetadataResponse = nil
         mockFavoritesResponse = nil
+        getAccountInfoCalled = false
     }
 }

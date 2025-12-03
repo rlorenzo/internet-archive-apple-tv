@@ -63,6 +63,27 @@ enum TestFixtures {
         error: nil
     )
 
+    static let successfulAuthResponse = AuthResponse(
+        success: true,
+        version: 1,
+        values: AuthResponse.AuthValues(
+            email: "test@example.com",
+            itemname: "@test_user",
+            screenname: "Test User",
+            verified: true,
+            privs: nil,
+            signedin: nil
+        ),
+        error: nil
+    )
+
+    static let failedAuthResponse = AuthResponse(
+        success: false,
+        version: 1,
+        values: nil,
+        error: "Invalid credentials"
+    )
+
     static let accountInfoResponse = AccountInfoResponse(
         success: true,
         version: 1,
@@ -105,6 +126,11 @@ enum TestFixtures {
         metadata: itemMetadata
     )
 
+    static let movieMetadataResponse = ItemMetadataResponse(
+        files: [fileInfo],
+        metadata: itemMetadata
+    )
+
     // MARK: - Favorites
 
     static let favoriteItem = FavoriteItem(
@@ -119,35 +145,53 @@ enum TestFixtures {
 
     // MARK: - Helper Methods
 
+    static let musicSearchResult = SearchResult(
+        identifier: "test_music_001",
+        title: "Test Concert",
+        mediatype: "etree",
+        creator: "Test Band",
+        description: "A test concert recording",
+        date: "2025-01-01",
+        year: "2025",
+        downloads: 750,
+        subject: ["test", "music"],
+        collection: ["etree"]
+    )
+
     static func makeSearchResult(
         identifier: String = "test_001",
-        title: String = "Test Item",
-        mediatype: String = "movies"
+        title: String? = "Test Item",
+        mediatype: String? = "movies",
+        creator: String? = "Test Creator",
+        description: String? = "Test description",
+        date: String? = "2025-01-01",
+        year: String? = "2025",
+        downloads: Int? = 100
     ) -> SearchResult {
         SearchResult(
             identifier: identifier,
             title: title,
             mediatype: mediatype,
-            creator: "Test Creator",
-            description: "Test description",
-            date: "2025-01-01",
-            year: "2025",
-            downloads: 100,
+            creator: creator,
+            description: description,
+            date: date,
+            year: year,
+            downloads: downloads,
             subject: ["test"],
             collection: ["test_collection"]
         )
     }
 
     static func makeSearchResponse(
-        numFound: Int = 10,
-        results: [SearchResult]
+        numFound: Int? = nil,
+        docs: [SearchResult]
     ) -> SearchResponse {
         SearchResponse(
             responseHeader: SearchResponse.ResponseHeader(status: 0, QTime: 10),
             response: SearchResponse.SearchResults(
-                numFound: numFound,
+                numFound: numFound ?? docs.count,
                 start: 0,
-                docs: results
+                docs: docs
             )
         )
     }

@@ -8,6 +8,7 @@
 //
 
 import UIKit
+import Combine
 
 @MainActor
 class FavoriteVC: UIViewController, UICollectionViewDelegate {
@@ -26,25 +27,38 @@ class FavoriteVC: UIViewController, UICollectionViewDelegate {
     private var musicPrefetcher: ImagePrefetcher!
     private var peoplePrefetcher: ImagePrefetcher!
 
-    var movieItems: [SearchResult] = []
-    var musicItems: [SearchResult] = []
-    var peoples: [SearchResult] = []
+    // MARK: - ViewModel
+
+    private lazy var viewModel: FavoritesViewModel = {
+        FavoritesViewModel(favoritesService: DefaultFavoritesService())
+    }()
+
+    private var cancellables = Set<AnyCancellable>()
+
+    // Computed properties from ViewModel state
+    var movieItems: [SearchResult] {
+        viewModel.state.movieResults
+    }
+
+    var musicItems: [SearchResult] {
+        viewModel.state.musicResults
+    }
+
+    var peoples: [SearchResult] {
+        viewModel.state.peopleResults
+    }
 
     override func viewDidLoad() {
         super.viewDidLoad()
         configureMovieCollectionView()
         configureMusicCollectionView()
         configurePeopleCollectionView()
+        bindViewModel()
     }
 
     override func viewWillAppear(_ animated: Bool) {
         super.viewWillAppear(animated)
-        self.clsMovie.isHidden = true
-        self.clsMusic.isHidden = true
-        self.clsPeople.isHidden = true
-        self.lblMovies.isHidden = true
-        self.lblMusic.isHidden = true
-        self.lblPeople.isHidden = true
+        hideAllCollections()
 
         guard Global.isLoggedIn(),
               let userData = Global.getUserData(),
@@ -53,77 +67,72 @@ class FavoriteVC: UIViewController, UICollectionViewDelegate {
             return
         }
 
-        AppProgressHUD.sharedManager.show(view: self.view)
+        loadFavorites(username: username)
+    }
 
-        Task {
-            do {
-                let favoritesResponse = try await APIManager.sharedManager.getFavoriteItemsTyped(username: username)
+    // MARK: - ViewModel Binding
 
-                guard let favorites = favoritesResponse.members, !favorites.isEmpty else {
-                    AppProgressHUD.sharedManager.hide()
-                    return
-                }
-
-                let identifiers = favorites.compactMap { item -> String? in
-                    guard let mediaType = item.mediatype,
-                          ["movies", "audio", "account"].contains(mediaType) else {
-                        return nil
-                    }
-                    return item.identifier
-                }
-
-                guard !identifiers.isEmpty else {
-                    AppProgressHUD.sharedManager.hide()
-                    return
-                }
-
-                let options = [
-                    "fl[]": "identifier,title,year,downloads,date,creator,description,mediatype",
-                    "sort[]": "date+desc"
-                ]
-
-                let query = identifiers.joined(separator: " OR ")
-                let searchResponse = try await APIManager.sharedManager.searchTyped(
-                    query: "identifier:(\(query))",
-                    options: options
-                )
-
-                self.movieItems.removeAll()
-                self.musicItems.removeAll()
-                self.peoples.removeAll()
-
-                for item in searchResponse.response.docs {
-                    switch item.safeMediaType {
-                    case "movies":
-                        self.movieItems.append(item)
-                    case "audio":
-                        self.musicItems.append(item)
-                    case "account":
-                        self.peoples.append(item)
-                    default:
-                        break
-                    }
-                }
-
-                // Apply snapshots with modern diffable data sources
-                await self.applyMovieSnapshot()
-                await self.applyMusicSnapshot()
-                await self.applyPeopleSnapshot()
-
-                self.clsMovie.isHidden = false
-                self.clsMusic.isHidden = false
-                self.clsPeople.isHidden = false
-                self.lblMovies.isHidden = false
-                self.lblMusic.isHidden = false
-                self.lblPeople.isHidden = false
-
-                AppProgressHUD.sharedManager.hide()
-
-            } catch {
-                AppProgressHUD.sharedManager.hide()
-                let errorMessage = (error as? NetworkError)?.localizedDescription ?? error.localizedDescription
-                Global.showAlert(title: "Error", message: "Error occurred while downloading favorites\n\(errorMessage)", target: self)
+    private func bindViewModel() {
+        viewModel.$state
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.handleStateChange(state)
             }
+            .store(in: &cancellables)
+    }
+
+    private func handleStateChange(_ state: FavoritesViewState) {
+        if state.isLoading {
+            AppProgressHUD.sharedManager.show(view: self.view)
+            return
+        }
+
+        AppProgressHUD.sharedManager.hide()
+
+        if let errorMessage = state.errorMessage {
+            Global.showAlert(title: "Error", message: errorMessage, target: self)
+            return
+        }
+
+        // Always apply snapshots to keep UI in sync with state
+        Task {
+            await applyMovieSnapshot()
+            await applyMusicSnapshot()
+            await applyPeopleSnapshot()
+        }
+
+        // Show or hide collections based on results
+        if state.hasResults {
+            showAllCollections()
+        } else {
+            hideAllCollections()
+        }
+    }
+
+    private func hideAllCollections() {
+        clsMovie.isHidden = true
+        clsMusic.isHidden = true
+        clsPeople.isHidden = true
+        lblMovies.isHidden = true
+        lblMusic.isHidden = true
+        lblPeople.isHidden = true
+    }
+
+    private func showAllCollections() {
+        clsMovie.isHidden = false
+        clsMusic.isHidden = false
+        clsPeople.isHidden = false
+        lblMovies.isHidden = false
+        lblMusic.isHidden = false
+        lblPeople.isHidden = false
+    }
+
+    private func loadFavorites(username: String) {
+        Task {
+            await viewModel.loadFavoritesWithDetails(
+                username: username,
+                searchService: DefaultSearchService()
+            )
         }
     }
 
