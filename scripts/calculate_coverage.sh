@@ -62,6 +62,7 @@ EXCLUDED_FILES=(
 
 echo "=== EXCLUDED FILES (require API key) ==="
 EXCLUDED_TOTAL=0
+EXCLUDED_COVERED=0
 for file in "${EXCLUDED_FILES[@]}"; do
     FILE_LINE=$(echo "$FULL_REPORT" | grep "$file" | head -1)
     if [ -n "$FILE_LINE" ]; then
@@ -72,14 +73,16 @@ for file in "${EXCLUDED_FILES[@]}"; do
         FILE_COVERED=${FILE_COVERED:-0}
         echo "  $file: $FILE_COVERED/$FILE_TOTAL lines"
         EXCLUDED_TOTAL=$((EXCLUDED_TOTAL + FILE_TOTAL))
+        EXCLUDED_COVERED=$((EXCLUDED_COVERED + FILE_COVERED))
     fi
 done
 echo ""
-echo "Total excluded lines: $EXCLUDED_TOTAL"
+echo "Total excluded: $EXCLUDED_COVERED/$EXCLUDED_TOTAL lines"
 echo ""
 
 # Calculate adjusted coverage
 ADJUSTED_TOTAL=$((TOTAL_LINES - EXCLUDED_TOTAL))
+ADJUSTED_COVERED=$((COVERED_LINES - EXCLUDED_COVERED))
 
 # Validate adjusted total to avoid division by zero
 if [ "$ADJUSTED_TOTAL" -le 0 ]; then
@@ -87,11 +90,11 @@ if [ "$ADJUSTED_TOTAL" -le 0 ]; then
     exit 1
 fi
 
-ADJUSTED_PERCENTAGE=$(echo "scale=2; $COVERED_LINES * 100 / $ADJUSTED_TOTAL" | bc -l)
+ADJUSTED_PERCENTAGE=$(echo "scale=2; $ADJUSTED_COVERED * 100 / $ADJUSTED_TOTAL" | bc -l)
 
 echo "=== ADJUSTED COVERAGE ==="
 echo "Total lines (excluding API-dependent files): $ADJUSTED_TOTAL"
-echo "Covered lines: $COVERED_LINES"
+echo "Covered lines (excluding API-dependent files): $ADJUSTED_COVERED"
 echo "Adjusted coverage: $ADJUSTED_PERCENTAGE%"
 echo ""
 
@@ -99,7 +102,7 @@ echo ""
 if (( $(echo "$ADJUSTED_PERCENTAGE >= 70" | bc -l) )); then
     echo "✅ Coverage target of 70% ACHIEVED (adjusted for API-dependent files)"
 else
-    NEEDED=$(echo "scale=0; ($ADJUSTED_TOTAL * 70 / 100) - $COVERED_LINES" | bc -l)
+    NEEDED=$(echo "scale=0; ($ADJUSTED_TOTAL * 70 / 100) - $ADJUSTED_COVERED" | bc -l)
     echo "❌ Coverage target of 70% not yet achieved."
     echo "   Need approximately $NEEDED more lines covered."
 fi
