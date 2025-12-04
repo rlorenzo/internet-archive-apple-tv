@@ -69,10 +69,12 @@ jobs:
 
     - name: Run tests
       run: |
+        # Run only unit tests, skip UI tests (they are flaky in CI and don't contribute to coverage)
         xcodebuild test \
           -workspace "Internet Archive.xcworkspace" \
           -scheme "Internet Archive" \
           -destination "platform=tvOS Simulator,name=Apple TV" \
+          -only-testing:"Internet ArchiveTests" \
           -enableCodeCoverage YES \
           -resultBundlePath TestResults.xcresult
 
