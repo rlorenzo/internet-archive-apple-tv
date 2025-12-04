@@ -20,6 +20,15 @@ struct FavoriteItemParams {
 final class APIManager: NSObject {
     static let sharedManager = APIManager()
 
+    /// Returns the appropriate network service based on testing mode
+    /// In UI testing mode, returns MockAPIManager; otherwise returns real APIManager
+    static var networkService: NetworkServiceProtocol {
+        if UITestingHelper.shared.useMockData {
+            return MockAPIManager.shared
+        }
+        return sharedManager
+    }
+
     let baseURL = "https://archive.org/"
     let apiCreate = "services/xauthn/?op=create"
     let apiLogin = "services/xauthn/?op=authenticate"

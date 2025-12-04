@@ -66,14 +66,16 @@ final class ErrorPresenter {
 
     private func getUserFriendlyMessage(for error: Error, context: ErrorContext) -> String {
         if let networkError = error as? NetworkError {
-            return getUserFriendlyMessage(for: networkError, context: context)
+            return userFriendlyMessage(for: networkError, context: context)
         }
 
         // Generic error message
         return "An unexpected error occurred. Please try again."
     }
 
-    private func getUserFriendlyMessage(for networkError: NetworkError, context: ErrorContext) -> String {
+    /// Returns a user-friendly message for a network error.
+    /// Exposed for testing purposes.
+    func userFriendlyMessage(for networkError: NetworkError, context: ErrorContext = ErrorContext(operation: .unknown)) -> String {
         switch networkError {
         case .noConnection:
             return "No internet connection. Please check your network settings and try again."

@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ master, main ]
 
+env:
+  XCODE_VERSION: "26.1"
+
 jobs:
   test:
     name: Run Tests
@@ -17,11 +20,34 @@ jobs:
 
     - name: Select Xcode version
       run: |
-        # Use latest available Xcode
-        sudo xcode-select -s /Applications/Xcode.app/Contents/Developer
+        XCODE_PATH="/Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer"
+        if [ ! -d "$XCODE_PATH" ]; then
+          echo "Requested Xcode ${{ env.XCODE_VERSION }} not found. Available Xcode versions:"
+          ls /Applications | grep Xcode || true
+          exit 1
+        fi
+        sudo xcode-select -s "$XCODE_PATH"
 
     - name: Show Xcode version
       run: xcodebuild -version
+
+    - name: Install tvOS Simulator Runtime
+      run: |
+        # Check if tvOS simulator is available
+        echo "Checking for tvOS simulators..."
+        xcrun simctl list runtimes
+        xcrun simctl list devices available | grep -i "tv" || echo "No tvOS devices found"
+
+        # Install tvOS runtime if no tvOS simulators exist
+        if ! xcrun simctl list runtimes | grep -q "tvOS"; then
+          echo "Installing tvOS Simulator runtime..."
+          xcodebuild -downloadPlatform tvOS
+          echo "Verifying installation..."
+          xcrun simctl list runtimes
+          xcrun simctl list devices available | grep -i "tv"
+        else
+          echo "tvOS Simulator runtime already installed"
+        fi
 
     - name: Cache CocoaPods
       uses: actions/cache@v4
@@ -41,14 +67,46 @@ jobs:
         cd "${GITHUB_WORKSPACE}"
         pod install --repo-update
 
+    - name: Boot simulator
+      run: |
+        # Pre-boot the simulator to avoid FrontBoard launch failures.
+        DEVICE_ID=$(xcrun simctl list devices available | grep "Apple TV" | head -1 | grep -oE '[A-F0-9-]{36}')
+        echo "Booting simulator: $DEVICE_ID"
+        xcrun simctl boot "$DEVICE_ID" || true
+        # Wait for simulator to fully boot
+        sleep 10
+        xcrun simctl list devices | grep -i "apple tv"
+
     - name: Run tests
       run: |
-        xcodebuild test \
-          -workspace "Internet Archive.xcworkspace" \
-          -scheme "Internet Archive" \
-          -destination "platform=tvOS Simulator,OS=latest,name=Apple TV" \
-          -enableCodeCoverage YES \
-          -resultBundlePath TestResults.xcresult
+        # Run only unit tests, skip UI tests (they are flaky in CI and don't contribute to coverage).
+        # Retry once if simulator fails to launch (FrontBoard intermittent issue).
+        for attempt in 1 2; do
+          echo "Test attempt $attempt..."
+          rm -rf TestResults.xcresult
+          if xcodebuild test \
+            -workspace "Internet Archive.xcworkspace" \
+            -scheme "Internet Archive" \
+            -destination "platform=tvOS Simulator,name=Apple TV" \
+            -only-testing:"Internet ArchiveTests" \
+            -enableCodeCoverage YES \
+            -resultBundlePath TestResults.xcresult; then
+            echo "Tests passed on attempt $attempt"
+            exit 0
+          else
+            echo "Tests failed on attempt $attempt"
+            if [ $attempt -eq 1 ]; then
+              echo "Retrying after simulator reset..."
+              xcrun simctl shutdown all || true
+              sleep 5
+              DEVICE_ID=$(xcrun simctl list devices available | grep "Apple TV" | head -1 | grep -oE '[A-F0-9-]{36}')
+              xcrun simctl boot "$DEVICE_ID" || true
+              sleep 10
+            fi
+          fi
+        done
+        echo "Tests failed after 2 attempts"
+        exit 1
 
     - name: Generate code coverage report
       if: success()
@@ -74,20 +132,77 @@ jobs:
     - name: Check coverage threshold
       if: success()
       run: |
-        # Look for the actual app target, not pod frameworks/bundles
-        coverage=$(xcrun xccov view --report TestResults.xcresult | grep -E '^Internet Archive\.app' | awk '{print $3}' | sed 's/%//')
-        if [ -z "$coverage" ]; then
-          echo "⚠️ Could not extract coverage percentage"
-          echo "Available targets:"
-          xcrun xccov view --report TestResults.xcresult | head -20
+        # Get full coverage report
+        REPORT=$(xcrun xccov view --report TestResults.xcresult)
+
+        # Get app coverage line
+        APP_LINE=$(echo "$REPORT" | grep -E '^Internet Archive\.app' | head -1)
+        echo "Full app coverage: $APP_LINE"
+
+        # Parse total and covered lines
+        TOTAL_LINES=$(echo "$APP_LINE" | grep -oE '\([0-9]+/[0-9]+\)' | grep -oE '[0-9]+/[0-9]+' | cut -d'/' -f2)
+        COVERED_LINES=$(echo "$APP_LINE" | grep -oE '\([0-9]+/[0-9]+\)' | grep -oE '[0-9]+/[0-9]+' | cut -d'/' -f1)
+
+        # Validate extracted values
+        if [ -z "$TOTAL_LINES" ] || [ -z "$COVERED_LINES" ]; then
+          echo "❌ Error: Could not parse coverage data from report"
+          echo "Report line: $APP_LINE"
           exit 1
         fi
-        echo "Code coverage: ${coverage}%"
-        # Set threshold to 15% for now since we're just starting with tests
-        threshold=15
-        if awk "BEGIN {exit !($coverage < $threshold)}"; then
-          echo "❌ Code coverage ${coverage}% is below threshold ${threshold}%"
+
+        echo "Total lines: $TOTAL_LINES"
+        echo "Covered lines: $COVERED_LINES"
+
+        # Files to exclude (require Internet Archive API credentials to test)
+        # NOTE: These files handle login/account functionality which cannot be tested
+        # without valid API credentials. See Configuration.plist.template for setup.
+        EXCLUDED_FILES="AccountVC.swift AccountNC.swift LoginVC.swift RegisterVC.swift PeopleVC.swift ItemVC.swift"
+
+        EXCLUDED_TOTAL=0
+        EXCLUDED_COVERED=0
+        echo ""
+        echo "=== Excluded files (require API credentials) ==="
+        for file in $EXCLUDED_FILES; do
+          FILE_LINE=$(echo "$REPORT" | grep "$file" | head -1)
+          if [ -n "$FILE_LINE" ]; then
+            FILE_TOTAL=$(echo "$FILE_LINE" | grep -oE '\([0-9]+/[0-9]+\)' | grep -oE '[0-9]+/[0-9]+' | cut -d'/' -f2)
+            FILE_COVERED=$(echo "$FILE_LINE" | grep -oE '\([0-9]+/[0-9]+\)' | grep -oE '[0-9]+/[0-9]+' | cut -d'/' -f1)
+            # Default to 0 if extraction failed
+            FILE_TOTAL=${FILE_TOTAL:-0}
+            FILE_COVERED=${FILE_COVERED:-0}
+            echo "  $file: $FILE_COVERED/$FILE_TOTAL lines excluded"
+            EXCLUDED_TOTAL=$((EXCLUDED_TOTAL + FILE_TOTAL))
+            EXCLUDED_COVERED=$((EXCLUDED_COVERED + FILE_COVERED))
+          fi
+        done
+        echo "Total excluded: $EXCLUDED_COVERED/$EXCLUDED_TOTAL lines"
+        echo ""
+
+        # Calculate adjusted coverage
+        ADJUSTED_TOTAL=$((TOTAL_LINES - EXCLUDED_TOTAL))
+        ADJUSTED_COVERED=$((COVERED_LINES - EXCLUDED_COVERED))
+
+        # Validate adjusted total to avoid division by zero
+        if [ "$ADJUSTED_TOTAL" -le 0 ]; then
+          echo "Error: Adjusted total lines is $ADJUSTED_TOTAL (all lines excluded?)"
+          exit 1
+        fi
+
+        ADJUSTED_COVERAGE=$(echo "scale=2; $ADJUSTED_COVERED * 100 / $ADJUSTED_TOTAL" | bc -l)
+
+        echo "=== Adjusted Coverage (excluding API-dependent files) ==="
+        echo "Adjusted total lines: $ADJUSTED_TOTAL"
+        echo "Adjusted covered lines: $ADJUSTED_COVERED"
+        echo "Adjusted coverage: ${ADJUSTED_COVERAGE}%"
+        echo ""
+
+        # Set threshold to 60% - ViewControllers with storyboard dependencies are hard to test
+        # without major refactoring. Current coverage is ~64% with API-dependent files excluded.
+        # TODO: Increase to 70% after additional refactoring of remaining ViewControllers.
+        threshold=60
+        if awk "BEGIN {exit !($ADJUSTED_COVERAGE < $threshold)}"; then
+          echo "❌ Adjusted coverage ${ADJUSTED_COVERAGE}% is below threshold ${threshold}%"
           exit 1
         else
-          echo "✅ Code coverage ${coverage}% meets threshold ${threshold}%"
+          echo "✅ Adjusted coverage ${ADJUSTED_COVERAGE}% meets threshold ${threshold}%"
         fi

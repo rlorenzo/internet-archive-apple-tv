@@ -8,24 +8,6 @@
 import XCTest
 @testable import Internet_Archive
 
-/// Thread-safe counter for testing async operations
-final class AtomicCounter: @unchecked Sendable {
-    private var _value: Int = 0
-    private let lock = NSLock()
-
-    var value: Int {
-        lock.lock()
-        defer { lock.unlock() }
-        return _value
-    }
-
-    func increment() {
-        lock.lock()
-        _value += 1
-        lock.unlock()
-    }
-}
-
 final class ErrorHandlingTests: XCTestCase {
 
     // MARK: - NetworkError Tests

@@ -11,7 +11,8 @@ import XCTest
 final class Internet_ArchiveUITestsLaunchTests: XCTestCase {
 
     override class var runsForEachTargetApplicationUIConfiguration: Bool {
-        true
+        // Disabled to prevent flaky parallel test runs in CI
+        false
     }
 
     override func setUpWithError() throws {

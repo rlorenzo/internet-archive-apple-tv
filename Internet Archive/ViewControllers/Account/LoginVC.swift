@@ -9,6 +9,7 @@
 //
 
 import UIKit
+import Combine
 
 @MainActor
 class LoginVC: UIViewController {
@@ -16,59 +17,101 @@ class LoginVC: UIViewController {
     @IBOutlet weak var txtEmail: UITextField!
     @IBOutlet weak var txtPassword: UITextField!
 
-    @IBAction func onLogin(_ sender: Any) {
-        guard validate() else {
-            return
+    // MARK: - ViewModel
+
+    private lazy var viewModel: LoginViewModel = {
+        LoginViewModel(authService: DefaultAuthService())
+    }()
+
+    private var cancellables = Set<AnyCancellable>()
+
+    // MARK: - Lifecycle
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        bindViewModel()
+    }
+
+    // MARK: - ViewModel Binding
+
+    private func bindViewModel() {
+        viewModel.$state
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.handleStateChange(state)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func handleStateChange(_ state: LoginViewState) {
+        if state.isLoading {
+            AppProgressHUD.sharedManager.show(view: self.view)
+        } else {
+            AppProgressHUD.sharedManager.hide()
         }
 
-        guard let email = txtEmail.text, !email.isEmpty,
-              let password = txtPassword.text, !password.isEmpty else {
-            return
+        if let errorMessage = state.errorMessage {
+            Global.showAlert(title: "Error", message: errorMessage, target: self)
         }
 
-        AppProgressHUD.sharedManager.show(view: self.view)
+        if state.isLoggedIn {
+            handleLoginSuccess()
+        }
+    }
+
+    private func handleLoginSuccess() {
+        // Get account info to retrieve username
+        guard let email = txtEmail.text else { return }
 
         Task {
             do {
-                // Login with typed response
-                let authResponse = try await APIManager.sharedManager.loginTyped(email: email, password: password)
+                // Route through auth service to respect mock mode for UI testing
+                let accountInfo = try await viewModel.fetchAccountInfo(email: email)
 
-                guard authResponse.isSuccess else {
-                    AppProgressHUD.sharedManager.hide()
-                    let errorMessage = authResponse.error ?? "Login failed"
-                    Global.showAlert(title: "Error", message: errorMessage, target: self)
-                    return
+                if let values = accountInfo.values, let username = values.screenname {
+                    // Update user data with username
+                    Global.saveUserData(userData: [
+                        "username": username,
+                        "email": email,
+                        "password": txtPassword.text ?? "",
+                        "logged-in": true
+                    ])
                 }
-
-                // Get account info with typed response
-                let accountInfo = try await APIManager.sharedManager.getAccountInfoTyped(email: email)
-                AppProgressHUD.sharedManager.hide()
-
-                guard let values = accountInfo.values,
-                      let username = values.screenname else {
-                    Global.showAlert(title: "Error", message: "Failed to retrieve account information", target: self)
-                    return
-                }
-
-                Global.saveUserData(userData: [
-                    "username": username,
-                    "email": email,
-                    "password": password,
-                    "logged-in": true
-                ])
 
                 if let accountNC = self.navigationController as? AccountNC {
                     accountNC.gotoAccountVC()
                 }
-
             } catch {
-                AppProgressHUD.sharedManager.hide()
                 let errorMessage = (error as? NetworkError)?.localizedDescription ?? error.localizedDescription
                 Global.showAlert(title: "Error", message: errorMessage, target: self)
             }
         }
     }
 
+    // MARK: - Actions
+
+    @IBAction func onLogin(_ sender: Any) {
+        guard let email = txtEmail.text,
+              let password = txtPassword.text else {
+            return
+        }
+
+        // Use ViewModel validation
+        let validation = viewModel.validateInputs(email: email, password: password)
+
+        guard validation.isValid else {
+            let errorMessage = validation.emailError ?? validation.passwordError ?? "Invalid input"
+            Global.showAlert(title: "Error", message: errorMessage, target: self)
+            return
+        }
+
+        // Perform login through ViewModel
+        Task {
+            _ = await viewModel.login(email: email, password: password)
+        }
+    }
+
+    /// Validate inputs - exposed for backward compatibility and testing
     func validate() -> Bool {
         guard let email = txtEmail.text, !email.isEmpty else {
             Global.showAlert(title: "Error", message: "Please enter an email address", target: self)

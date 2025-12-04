@@ -135,4 +135,133 @@ final class SearchModelsTests: XCTestCase {
         XCTAssertEqual(response.response.numFound, 0)
         XCTAssertEqual(response.response.docs.count, 0)
     }
+
+    // MARK: - Additional SearchResult Tests
+
+    func testSearchResultToDictionary() {
+        let result = TestFixtures.movieSearchResult
+        let dict = result.toDictionary()
+
+        XCTAssertEqual(dict["identifier"] as? String, "test_movie_001")
+        XCTAssertEqual(dict["title"] as? String, "Test Movie")
+        XCTAssertEqual(dict["mediatype"] as? String, "movies")
+        XCTAssertEqual(dict["creator"] as? String, "Test Creator")
+        XCTAssertEqual(dict["description"] as? String, "A test movie for unit testing")
+        XCTAssertEqual(dict["date"] as? String, "2025-01-01")
+        XCTAssertEqual(dict["year"] as? String, "2025")
+        XCTAssertEqual(dict["downloads"] as? Int, 1000)
+        XCTAssertEqual(dict["subject"] as? [String], ["test", "movies"])
+        XCTAssertEqual(dict["collection"] as? [String], ["test_collection"])
+    }
+
+    func testSearchResultToDictionaryOmitsNilValues() {
+        let result = SearchResult(identifier: "minimal")
+        let dict = result.toDictionary()
+
+        XCTAssertEqual(dict["identifier"] as? String, "minimal")
+        XCTAssertNil(dict["title"])
+        XCTAssertNil(dict["mediatype"])
+        XCTAssertNil(dict["creator"])
+    }
+
+    func testSearchResultMemberwiseInit() {
+        let result = SearchResult(
+            identifier: "test_id",
+            title: "My Title",
+            mediatype: "audio",
+            creator: "Artist Name",
+            downloads: 500
+        )
+
+        XCTAssertEqual(result.identifier, "test_id")
+        XCTAssertEqual(result.title, "My Title")
+        XCTAssertEqual(result.mediatype, "audio")
+        XCTAssertEqual(result.creator, "Artist Name")
+        XCTAssertEqual(result.downloads, 500)
+        XCTAssertNil(result.date)
+        XCTAssertNil(result.year)
+    }
+
+    func testSearchResultWithAllNilOptionals() {
+        let result = SearchResult(identifier: "only_id")
+
+        XCTAssertEqual(result.identifier, "only_id")
+        XCTAssertNil(result.title)
+        XCTAssertNil(result.mediatype)
+        XCTAssertNil(result.creator)
+        XCTAssertNil(result.description)
+        XCTAssertNil(result.date)
+        XCTAssertNil(result.year)
+        XCTAssertNil(result.downloads)
+        XCTAssertNil(result.subject)
+        XCTAssertNil(result.collection)
+    }
+
+    func testSearchResponseMemberwiseInit() {
+        let results = [
+            SearchResult(identifier: "item1", title: "Item 1"),
+            SearchResult(identifier: "item2", title: "Item 2")
+        ]
+        let header = SearchResponse.ResponseHeader(status: 0, QTime: 5)
+        let searchResults = SearchResponse.SearchResults(numFound: 2, start: 0, docs: results)
+        let response = SearchResponse(responseHeader: header, response: searchResults)
+
+        XCTAssertEqual(response.responseHeader?.status, 0)
+        XCTAssertEqual(response.responseHeader?.QTime, 5)
+        XCTAssertEqual(response.response.numFound, 2)
+        XCTAssertEqual(response.response.start, 0)
+        XCTAssertEqual(response.response.docs.count, 2)
+    }
+
+    func testResponseHeaderDecoding() throws {
+        let json = """
+        {
+            "status": 0,
+            "QTime": 15
+        }
+        """
+
+        let data = json.data(using: .utf8)!
+        let header = try JSONDecoder().decode(SearchResponse.ResponseHeader.self, from: data)
+
+        XCTAssertEqual(header.status, 0)
+        XCTAssertEqual(header.QTime, 15)
+    }
+
+    // MARK: - TestFixtures Integration
+
+    func testSearchResponseFromFixtures() {
+        let response = TestFixtures.searchResponse
+
+        XCTAssertEqual(response.responseHeader?.status, 0)
+        XCTAssertEqual(response.response.numFound, 2)
+        XCTAssertEqual(response.response.docs.count, 2)
+        XCTAssertEqual(response.response.docs[0].identifier, "test_movie_001")
+        XCTAssertEqual(response.response.docs[1].identifier, "test_audio_001")
+    }
+
+    func testMakeSearchResultHelper() {
+        let result = TestFixtures.makeSearchResult(
+            identifier: "custom_id",
+            title: "Custom Title",
+            mediatype: "texts"
+        )
+
+        XCTAssertEqual(result.identifier, "custom_id")
+        XCTAssertEqual(result.title, "Custom Title")
+        XCTAssertEqual(result.mediatype, "texts")
+        XCTAssertEqual(result.creator, "Test Creator")
+    }
+
+    func testMakeSearchResponseHelper() {
+        let results = [
+            TestFixtures.makeSearchResult(identifier: "r1"),
+            TestFixtures.makeSearchResult(identifier: "r2"),
+            TestFixtures.makeSearchResult(identifier: "r3")
+        ]
+        let response = TestFixtures.makeSearchResponse(numFound: 100, docs: results)
+
+        XCTAssertEqual(response.response.numFound, 100)
+        XCTAssertEqual(response.response.docs.count, 3)
+    }
 }

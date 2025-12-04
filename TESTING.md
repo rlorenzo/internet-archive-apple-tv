@@ -13,10 +13,22 @@ Internet ArchiveTests/
 ├── Fixtures/
 │   └── TestFixtures.swift            # Test data fixtures
 ├── Models/
-│   └── SearchModelsTests.swift       # Data model tests
-└── ErrorHandling/
-    ├── ErrorHandlingTests.swift      # Error handling tests
-    └── NetworkMonitorTests.swift     # Network monitoring tests
+│   ├── AuthModelsTests.swift         # Authentication model tests
+│   ├── FavoritesModelsTests.swift    # Favorites model tests
+│   ├── MetadataModelsTests.swift     # Metadata model tests
+│   ├── RequestModelsTests.swift      # Request model tests
+│   └── SearchModelsTests.swift       # Search model tests
+├── ErrorHandling/
+│   ├── ErrorHandlingTests.swift      # Error and retry mechanism tests
+│   ├── ErrorLoggerTests.swift        # Logging tests
+│   ├── ErrorPresenterTests.swift     # User-friendly message tests
+│   ├── NetworkMonitorTests.swift     # Network monitoring tests
+│   └── NetworkErrorTests.swift       # NetworkError enum tests
+├── Utilities/
+│   ├── GlobalTests.swift             # Global utility tests
+│   └── KeychainManagerTests.swift    # Keychain storage tests
+└── Configuration/
+    └── AppConfigurationTests.swift   # Configuration loading tests
 
 Internet ArchiveUITests/
 └── (UI tests for critical user flows)
@@ -226,7 +238,7 @@ Tests run automatically on every push and pull request via GitHub Actions.
 
 ### CI Workflow
 
-- Runs on macOS runner with Xcode 15+
+- Runs on macos-latest runner with Xcode 26.1 (Swift 6.2)
 - Executes all unit tests
 - Reports code coverage
 - Fails build if tests fail

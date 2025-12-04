@@ -69,7 +69,12 @@ struct AppConfiguration: @unchecked Sendable {
     }
 
     /// Check if configuration is valid
+    /// Returns true during UI testing to enable all features
     var isConfigured: Bool {
-        !apiAccessKey.isEmpty && !apiSecretKey.isEmpty
+        // Enable all features during UI testing
+        if ProcessInfo.processInfo.arguments.contains("--uitesting") {
+            return true
+        }
+        return !apiAccessKey.isEmpty && !apiSecretKey.isEmpty
     }
 }

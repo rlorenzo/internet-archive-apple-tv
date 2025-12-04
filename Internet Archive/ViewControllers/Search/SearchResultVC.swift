@@ -9,6 +9,7 @@
 
 import UIKit
 import AVKit
+import Combine
 
 @MainActor
 class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionViewDelegate {
@@ -23,92 +24,48 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
     private var videoPrefetcher: ImagePrefetcher!
     private var musicPrefetcher: ImagePrefetcher!
 
-    var videoItems: [SearchResult] = []
-    var musicItems: [SearchResult] = []
+    // MARK: - ViewModel
+
+    private lazy var viewModel: SearchViewModel = {
+        SearchViewModel(searchService: DefaultSearchService())
+    }()
+
+    private var cancellables = Set<AnyCancellable>()
+    private var lastQuery = ""
+
+    // Computed properties from ViewModel state
+    var videoItems: [SearchResult] {
+        viewModel.state.videoResults
+    }
+
+    var musicItems: [SearchResult] {
+        viewModel.state.musicResults
+    }
 
     var query = "" {
         didSet {
-            // Return if the filter string hasn't changed.
-            let trimedQuery = query.trimmingCharacters(in: .whitespaces)
-            guard trimedQuery != oldValue else { return }
-            if trimedQuery.isEmpty {
-                videoItems.removeAll()
-                musicItems.removeAll()
-                Task {
-                    await applyVideoSnapshot()
-                    await applyMusicSnapshot()
-                }
+            let trimmedQuery = query.trimmingCharacters(in: .whitespaces)
+            guard trimmedQuery != lastQuery else { return }
+            lastQuery = trimmedQuery
+
+            if trimmedQuery.isEmpty {
+                viewModel.clearResults()
                 return
             }
-            // Apply the filter or show all items if the filter string is empty.
 
-            AppProgressHUD.sharedManager.show(view: self.view)
-            videoItems.removeAll()
-            musicItems.removeAll()
+            performSearch(query: trimmedQuery)
+        }
+    }
 
-            clsVideo.isHidden = true
-            clsMusic.isHidden = true
-            lblMovies.isHidden = true
-            lblMusic.isHidden = true
+    private func performSearch(query: String) {
+        AppProgressHUD.sharedManager.show(view: self.view)
+        clsVideo.isHidden = true
+        clsMusic.isHidden = true
+        lblMovies.isHidden = true
+        lblMusic.isHidden = true
 
-            Task {
-                do {
-                    // Use retry mechanism for network resilience
-                    let searchResponse = try await RetryMechanism.execute(config: .standard) {
-                        let options = [
-                            "rows": "50",
-                            "fl[]": "identifier,title,downloads,mediatype"
-                        ]
-
-                        return try await APIManager.sharedManager.searchTyped(
-                            query: "\(trimedQuery) AND mediatype:(etree OR movies)",
-                            options: options
-                        )
-                    }
-
-                    self.clsVideo.isHidden = false
-                    self.clsMusic.isHidden = false
-                    self.lblMovies.isHidden = false
-                    self.lblMusic.isHidden = false
-
-                    for item in searchResponse.response.docs {
-                        if item.safeMediaType == "movies" {
-                            self.videoItems.append(item)
-                        } else {
-                            self.musicItems.append(item)
-                        }
-                    }
-
-                    // Apply snapshots with modern diffable data sources
-                    await self.applyVideoSnapshot()
-                    await self.applyMusicSnapshot()
-
-                    AppProgressHUD.sharedManager.hide()
-
-                    // Log success
-                    ErrorLogger.shared.logSuccess(
-                        operation: .search,
-                        info: ["query": trimedQuery, "results": searchResponse.response.docs.count]
-                    )
-
-                } catch {
-                    // Use centralized error presenter
-                    let context = ErrorContext(
-                        operation: .search,
-                        userFacingTitle: "Search Failed",
-                        additionalInfo: ["query": trimedQuery]
-                    )
-
-                    ErrorPresenter.shared.present(
-                        error,
-                        context: context,
-                        on: self,
-                        retry: { [weak self] in
-                            self?.query = trimedQuery
-                        }
-                    )
-                }
-            }
+        Task {
+            await viewModel.searchMoviesAndMusic(query: query)
         }
     }
 
@@ -116,6 +73,7 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
         super.viewDidLoad()
         configureVideoCollectionView()
         configureMusicCollectionView()
+        bindViewModel()
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -124,6 +82,48 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
         clsMusic.isHidden = true
         lblMovies.isHidden = true
         lblMusic.isHidden = true
+    }
+
+    // MARK: - ViewModel Binding
+
+    private func bindViewModel() {
+        viewModel.$state
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.handleStateChange(state)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func handleStateChange(_ state: SearchViewState) {
+        if state.isLoading {
+            return // Wait for results
+        }
+
+        AppProgressHUD.sharedManager.hide()
+
+        if let errorMessage = state.errorMessage {
+            let context = ErrorContext(
+                operation: .search,
+                userFacingTitle: "Search Failed",
+                additionalInfo: ["query": lastQuery]
+            )
+            Global.showAlert(title: context.userFacingTitle, message: errorMessage, target: self)
+            return
+        }
+
+        // Show collections if we have results
+        let hasResults = !state.results.isEmpty
+        clsVideo.isHidden = !hasResults
+        clsMusic.isHidden = !hasResults
+        lblMovies.isHidden = !hasResults
+        lblMusic.isHidden = !hasResults
+
+        // Apply snapshots
+        Task {
+            await applyVideoSnapshot()
+            await applyMusicSnapshot()
+        }
     }
 
     // MARK: - Configuration
