@@ -238,7 +238,7 @@ Tests run automatically on every push and pull request via GitHub Actions.
 
 ### CI Workflow
 
-- Runs on macOS 15 runner with Xcode 16.4
+- Runs on macos-latest runner with Xcode 26.1 (Swift 6.2)
 - Executes all unit tests
 - Reports code coverage
 - Fails build if tests fail

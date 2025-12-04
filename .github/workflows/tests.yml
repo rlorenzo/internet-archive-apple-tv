@@ -69,7 +69,7 @@ jobs:
 
     - name: Run tests
       run: |
-        # Run only unit tests, skip UI tests (they are flaky in CI and don't contribute to coverage)
+        # Run only unit tests, skip UI tests (they are flaky in CI and don't contribute to coverage).
         xcodebuild test \
           -workspace "Internet Archive.xcworkspace" \
           -scheme "Internet Archive" \
@@ -167,7 +167,8 @@ jobs:
         echo ""
 
         # Set threshold to 60% - ViewControllers with storyboard dependencies are hard to test
-        # without major refactoring. Current coverage is ~62% with API-dependent files excluded.
+        # without major refactoring. Current coverage is ~64% with API-dependent files excluded.
+        # TODO: Increase to 70% after additional refactoring of remaining ViewControllers.
         threshold=60
         if awk "BEGIN {exit !($ADJUSTED_COVERAGE < $threshold)}"; then
           echo "❌ Adjusted coverage ${ADJUSTED_COVERAGE}% is below threshold ${threshold}%"
