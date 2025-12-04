@@ -67,16 +67,46 @@ jobs:
         cd "${GITHUB_WORKSPACE}"
         pod install --repo-update
 
+    - name: Boot simulator
+      run: |
+        # Pre-boot the simulator to avoid FrontBoard launch failures.
+        DEVICE_ID=$(xcrun simctl list devices available | grep "Apple TV" | head -1 | grep -oE '[A-F0-9-]{36}')
+        echo "Booting simulator: $DEVICE_ID"
+        xcrun simctl boot "$DEVICE_ID" || true
+        # Wait for simulator to fully boot
+        sleep 10
+        xcrun simctl list devices | grep -i "apple tv"
+
     - name: Run tests
       run: |
         # Run only unit tests, skip UI tests (they are flaky in CI and don't contribute to coverage).
-        xcodebuild test \
-          -workspace "Internet Archive.xcworkspace" \
-          -scheme "Internet Archive" \
-          -destination "platform=tvOS Simulator,name=Apple TV" \
-          -only-testing:"Internet ArchiveTests" \
-          -enableCodeCoverage YES \
-          -resultBundlePath TestResults.xcresult
+        # Retry once if simulator fails to launch (FrontBoard intermittent issue).
+        for attempt in 1 2; do
+          echo "Test attempt $attempt..."
+          rm -rf TestResults.xcresult
+          if xcodebuild test \
+            -workspace "Internet Archive.xcworkspace" \
+            -scheme "Internet Archive" \
+            -destination "platform=tvOS Simulator,name=Apple TV" \
+            -only-testing:"Internet ArchiveTests" \
+            -enableCodeCoverage YES \
+            -resultBundlePath TestResults.xcresult; then
+            echo "Tests passed on attempt $attempt"
+            exit 0
+          else
+            echo "Tests failed on attempt $attempt"
+            if [ $attempt -eq 1 ]; then
+              echo "Retrying after simulator reset..."
+              xcrun simctl shutdown all || true
+              sleep 5
+              DEVICE_ID=$(xcrun simctl list devices available | grep "Apple TV" | head -1 | grep -oE '[A-F0-9-]{36}')
+              xcrun simctl boot "$DEVICE_ID" || true
+              sleep 10
+            fi
+          fi
+        done
+        echo "Tests failed after 2 attempts"
+        exit 1
 
     - name: Generate code coverage report
       if: success()
