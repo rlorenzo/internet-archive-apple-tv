@@ -9,35 +9,67 @@
 
 import UIKit
 import AlamofireImage
+import Combine
 
 @MainActor
 class VideoVC: UIViewController {
 
     // MARK: - Properties
 
-    @IBOutlet weak var collectionView: UICollectionView!
+    @IBOutlet weak var collectionView: UICollectionView?
 
-    var collection = "movies"
+    /// Public property for setting collection (for storyboard usage)
+    var collection: String {
+        get { viewModel.state.collection }
+        set { viewModel.setCollection(newValue) }
+    }
 
-    private var dataSource: ItemDataSource!
-    private var imagePrefetcher: ImagePrefetcher!
-    private var items: [SearchResult] = []
-    private var isLoading = false
+    // MARK: - Dependencies
+
+    /// ViewModel - can be replaced for testing via `setViewModel(_:)` before viewDidLoad
+    private(set) lazy var viewModel: VideoViewModel = {
+        VideoViewModel(
+            collectionService: DefaultCollectionService(),
+            collection: "movies"
+        )
+    }()
+
+    private var cancellables = Set<AnyCancellable>()
+
+    // MARK: - Private Properties
+
+    private var dataSource: ItemDataSource?
+    private var imagePrefetcher: ImagePrefetcher?
+
+    // MARK: - Testing Support
+
+    /// Allows injecting a mock ViewModel for testing - must be called before viewDidLoad
+    func setViewModel(_ viewModel: VideoViewModel) {
+        self.viewModel = viewModel
+    }
 
     // MARK: - Lifecycle
 
     override func viewDidLoad() {
         super.viewDidLoad()
 
+        guard collectionView != nil else {
+            // Skip setup if collectionView is not connected (testing without storyboard)
+            return
+        }
+
         configureCollectionView()
         configureDataSource()
         configureImagePrefetching()
+        bindViewModel()
         loadData()
     }
 
     // MARK: - Configuration
 
-    private func configureCollectionView() {
+    func configureCollectionView() {
+        guard let collectionView = collectionView else { return }
+
         // Configure appearance
         collectionView.backgroundColor = .clear
         view.backgroundColor = .clear
@@ -61,12 +93,16 @@ class VideoVC: UIViewController {
         collectionView.delegate = self
     }
 
-    private func configureDataSource() {
+    func configureDataSource() {
+        guard let collectionView = collectionView else { return }
+
         dataSource = ItemDataSource(
             collectionView: collectionView
         ) { [weak self] collectionView, indexPath, itemViewModel in
+            guard let self = self else { return UICollectionViewCell() }
+
             // Return skeleton cell if loading
-            if self?.isLoading == true {
+            if self.viewModel.state.isLoading {
                 guard let cell = collectionView.dequeueReusableCell(
                     withReuseIdentifier: SkeletonItemCell.reuseIdentifier,
                     for: indexPath
@@ -90,79 +126,51 @@ class VideoVC: UIViewController {
         }
     }
 
-    private func configureImagePrefetching() {
+    func configureImagePrefetching() {
+        guard let collectionView = collectionView, let dataSource = dataSource else { return }
         imagePrefetcher = ImagePrefetcher(collectionView: collectionView, dataSource: dataSource)
+    }
+
+    // MARK: - ViewModel Binding
+
+    private func bindViewModel() {
+        viewModel.$state
+            .receive(on: DispatchQueue.main)
+            .sink { [weak self] state in
+                self?.handleStateChange(state)
+            }
+            .store(in: &cancellables)
+    }
+
+    private func handleStateChange(_ state: VideoViewState) {
+        if state.isLoading {
+            showSkeletonLoading()
+        } else if let errorMessage = state.errorMessage {
+            displayEmptyState(.networkError())
+            Global.showServiceUnavailableAlert(target: self)
+            NSLog("VideoVC Error: \(errorMessage)")
+        } else if state.items.isEmpty {
+            displayEmptyState(.noItems())
+        } else {
+            Task {
+                await applySnapshot(items: state.items)
+            }
+        }
     }
 
     // MARK: - Data Loading
 
-    private func loadData() {
-        isLoading = true
-        showSkeletonLoading()
-
+    func loadData() {
         Task {
-            do {
-                // Use retry mechanism for network resilience
-                let result = try await RetryMechanism.execute(config: .standard) {
-                    try await APIManager.sharedManager.getCollectionsTyped(
-                        collection: self.collection,
-                        resultType: "collection",
-                        limit: nil as Int?
-                    )
-                }
-
-                // Update collection name
-                self.collection = result.collection
-
-                // Sort by downloads
-                self.items = result.results.sorted { item1, item2 in
-                    (item1.downloads ?? 0) > (item2.downloads ?? 0)
-                }
-
-                // Update data source
-                isLoading = false
-                await applySnapshot()
-
-                // Show empty state if no items
-                if items.isEmpty {
-                    displayEmptyState(.noItems())
-                }
-
-                // Log success
-                ErrorLogger.shared.logSuccess(
-                    operation: .getCollections,
-                    info: ["count": items.count, "collection": collection]
-                )
-
-            } catch {
-                isLoading = false
-
-                // Log error with context
-                let context = ErrorContext(
-                    operation: .getCollections,
-                    userFacingTitle: "Unable to Load Videos",
-                    additionalInfo: ["collection": collection]
-                )
-
-                // Show error empty state
-                displayEmptyState(.networkError())
-
-                // Present error with retry option
-                ErrorPresenter.shared.present(
-                    error,
-                    context: context,
-                    on: self,
-                    retry: { [weak self] in
-                        self?.loadData()
-                    }
-                )
-            }
+            await viewModel.loadCollection()
         }
     }
 
     // MARK: - Snapshot Management
 
-    private func applySnapshot() async {
+    private func applySnapshot(items: [SearchResult]) async {
+        guard let dataSource = dataSource else { return }
+
         var snapshot = ItemSnapshot()
         snapshot.appendSections([.main])
 
@@ -172,7 +180,9 @@ class VideoVC: UIViewController {
         await dataSource.apply(snapshot, animatingDifferences: true)
     }
 
-    private func showSkeletonLoading() {
+    func showSkeletonLoading() {
+        guard let dataSource = dataSource else { return }
+
         var snapshot = ItemSnapshot()
         snapshot.appendSections([.main])
 
@@ -202,9 +212,21 @@ class VideoVC: UIViewController {
 
     // MARK: - Empty State
 
-    private func displayEmptyState(_ emptyStateView: EmptyStateView) {
+    func displayEmptyState(_ emptyStateView: EmptyStateView) {
         hideEmptyState()
         showEmptyState(emptyStateView)
+    }
+
+    // MARK: - Testing Helpers
+
+    /// Expose state for testing
+    var currentState: VideoViewState {
+        viewModel.state
+    }
+
+    /// Expose items count for testing
+    var itemCount: Int {
+        viewModel.state.itemCount
     }
 }
 
@@ -214,11 +236,10 @@ extension VideoVC: UICollectionViewDelegate {
 
     func collectionView(_ collectionView: UICollectionView, didSelectItemAt indexPath: IndexPath) {
         // Don't allow selection while loading
-        guard !isLoading else { return }
+        guard !viewModel.state.isLoading else { return }
 
-        // Get the selected item
-        guard indexPath.item < items.count else { return }
-        let item = items[indexPath.item]
+        // Get navigation data from ViewModel
+        guard let navData = viewModel.navigationData(for: indexPath.item) else { return }
 
         // Navigate to YearsVC
         guard let yearsVC = storyboard?.instantiateViewController(
@@ -227,9 +248,9 @@ extension VideoVC: UICollectionViewDelegate {
             return
         }
 
-        yearsVC.collection = collection
-        yearsVC.name = item.title ?? item.identifier
-        yearsVC.identifier = item.identifier
+        yearsVC.collection = navData.collection
+        yearsVC.name = navData.name
+        yearsVC.identifier = navData.identifier
 
         present(yearsVC, animated: true, completion: nil)
     }

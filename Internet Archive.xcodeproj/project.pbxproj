@@ -67,6 +67,7 @@
 		C3DD648F20A2382B0056DEC1 /* AppConstants.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3DD648E20A2382B0056DEC1 /* AppConstants.swift */; };
 		C3DD649220A24FFD0056DEC1 /* ItemCell.swift in Sources */ = {isa = PBXBuildFile; fileRef = C3DD649120A24FFD0056DEC1 /* ItemCell.swift */; };
 		C3F7738120A4F47D002A3BD2 /* Asses.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C3F7738020A4F47D002A3BD2 /* Asses.xcassets */; };
+		FFF1FDC25FE208C0BBA77E21 /* VideoViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A026F81D336612FB451D836 /* VideoViewModel.swift */; };
 		LAUNCH000000000000001 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = LAUNCH000000000000002 /* LaunchScreen.storyboard */; };
 /* End PBXBuildFile section */
 
@@ -126,6 +127,7 @@
 		508928117E97EAD89FDE1405 /* Pods-Internet Archive.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet Archive.release.xcconfig"; path = "Target Support Files/Pods-Internet Archive/Pods-Internet Archive.release.xcconfig"; sourceTree = "<group>"; };
 		6A1A8F581F04FACC7FC1013E /* Pods-Internet Archive.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet Archive.debug.xcconfig"; path = "Target Support Files/Pods-Internet Archive/Pods-Internet Archive.debug.xcconfig"; sourceTree = "<group>"; };
 		79728E0BC82FA53973F1E113 /* RequestModels.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = RequestModels.swift; sourceTree = "<group>"; };
+		8A026F81D336612FB451D836 /* VideoViewModel.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = VideoViewModel.swift; sourceTree = "<group>"; };
 		A1789A7600134709E74AA21B /* Pods_Internet_ArchiveUITests.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Internet_ArchiveUITests.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		ACF558E0B6CB8477B99F92DB /* Pods_Internet_Archive.framework */ = {isa = PBXFileReference; explicitFileType = wrapper.framework; includeInIndex = 0; path = Pods_Internet_Archive.framework; sourceTree = BUILT_PRODUCTS_DIR; };
 		B14660AC6723CAC75EDB331E /* Pods-Internet ArchiveUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet ArchiveUITests.release.xcconfig"; path = "Target Support Files/Pods-Internet ArchiveUITests/Pods-Internet ArchiveUITests.release.xcconfig"; sourceTree = "<group>"; };
@@ -166,7 +168,7 @@
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		48AC81DE2ED11B3A004C9F77 /* PBXFileSystemSynchronizedBuildFileExceptionSet */ = {
+		48AC81DE2ED11B3A004C9F77 /* Exceptions for "Internet ArchiveTests" folder in "Internet ArchiveTests" target */ = {
 			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
 			membershipExceptions = (
 				Info.plist,
@@ -176,8 +178,29 @@
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
-		48AC819C2ED1179F004C9F77 /* Internet ArchiveTests */ = {isa = PBXFileSystemSynchronizedRootGroup; exceptions = (48AC81DE2ED11B3A004C9F77 /* PBXFileSystemSynchronizedBuildFileExceptionSet */, ); explicitFileTypes = {}; explicitFolders = (); path = "Internet ArchiveTests"; sourceTree = "<group>"; };
-		48AC81C72ED1181A004C9F77 /* Internet ArchiveUITests */ = {isa = PBXFileSystemSynchronizedRootGroup; explicitFileTypes = {}; explicitFolders = (); path = "Internet ArchiveUITests"; sourceTree = "<group>"; };
+		48AC819C2ED1179F004C9F77 /* Internet ArchiveTests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				48AC81DE2ED11B3A004C9F77 /* Exceptions for "Internet ArchiveTests" folder in "Internet ArchiveTests" target */,
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "Internet ArchiveTests";
+			sourceTree = "<group>";
+		};
+		48AC81C72ED1181A004C9F77 /* Internet ArchiveUITests */ = {
+			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+			);
+			explicitFileTypes = {
+			};
+			explicitFolders = (
+			);
+			path = "Internet ArchiveUITests";
+			sourceTree = "<group>";
+		};
 /* End PBXFileSystemSynchronizedRootGroup section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -234,6 +257,7 @@
 				3B0B3A412EDCF5A500D1EA24 /* FavoritesViewModel.swift */,
 				3B0B3A422EDCF5A500D1EA24 /* LoginViewModel.swift */,
 				3B0B3A432EDCF5A500D1EA24 /* SearchViewModel.swift */,
+				8A026F81D336612FB451D836 /* VideoViewModel.swift */,
 			);
 			path = ViewModels;
 			sourceTree = "<group>";
@@ -816,6 +840,7 @@
 				C3186B9920BF074200698EC3 /* FavoriteVC.swift in Sources */,
 				C39588C620BE35A200BB23C5 /* ItemVC.swift in Sources */,
 				1690D8B88836415BCC8D12CF /* RequestModels.swift in Sources */,
+				FFF1FDC25FE208C0BBA77E21 /* VideoViewModel.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
