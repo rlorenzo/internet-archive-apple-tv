@@ -129,34 +129,103 @@ final class APIManager: NSObject {
     }
 
     /// Search with typed response (async/await)
-    func searchTyped(query: String, options: [String: String]) async throws -> SearchResponse {
+    /// - Parameters:
+    ///   - query: The search query
+    ///   - options: Additional query options (rows, fl[], sort, etc.)
+    ///   - applyContentFilter: Whether to apply content filtering exclusions (default: true)
+    func searchTyped(
+        query: String,
+        options: [String: String],
+        applyContentFilter: Bool = true
+    ) async throws -> SearchResponse {
         var strOption = "&output=json"
 
-        for (key, value) in options {
+        // Ensure licenseurl and collection are in the field list for content filtering
+        var modifiedOptions = options
+        if applyContentFilter, let existingFields = options["fl[]"] {
+            // Add licenseurl and collection if not already present
+            var fields = existingFields
+            if !fields.contains("licenseurl") {
+                fields += ",licenseurl"
+            }
+            if !fields.contains("collection") {
+                fields += ",collection"
+            }
+            modifiedOptions["fl[]"] = fields
+        }
+
+        for (key, value) in modifiedOptions {
             strOption += "&\(key)=\(value)"
         }
 
-        let url = "\(baseURL)advancedsearch.php?q=\(query)\(strOption)"
+        // Build the final query with content filter exclusions
+        var finalQuery = query
+        if applyContentFilter {
+            let exclusionQuery = ContentFilterService.shared.buildExclusionQuery()
+            if !exclusionQuery.isEmpty {
+                finalQuery = "\(query) \(exclusionQuery)"
+            }
+        }
+
+        let url = "\(baseURL)advancedsearch.php?q=\(finalQuery)\(strOption)"
         guard let encodedURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
             throw NetworkError.invalidParameters
         }
 
-        return try await AF.request(encodedURL,
-                                    method: .get,
-                                    encoding: URLEncoding.default,
-                                    headers: headers)
-            .serializingDecodable(SearchResponse.self)
-            .value
+        let response = try await AF.request(
+            encodedURL,
+            method: .get,
+            encoding: URLEncoding.default,
+            headers: headers
+        )
+        .serializingDecodable(SearchResponse.self)
+        .value
+
+        // Apply additional client-side filtering for results that may have slipped through
+        // Note: We preserve the original numFound to avoid breaking pagination logic
+        // The filtered docs may be fewer than numFound, which is expected
+        if applyContentFilter {
+            let filteredDocs = ContentFilterService.shared.filter(response.response.docs)
+            return SearchResponse(
+                responseHeader: response.responseHeader,
+                response: SearchResponse.SearchResults(
+                    numFound: response.response.numFound,
+                    start: response.response.start,
+                    docs: filteredDocs
+                )
+            )
+        }
+
+        return response
     }
 
     /// Get collections with typed response (async/await)
-    func getCollectionsTyped(collection: String, resultType: String, limit: Int? = nil) async throws -> (collection: String, results: [SearchResult]) {
+    /// - Parameters:
+    ///   - collection: The collection identifier to fetch
+    ///   - resultType: The media type to filter by (e.g., "movies", "audio")
+    ///   - limit: Maximum number of results (nil fetches count first, then all)
+    ///   - applyContentFilter: Whether to apply content filtering (default: true)
+    func getCollectionsTyped(
+        collection: String,
+        resultType: String,
+        limit: Int? = nil,
+        applyContentFilter: Bool = true
+    ) async throws -> (collection: String, results: [SearchResult]) {
+        // Check if the collection itself is blocked
+        if applyContentFilter && ContentFilterService.shared.isCollectionBlocked(collection) {
+            return (collection, [])
+        }
+
         let options = [
             "rows": limit.map { "\($0)" } ?? "1",
-            "fl[]": "identifier,title,year,downloads,date,creator,description,mediatype"
+            "fl[]": "identifier,title,year,downloads,date,creator,description,mediatype,collection,licenseurl"
         ]
 
-        let response = try await searchTyped(query: "collection:(\(collection)) And mediatype:\(resultType)", options: options)
+        let response = try await searchTyped(
+            query: "collection:(\(collection)) And mediatype:\(resultType)",
+            options: options,
+            applyContentFilter: applyContentFilter
+        )
 
         // If first call to get count, make second call with actual limit
         if limit == nil {
@@ -164,7 +233,12 @@ final class APIManager: NSObject {
             if numFound == 0 {
                 return (collection, [])
             }
-            return try await getCollectionsTyped(collection: collection, resultType: resultType, limit: numFound)
+            return try await getCollectionsTyped(
+                collection: collection,
+                resultType: resultType,
+                limit: numFound,
+                applyContentFilter: applyContentFilter
+            )
         }
 
         return (collection, response.response.docs)
