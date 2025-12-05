@@ -144,14 +144,16 @@ class VideoVC: UIViewController {
 
     private func handleStateChange(_ state: VideoViewState) {
         if state.isLoading {
+            hideEmptyState()
             showSkeletonLoading()
         } else if let errorMessage = state.errorMessage {
             displayEmptyState(.networkError())
             Global.showServiceUnavailableAlert(target: self)
             NSLog("VideoVC Error: \(errorMessage)")
-        } else if state.items.isEmpty {
+        } else if state.hasLoaded && state.items.isEmpty {
             displayEmptyState(.noItems())
-        } else {
+        } else if !state.items.isEmpty {
+            hideEmptyState()
             Task {
                 await applySnapshot(items: state.items)
             }

@@ -181,6 +181,10 @@ final class ModernItemCell: UICollectionViewCell {
             cornerRadius: 12
         ).cgPath
 
+        // Focus outline border
+        layer.borderWidth = 4
+        layer.borderColor = UIColor.white.cgColor
+
         // Glass effect (subtle overlay)
         if #available(tvOS 26.0, *) {
             // Enhanced liquid glass on focus
@@ -200,6 +204,9 @@ final class ModernItemCell: UICollectionViewCell {
 
         // Remove shadow
         shadowLayer.shadowOpacity = 0
+
+        // Remove focus outline border
+        layer.borderWidth = 0
 
         // Remove glass effect
         glassEffectView.alpha = 0

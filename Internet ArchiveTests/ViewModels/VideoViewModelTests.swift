@@ -282,6 +282,36 @@ final class VideoViewModelTests: XCTestCase {
         await viewModel.loadCollection()
         XCTAssertFalse(viewModel.state.isLoading)
     }
+
+    // MARK: - hasLoaded Tests
+
+    func testLoadCollection_setsHasLoadedTrue_onSuccess() async {
+        mockService.mockCollectionsResponse = (
+            collection: "movies",
+            results: [TestFixtures.makeSearchResult(identifier: "test1")]
+        )
+
+        XCTAssertFalse(viewModel.state.hasLoaded)
+
+        await viewModel.loadCollection()
+
+        XCTAssertTrue(viewModel.state.hasLoaded)
+    }
+
+    func testLoadCollection_setsHasLoadedTrue_onError() async {
+        mockService.errorToThrow = NetworkError.timeout
+
+        XCTAssertFalse(viewModel.state.hasLoaded)
+
+        await viewModel.loadCollection()
+
+        XCTAssertTrue(viewModel.state.hasLoaded)
+        XCTAssertNotNil(viewModel.state.errorMessage)
+    }
+
+    func testLoadCollection_hasLoadedFalse_beforeLoad() {
+        XCTAssertFalse(viewModel.state.hasLoaded)
+    }
 }
 
 // MARK: - VideoViewState Tests
@@ -318,5 +348,27 @@ final class VideoViewStateTests: XCTestCase {
             TestFixtures.makeSearchResult(identifier: "test3")
         ]
         XCTAssertEqual(state.itemCount, 3)
+    }
+
+    // MARK: - hasLoaded Tests
+
+    func testHasLoaded_initiallyFalse() {
+        let state = VideoViewState.initial
+        XCTAssertFalse(state.hasLoaded)
+    }
+
+    func testHasLoaded_canBeSetToTrue() {
+        var state = VideoViewState.initial
+        state.hasLoaded = true
+        XCTAssertTrue(state.hasLoaded)
+    }
+
+    func testHasLoaded_remainsTrueAfterSettingItems() {
+        var state = VideoViewState.initial
+        state.hasLoaded = true
+        state.items = [TestFixtures.makeSearchResult(identifier: "test1")]
+
+        XCTAssertTrue(state.hasLoaded)
+        XCTAssertTrue(state.hasItems)
     }
 }
