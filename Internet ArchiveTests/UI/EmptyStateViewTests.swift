@@ -143,4 +143,66 @@ final class EmptyStateViewTests: XCTestCase {
         // The view should have auto layout constraints from setupViews
         XCTAssertFalse(view.constraints.isEmpty || view.subviews.first?.constraints.isEmpty == false)
     }
+
+    // MARK: - UIViewController Extension Tests
+
+    func testShowEmptyState_addsEmptyStateView() {
+        let viewController = UIViewController()
+        viewController.loadViewIfNeeded()
+
+        let emptyState = EmptyStateView.noSearchResults()
+        viewController.showEmptyState(emptyState)
+
+        let hasEmptyState = viewController.view.subviews.contains { $0 is EmptyStateView }
+        XCTAssertTrue(hasEmptyState)
+    }
+
+    func testShowEmptyState_setsConstraints() {
+        let viewController = UIViewController()
+        viewController.loadViewIfNeeded()
+
+        let emptyState = EmptyStateView.noSearchResults()
+        viewController.showEmptyState(emptyState)
+
+        XCTAssertFalse(emptyState.translatesAutoresizingMaskIntoConstraints)
+    }
+
+    func testHideEmptyState_removesEmptyStateView() {
+        let viewController = UIViewController()
+        viewController.loadViewIfNeeded()
+
+        let emptyState = EmptyStateView.noSearchResults()
+        viewController.showEmptyState(emptyState)
+
+        viewController.hideEmptyState()
+
+        let hasEmptyState = viewController.view.subviews.contains { $0 is EmptyStateView }
+        XCTAssertFalse(hasEmptyState)
+    }
+
+    func testHideEmptyState_whenNoEmptyState_doesNotCrash() {
+        let viewController = UIViewController()
+        viewController.loadViewIfNeeded()
+
+        // Should not crash when no empty state exists
+        viewController.hideEmptyState()
+
+        XCTAssertNotNil(viewController)
+    }
+
+    func testShowMultipleEmptyStates_andHideAll() {
+        let viewController = UIViewController()
+        viewController.loadViewIfNeeded()
+
+        viewController.showEmptyState(EmptyStateView.noSearchResults())
+        viewController.showEmptyState(EmptyStateView.noFavorites())
+
+        let countBefore = viewController.view.subviews.filter { $0 is EmptyStateView }.count
+        XCTAssertEqual(countBefore, 2)
+
+        viewController.hideEmptyState()
+
+        let countAfter = viewController.view.subviews.filter { $0 is EmptyStateView }.count
+        XCTAssertEqual(countAfter, 0)
+    }
 }

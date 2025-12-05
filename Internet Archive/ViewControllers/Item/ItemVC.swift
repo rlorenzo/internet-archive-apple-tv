@@ -158,9 +158,20 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
                 self.player = AVPlayer(playerItem: playerItem)
 
                 if mediaType == "movies" {
-                    let playerViewController = AVPlayerViewController()
+                    // Extract subtitle tracks from metadata
+                    let subtitleTracks = SubtitleManager.shared.extractSubtitleTracks(
+                        from: files,
+                        identifier: identifier,
+                        server: metadataResponse.server
+                    )
+
+                    // Use custom video player with subtitle support
+                    let playerViewController = VideoPlayerViewController(
+                        player: self.player,
+                        subtitleTracks: subtitleTracks,
+                        identifier: identifier
+                    )
                     playerViewController.delegate = self
-                    playerViewController.player = self.player
 
                     self.present(playerViewController, animated: true) {
                         self.player.play()
@@ -168,7 +179,11 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
 
                     ErrorLogger.shared.logSuccess(
                         operation: .playVideo,
-                        info: ["identifier": identifier, "filename": filename]
+                        info: [
+                            "identifier": identifier,
+                            "filename": filename,
+                            "subtitleTracksCount": "\(subtitleTracks.count)"
+                        ]
                     )
                 } else if mediaType == "etree" {
                     self.startPlaying()

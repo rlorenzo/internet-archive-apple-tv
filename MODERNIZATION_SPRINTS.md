@@ -748,9 +748,10 @@ The following files need to be manually added to the Xcode project:
 
 ## Optional Future Sprints
 
-### Sprint 13: Closed Captioning Support
+### Sprint 13: Closed Captioning Support 🚧 IN PROGRESS
 **Estimated Time:** 15-20 hours
 **PR Title:** `feat: Add closed captioning/subtitle support for video playback`
+**Status:** Implementation Complete - Ready for Testing
 
 #### Goals
 - Enable closed captions for videos that have subtitle files
@@ -767,24 +768,59 @@ Subtitle files are stored alongside video files with matching names:
 - Multiple languages: `IDENTIFIER_english.srt`, `IDENTIFIER_spanish.srt`, etc.
 
 #### Tasks
-- [ ] Detect subtitle files in metadata response (`FileInfo` with `.srt` or `.vtt` format)
-- [ ] Parse subtitle file names to extract language information
-- [ ] Create subtitle URL builder using server/identifier pattern
-- [ ] Integrate AVPlayer subtitle support (native WebVTT support)
-- [ ] Convert SRT to WebVTT if needed (AVPlayer prefers WebVTT)
-- [ ] Add subtitle track selection UI in video player
-- [ ] Store user's subtitle preference in UserDefaults
-- [ ] Add accessibility labels for subtitle controls
-- [ ] Test with various Internet Archive videos that have captions
+- [x] Detect subtitle files in metadata response (`FileInfo` with `.srt` or `.vtt` format)
+- [x] Parse subtitle file names to extract language information
+- [x] Create subtitle URL builder using server/identifier pattern
+- [x] Integrate AVPlayer subtitle support (custom overlay approach)
+- [x] Convert SRT to WebVTT if needed (AVPlayer prefers WebVTT)
+- [x] Add subtitle track selection UI in video player
+- [x] Store user's subtitle preference in UserDefaults
+- [x] Add accessibility labels for subtitle controls
+- [ ] Test with various Internet Archive videos that have captions ⏳
+
+#### Files Created
+```
+Internet Archive/Models/
+└── SubtitleModels.swift ✅ (SubtitleTrack, SubtitleFormat, SubtitleLanguage, SubtitlePreferences)
+
+Internet Archive/Utilities/
+├── SubtitleManager.swift ✅ (Subtitle detection, language parsing, preference management)
+├── SRTtoVTTConverter.swift ✅ (Actor-based SRT→WebVTT converter with caching)
+└── SubtitleParser.swift ✅ (WebVTT parsing into SubtitleCue objects)
+
+Internet Archive/UI/Subtitles/
+└── SubtitleOverlayView.swift ✅ (Time-synchronized subtitle display overlay)
+
+Internet Archive/ViewControllers/Subtitles/
+└── SubtitleSelectionViewController.swift ✅ (tvOS-optimized track selection UI)
+
+Internet Archive/ViewControllers/Video/
+└── VideoPlayerViewController.swift ✅ (AVPlayerViewController subclass with subtitle support)
+```
+
+#### Files Modified
+```
+Internet Archive/Models/SubtitleModels.swift ✅ (FileInfo extension for subtitle detection)
+Internet Archive/ViewControllers/Item/ItemVC.swift ✅ (Uses VideoPlayerViewController)
+Internet Archive.xcodeproj/project.pbxproj ✅ (Added new files to project)
+```
+
+#### Technical Implementation
+- **Subtitle Detection:** FileInfo extension checks for `.srt` and `.vtt` file formats
+- **Language Parsing:** SubtitleManager parses filenames for 27+ language codes
+- **SRT Conversion:** Actor-based converter with local file caching
+- **Display:** Custom SubtitleOverlayView syncs with AVPlayer periodic time observer
+- **Selection UI:** SubtitleSelectionViewController with tvOS focus engine support
+- **Persistence:** UserDefaults stores enabled state, preferred language, last track
 
 #### Technical Notes
-- AVPlayer on tvOS natively supports WebVTT subtitles via `AVMediaSelectionGroup`
-- Subtitle URL pattern: `https://{server}/download/{identifier}/{subtitle_filename}`
-- Consider using `AVPlayerItem.externalMetadata` for subtitle tracks
-- May need to implement SRT→WebVTT converter for legacy files
+- Uses custom subtitle overlay instead of AVPlayer's native subtitle support for more control
+- SRT files are converted to WebVTT and cached locally for performance
+- Subtitle cues are parsed into memory for efficient time-based lookup
+- Supports 27+ languages with display name mapping
 
 #### Deliverable
-Video player with optional closed caption support, language selection for multi-language content, and persistent user preferences.
+✅ Video player with optional closed caption support, language selection for multi-language content, and persistent user preferences. **Implementation complete, ready for device testing.**
 
 ---
 
