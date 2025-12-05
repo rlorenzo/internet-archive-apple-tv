@@ -830,9 +830,8 @@ Internet Archive.xcodeproj/project.pbxproj ✅ (Added new files to project)
 **Status:** Implementation in progress
 
 #### Goals
-- Filter adult/mature content to comply with App Store guidelines
-- Filter copyrighted content by checking license URLs
-- Implement parental controls using tvOS built-in restrictions
+- Filter adult/mature content to comply with App Store guidelines (always enabled)
+- Optionally filter to show only openly-licensed content (Creative Commons, public domain, etc.)
 - Ensure app is suitable for all audiences by default
 
 #### Background
@@ -848,16 +847,10 @@ Internet Archive hosts adult content categories (e.g., "Hentai", mature media) t
 
 **License URL Field (`licenseurl`):**
 - Items can have a `licenseurl` metadata field pointing to their license
-- Common open licenses found:
-  - `creativecommons.org/publicdomain/zero/1.0/` (CC0)
-  - `creativecommons.org/publicdomain/mark/1.0/` (Public Domain Mark)
-  - `creativecommons.org/licenses/by/...` (CC BY)
-  - `creativecommons.org/licenses/by-sa/...` (CC BY-SA)
-  - `creativecommons.org/licenses/by-nc/...` (CC BY-NC)
-  - `creativecommons.org/licenses/by-nc-sa/...` (CC BY-NC-SA)
-  - `creativecommons.org/licenses/by-nd/...` (CC BY-ND)
-  - `creativecommons.org/licenses/by-nc-nd/...` (CC BY-NC-ND)
-- Many items lack a `licenseurl` field entirely
+- Supported open licenses (found in actual IA media content):
+  - **Public Domain:** CC0, Public Domain Mark
+  - **Creative Commons:** CC BY, CC BY-SA, CC BY-NC, CC BY-NC-SA, CC BY-ND, CC BY-NC-ND (versions 2.0-4.0)
+- Many items lack a `licenseurl` field entirely (license filtering excludes them by default)
 
 **API Filtering:**
 - Can search with `licenseurl:*creativecommons*` or `licenseurl:*publicdomain*`
@@ -875,19 +868,14 @@ Internet Archive hosts adult content categories (e.g., "Hentai", mature media) t
   - [ ] Filter search results to exclude mature collections by default
   - [ ] Filter browse/discovery screens to exclude adult content
   - [ ] Handle edge cases (user-uploaded content, mislabeled items)
-- [ ] **License Filtering (Optional):**
+- [x] **License Filtering (Default ON):**
   - [x] Create allowlist for open licenses (CC, public domain, GPL, MIT, etc.)
-  - [ ] Add option to only show openly-licensed content
+  - [x] Default to only showing openly-licensed content
   - [ ] Display license type in item details
-- [ ] **Parental Controls Integration:**
-  - [ ] Use Screen Time API or content rating entitlements for restrictions
-  - [ ] Check system parental control settings via device capabilities
-  - [ ] Consider AVPlayerItem content ratings for video playback
+  - [ ] Add option in Settings to disable license filtering
 - [ ] **Settings UI:**
-  - [ ] Add content filter toggle in Settings (default: ON/filtered)
-  - [ ] Add license filter toggle (optional, default: OFF)
-  - [ ] Require PIN or restriction override to disable filter
-  - [ ] Persist filter preference securely
+  - [ ] Add license filter toggle (default: ON)
+  - [ ] Persist filter preference
 - [ ] **Testing:**
   - [ ] Verify filtered content doesn't appear in any UI
   - [ ] Test parental control integration
@@ -918,11 +906,10 @@ Internet Archive/Models/
 ```
 
 #### Technical Implementation
-- **Collection-based filtering:** Blocks items in known adult collections including `no-preview`
-- **Keyword filtering:** Minimal keyword list for explicit terms (xxx, porn, etc.)
-- **License validation:** Allowlist pattern matching for CC, public domain, GPL, MIT, BSD licenses
-- **Query building:** Methods to build API exclusion queries and license filters
-- **PIN protection:** Optional PIN to modify filter settings
+- **Adult content filtering (always ON):** Blocks items in known adult collections including `no-preview`
+- **Keyword filtering (always ON):** Minimal keyword list for explicit terms (xxx, porn, etc.)
+- **License filtering (default ON):** Allowlist pattern matching for Creative Commons and Public Domain licenses
+- **Query building:** Methods to build API exclusion queries
 - **Statistics tracking:** Tracks filter reasons for debugging
 
 #### Deliverable

@@ -2,18 +2,10 @@
 //  ContentFilterModels.swift
 //  Internet Archive
 //
-//  Models for content filtering and parental controls
+//  Models for content filtering to ensure App Store compliance
 //
 
 import Foundation
-
-/// Content maturity level classifications
-/// Note: Currently only `general` (default) and `adult` (blocked) are used.
-/// Additional levels can be added when Internet Archive provides content ratings.
-public enum ContentMaturityLevel: String, Codable, Sendable {
-    case general   // Suitable for all ages (default)
-    case adult     // Blocked adult content
-}
 
 /// Reason why content was filtered
 public enum ContentFilterReason: Sendable {
@@ -40,53 +32,29 @@ public enum ContentFilterReason: Sendable {
 public struct ContentFilterResult: Sendable {
     let isFiltered: Bool
     let reason: ContentFilterReason?
-    let maturityLevel: ContentMaturityLevel
 
-    static let allowed = ContentFilterResult(isFiltered: false, reason: nil, maturityLevel: .general)
+    static let allowed = ContentFilterResult(isFiltered: false, reason: nil)
 
-    static func filtered(reason: ContentFilterReason, level: ContentMaturityLevel = .adult) -> ContentFilterResult {
-        ContentFilterResult(isFiltered: true, reason: reason, maturityLevel: level)
+    static func filtered(reason: ContentFilterReason) -> ContentFilterResult {
+        ContentFilterResult(isFiltered: true, reason: reason)
     }
 }
 
 /// User preferences for content filtering
+/// Note: Adult content filtering is always enabled and cannot be disabled (App Store requirement)
 public struct ContentFilterPreferences: Codable, Sendable {
-    /// Whether content filtering is enabled (default: true for App Store compliance)
-    var isEnabled: Bool
-
-    /// Maximum maturity level allowed (reserved for future use when IA provides ratings)
-    var maxMaturityLevel: ContentMaturityLevel
-
     /// Whether to require open licenses (CC, public domain, etc.)
     /// When enabled, only content with recognized open licenses is shown
+    /// Default: ON to suppress content without clear licensing
     var requireOpenLicense: Bool
 
-    /// Custom blocked collections added by user
-    var customBlockedCollections: [String]
-
-    /// Custom blocked keywords added by user
-    var customBlockedKeywords: [String]
-
-    /// Whether PIN is required to modify settings
-    var requirePINForSettings: Bool
-
-    /// Hashed PIN for settings protection (nil if not set)
-    /// Note: Uses simple obfuscation, not cryptographic security
-    var pinHash: String?
-
-    /// Default preferences (safe for App Store)
+    /// Default preferences
     static let `default` = ContentFilterPreferences(
-        isEnabled: true,
-        maxMaturityLevel: .general,
-        requireOpenLicense: false,
-        customBlockedCollections: [],
-        customBlockedKeywords: [],
-        requirePINForSettings: false,
-        pinHash: nil
+        requireOpenLicense: true  // Default ON to show only openly-licensed content
     )
 }
 
-/// Statistics about filtered content
+/// Statistics about filtered content (for debugging/logging)
 public struct ContentFilterStats: Sendable {
     var totalItemsChecked: Int
     var totalItemsFiltered: Int

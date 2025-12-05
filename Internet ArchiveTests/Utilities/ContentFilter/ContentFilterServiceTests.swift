@@ -41,17 +41,13 @@ final class ContentFilterServiceTests: XCTestCase {
 
     // MARK: - Default State Tests
 
-    func testDefaultState_filteringEnabled() {
+    func testDefaultState_licenseFilteringEnabled() {
         let service = ContentFilterService.shared
-        XCTAssertTrue(service.isFilteringEnabled, "Filtering should be enabled by default for App Store compliance")
+        service.resetToDefaults()
+        XCTAssertTrue(service.isLicenseFilteringEnabled, "License filtering should be enabled by default to suppress unlicensed content")
     }
 
-    func testDefaultState_licenseFilteringDisabled() {
-        let service = ContentFilterService.shared
-        XCTAssertFalse(service.isLicenseFilteringEnabled, "License filtering should be disabled by default")
-    }
-
-    // MARK: - Collection Filtering Tests
+    // MARK: - Collection Filtering Tests (Always Active)
 
     func testShouldFilter_blockedCollection_noPreview() {
         let result = SearchResult(
@@ -61,7 +57,7 @@ final class ContentFilterServiceTests: XCTestCase {
         )
 
         let filterResult = ContentFilterService.shared.shouldFilter(result)
-        XCTAssertTrue(filterResult.isFiltered, "Items in no-preview collection should be filtered")
+        XCTAssertTrue(filterResult.isFiltered, "Items in no-preview collection should always be filtered")
         if case .blockedCollection(let collection) = filterResult.reason {
             XCTAssertEqual(collection, "no-preview")
         } else {
@@ -77,7 +73,7 @@ final class ContentFilterServiceTests: XCTestCase {
         )
 
         let filterResult = ContentFilterService.shared.shouldFilter(result)
-        XCTAssertTrue(filterResult.isFiltered, "Items in hentai collection should be filtered")
+        XCTAssertTrue(filterResult.isFiltered, "Items in hentai collection should always be filtered")
     }
 
     func testShouldFilter_blockedCollection_adultcdroms() {
@@ -88,18 +84,34 @@ final class ContentFilterServiceTests: XCTestCase {
         )
 
         let filterResult = ContentFilterService.shared.shouldFilter(result)
-        XCTAssertTrue(filterResult.isFiltered, "Items in adultcdroms collection should be filtered")
+        XCTAssertTrue(filterResult.isFiltered, "Items in adultcdroms collection should always be filtered")
     }
 
-    func testShouldFilter_allowedCollection() {
+    func testShouldFilter_allowedCollection_withLicense() {
+        // Need to disable license filtering to test collection-only filtering
+        let service = ContentFilterService.shared
+        service.setLicenseFilteringEnabled(false)
+
         let result = SearchResult(
             identifier: "test-item",
             title: "Test Documentary",
             collection: ["movies", "documentary"]
         )
 
+        let filterResult = service.shouldFilter(result)
+        XCTAssertFalse(filterResult.isFiltered, "Items in normal collections should not be filtered when license filtering is off")
+    }
+
+    func testShouldFilter_allowedCollection_withOpenLicense() {
+        let result = SearchResult(
+            identifier: "test-item",
+            title: "Test Documentary",
+            collection: ["movies", "documentary"],
+            licenseurl: "https://creativecommons.org/licenses/by/4.0/"
+        )
+
         let filterResult = ContentFilterService.shared.shouldFilter(result)
-        XCTAssertFalse(filterResult.isFiltered, "Items in normal collections should not be filtered")
+        XCTAssertFalse(filterResult.isFiltered, "Items with open license should not be filtered")
     }
 
     func testShouldFilter_caseInsensitive() {
@@ -113,7 +125,7 @@ final class ContentFilterServiceTests: XCTestCase {
         XCTAssertTrue(filterResult.isFiltered, "Collection filtering should be case-insensitive")
     }
 
-    // MARK: - Keyword Filtering Tests
+    // MARK: - Keyword Filtering Tests (Always Active)
 
     func testShouldFilter_blockedKeyword_xxx() {
         let result = SearchResult(
@@ -123,7 +135,7 @@ final class ContentFilterServiceTests: XCTestCase {
         )
 
         let filterResult = ContentFilterService.shared.shouldFilter(result)
-        XCTAssertTrue(filterResult.isFiltered, "Items with xxx in title should be filtered")
+        XCTAssertTrue(filterResult.isFiltered, "Items with xxx in title should always be filtered")
     }
 
     func testShouldFilter_blockedKeyword_porn() {
@@ -134,21 +146,25 @@ final class ContentFilterServiceTests: XCTestCase {
         )
 
         let filterResult = ContentFilterService.shared.shouldFilter(result)
-        XCTAssertTrue(filterResult.isFiltered, "Items with porn in title should be filtered")
+        XCTAssertTrue(filterResult.isFiltered, "Items with porn in title should always be filtered")
     }
 
     func testShouldFilter_safeTitle() {
+        // Disable license filtering to test keyword-only filtering
+        let service = ContentFilterService.shared
+        service.setLicenseFilteringEnabled(false)
+
         let result = SearchResult(
             identifier: "test-item",
             title: "Educational Documentary",
             collection: ["movies"]
         )
 
-        let filterResult = ContentFilterService.shared.shouldFilter(result)
+        let filterResult = service.shouldFilter(result)
         XCTAssertFalse(filterResult.isFiltered, "Items with safe titles should not be filtered")
     }
 
-    // MARK: - License Filtering Tests
+    // MARK: - License Filtering Tests (Optional)
 
     func testIsOpenLicense_creativeCommonsPublicDomain() {
         let service = ContentFilterService.shared
@@ -221,18 +237,51 @@ final class ContentFilterServiceTests: XCTestCase {
         XCTAssertTrue(service.shouldFilter(resultWithRestrictedLicense).isFiltered, "Items with restricted license should be filtered")
     }
 
+    func testShouldFilter_licenseFiltering_disabled() {
+        let service = ContentFilterService.shared
+        service.setLicenseFilteringEnabled(false)
+
+        let resultWithoutLicense = SearchResult(
+            identifier: "test-item",
+            title: "Test Item",
+            collection: ["movies"],
+            licenseurl: nil
+        )
+
+        XCTAssertFalse(service.shouldFilter(resultWithoutLicense).isFiltered, "Items without license should pass when license filtering is disabled")
+    }
+
     // MARK: - Filter Array Tests
 
     func testFilter_removesBlockedItems() {
+        // Disable license filtering to test collection filtering only
+        let service = ContentFilterService.shared
+        service.setLicenseFilteringEnabled(false)
+
         let results = [
             SearchResult(identifier: "1", title: "Safe Movie", collection: ["movies"]),
             SearchResult(identifier: "2", title: "Adult Content", collection: ["hentai"]),
             SearchResult(identifier: "3", title: "Another Safe Movie", collection: ["documentary"])
         ]
 
-        let filtered = ContentFilterService.shared.filter(results)
+        let filtered = service.filter(results)
         XCTAssertEqual(filtered.count, 2, "Should filter out blocked items")
         XCTAssertTrue(filtered.allSatisfy { $0.identifier != "2" }, "Blocked item should be removed")
+    }
+
+    func testFilter_withLicenseFiltering() {
+        let service = ContentFilterService.shared
+        service.setLicenseFilteringEnabled(true)
+
+        let results = [
+            SearchResult(identifier: "1", title: "Licensed Movie", collection: ["movies"], licenseurl: "https://creativecommons.org/licenses/by/4.0/"),
+            SearchResult(identifier: "2", title: "Unlicensed Movie", collection: ["movies"], licenseurl: nil),
+            SearchResult(identifier: "3", title: "Adult Content", collection: ["hentai"], licenseurl: "https://creativecommons.org/licenses/by/4.0/")
+        ]
+
+        let filtered = service.filter(results)
+        XCTAssertEqual(filtered.count, 1, "Should only keep licensed, non-adult content")
+        XCTAssertEqual(filtered.first?.identifier, "1", "Only the licensed, safe item should remain")
     }
 
     // MARK: - Collection Blocking Tests
@@ -256,67 +305,6 @@ final class ContentFilterServiceTests: XCTestCase {
         XCTAssertFalse(service.hasContentWarning(["movies", "documentary"]))
     }
 
-    // MARK: - Custom Blocking Tests
-
-    func testAddBlockedCollection() {
-        let service = ContentFilterService.shared
-
-        service.addBlockedCollection("custom-adult-collection")
-
-        let result = SearchResult(
-            identifier: "test",
-            title: "Test",
-            collection: ["custom-adult-collection"]
-        )
-
-        XCTAssertTrue(service.shouldFilter(result).isFiltered, "Custom blocked collection should be filtered")
-    }
-
-    func testRemoveBlockedCollection() {
-        let service = ContentFilterService.shared
-
-        service.addBlockedCollection("custom-collection")
-        service.removeBlockedCollection("custom-collection")
-
-        let result = SearchResult(
-            identifier: "test",
-            title: "Test",
-            collection: ["custom-collection"]
-        )
-
-        XCTAssertFalse(service.shouldFilter(result).isFiltered, "Removed collection should not be filtered")
-    }
-
-    func testAddBlockedKeyword() {
-        let service = ContentFilterService.shared
-
-        service.addBlockedKeyword("custom-bad-word")
-
-        let result = SearchResult(
-            identifier: "test",
-            title: "This has custom-bad-word in it",
-            collection: ["movies"]
-        )
-
-        XCTAssertTrue(service.shouldFilter(result).isFiltered, "Custom blocked keyword should be filtered")
-    }
-
-    // MARK: - Filtering Disabled Tests
-
-    func testShouldFilter_whenDisabled_allowsEverything() {
-        let service = ContentFilterService.shared
-        service.setFilteringEnabled(false)
-
-        let result = SearchResult(
-            identifier: "test",
-            title: "XXX Porn Content",
-            collection: ["hentai", "no-preview"]
-        )
-
-        let filterResult = service.shouldFilter(result)
-        XCTAssertFalse(filterResult.isFiltered, "Nothing should be filtered when filtering is disabled")
-    }
-
     // MARK: - Query Building Tests
 
     func testBuildExclusionQuery() {
@@ -327,34 +315,11 @@ final class ContentFilterServiceTests: XCTestCase {
         XCTAssertTrue(query.contains("-collection:(hentai)"), "Exclusion query should include hentai")
     }
 
-    func testBuildExclusionQuery_whenDisabled() {
-        let service = ContentFilterService.shared
-        service.setFilteringEnabled(false)
-
-        let query = service.buildExclusionQuery()
-        XCTAssertTrue(query.isEmpty, "Exclusion query should be empty when filtering is disabled")
-    }
-
-    func testBuildLicenseQuery() {
-        let service = ContentFilterService.shared
-        service.setLicenseFilteringEnabled(true)
-
-        let query = service.buildLicenseQuery()
-        XCTAssertTrue(query.contains("licenseurl:*creativecommons*"), "License query should filter for CC licenses")
-    }
-
-    func testBuildLicenseQuery_whenDisabled() {
-        let service = ContentFilterService.shared
-        service.setLicenseFilteringEnabled(false)
-
-        let query = service.buildLicenseQuery()
-        XCTAssertTrue(query.isEmpty, "License query should be empty when license filtering is disabled")
-    }
-
     // MARK: - Statistics Tests
 
     func testFilterStatistics() {
         let service = ContentFilterService.shared
+        service.setLicenseFilteringEnabled(false)  // Disable to test collection/keyword filtering only
 
         // Filter some items
         let results = [
@@ -386,48 +351,27 @@ final class ContentFilterServiceTests: XCTestCase {
         XCTAssertEqual(stats.totalItemsFiltered, 0)
     }
 
-    // MARK: - PIN Tests
-
-    func testPIN_notEnabledByDefault() {
-        let service = ContentFilterService.shared
-        XCTAssertFalse(service.isPINProtectionEnabled)
-    }
-
-    func testPIN_setAndVerify() {
-        let service = ContentFilterService.shared
-
-        service.setPIN("1234")
-        XCTAssertTrue(service.isPINProtectionEnabled)
-        XCTAssertTrue(service.verifyPIN("1234"))
-        XCTAssertFalse(service.verifyPIN("0000"))
-    }
-
-    func testPIN_remove() {
-        let service = ContentFilterService.shared
-
-        service.setPIN("1234")
-        service.removePIN()
-
-        XCTAssertFalse(service.isPINProtectionEnabled)
-        XCTAssertTrue(service.verifyPIN("anything"))  // Should always pass when no PIN
-    }
-
     // MARK: - Preferences Tests
 
     func testResetToDefaults() {
         let service = ContentFilterService.shared
 
         // Modify settings
-        service.setFilteringEnabled(false)
-        service.setLicenseFilteringEnabled(true)
-        service.addBlockedCollection("custom")
-        service.setPIN("1234")
+        service.setLicenseFilteringEnabled(false)
 
         // Reset
         service.resetToDefaults()
 
-        XCTAssertTrue(service.isFilteringEnabled)
+        XCTAssertTrue(service.isLicenseFilteringEnabled, "Default should have license filtering ON")
+    }
+
+    func testSetLicenseFilteringEnabled() {
+        let service = ContentFilterService.shared
+
+        service.setLicenseFilteringEnabled(true)
+        XCTAssertTrue(service.isLicenseFilteringEnabled)
+
+        service.setLicenseFilteringEnabled(false)
         XCTAssertFalse(service.isLicenseFilteringEnabled)
-        XCTAssertFalse(service.isPINProtectionEnabled)
     }
 }

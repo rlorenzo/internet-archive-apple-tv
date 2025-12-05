@@ -140,16 +140,15 @@ final class APIManager: NSObject {
     ) async throws -> SearchResponse {
         var strOption = "&output=json"
 
-        // Ensure licenseurl and collection are in the field list for content filtering
+        // Ensure collection and licenseurl fields are in the list for content filtering
         var modifiedOptions = options
         if applyContentFilter, let existingFields = options["fl[]"] {
-            // Add licenseurl and collection if not already present
             var fields = existingFields
-            if !fields.contains("licenseurl") {
-                fields += ",licenseurl"
-            }
             if !fields.contains("collection") {
                 fields += ",collection"
+            }
+            if !fields.contains("licenseurl") {
+                fields += ",licenseurl"
             }
             modifiedOptions["fl[]"] = fields
         }
@@ -182,8 +181,6 @@ final class APIManager: NSObject {
         .value
 
         // Apply additional client-side filtering for results that may have slipped through
-        // Note: We preserve the original numFound to avoid breaking pagination logic
-        // The filtered docs may be fewer than numFound, which is expected
         if applyContentFilter {
             let filteredDocs = ContentFilterService.shared.filter(response.response.docs)
             return SearchResponse(
