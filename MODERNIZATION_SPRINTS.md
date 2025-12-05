@@ -824,56 +824,96 @@ Internet Archive.xcodeproj/project.pbxproj ✅ (Added new files to project)
 
 ---
 
-### Sprint 14: Content Filtering & Parental Controls
+### Sprint 14: Content Filtering & Parental Controls 🚧 IN PROGRESS
 **Estimated Time:** 20-30 hours
 **PR Title:** `feat: Add content filtering and parental controls for App Store compliance`
+**Status:** Implementation in progress
 
 #### Goals
-- Filter adult/mature content to comply with App Store guidelines
-- Implement parental controls using tvOS built-in restrictions
+- Filter adult/mature content to comply with App Store guidelines (always enabled)
+- Optionally filter to show only openly-licensed content (Creative Commons, public domain, etc.)
 - Ensure app is suitable for all audiences by default
 
 #### Background
-Internet Archive hosts adult content categories (e.g., "Hentai", mature media) that would violate Apple's App Store guidelines if displayed without proper filtering. Apps must either:
-1. Filter out adult content entirely, or
-2. Implement proper age-gating with parental controls
+Internet Archive hosts adult content categories (e.g., "Hentai", mature media) that would violate Apple's App Store guidelines if displayed without proper filtering. Additionally, some content may have unclear licensing.
+
+#### Research Findings ✅
+
+**Content Warning System:**
+- Internet Archive's "content may be inappropriate" warning is triggered by the `no-preview` collection
+- Items in adult collections (e.g., `adultcdroms`) are also added to `no-preview`
+- The warning uses parameter `hide_flag_warning=porn` in the UI
+- **No formal content rating metadata field exists in the API**
+
+**License URL Field (`licenseurl`):**
+- Items can have a `licenseurl` metadata field pointing to their license
+- Supported open licenses (found in actual IA media content):
+  - **Public Domain:** CC0, Public Domain Mark
+  - **Creative Commons:** CC BY, CC BY-SA, CC BY-NC, CC BY-NC-SA, CC BY-ND, CC BY-NC-ND (versions 2.0-4.0)
+- Many items lack a `licenseurl` field entirely (license filtering excludes them by default)
+
+**API Filtering:**
+- Can search with `licenseurl:*creativecommons*` or `licenseurl:*publicdomain*`
+- Can exclude collections with `-collection:(name)` syntax
 
 #### Tasks
-- [ ] **Research Internet Archive Content Ratings:**
-  - [ ] Investigate if Internet Archive API provides content ratings/maturity flags
-  - [ ] Identify all adult/mature collection identifiers to filter
-  - [ ] Document which media types may contain mature content
-- [ ] **Implement Content Filtering:**
-  - [ ] Create `ContentFilter` service to check items against blocklist
+- [x] **Research Internet Archive Content Ratings:**
+  - [x] Investigate if Internet Archive API provides content ratings/maturity flags
+  - [x] Identify all adult/mature collection identifiers to filter
+  - [x] Document license URL patterns for open content
+- [x] **Implement Content Filtering:**
+  - [x] Create `ContentFilterService` to check items against blocklist
+  - [x] Create `ContentFilterModels` for preferences and filter results
+  - [x] Add `licenseurl` field to `SearchResult` and `ItemMetadata` models
   - [ ] Filter search results to exclude mature collections by default
   - [ ] Filter browse/discovery screens to exclude adult content
   - [ ] Handle edge cases (user-uploaded content, mislabeled items)
-- [ ] **Parental Controls Integration:**
-  - [ ] Use Screen Time API or content rating entitlements for restrictions
-  - [ ] Check system parental control settings via device capabilities
-  - [ ] Implement age-appropriate content tiers (if ratings available)
-  - [ ] Consider AVPlayerItem content ratings for video playback
+- [x] **License Filtering (Default ON):**
+  - [x] Create allowlist for open licenses (CC, public domain, GPL, MIT, etc.)
+  - [x] Default to only showing openly-licensed content
+  - [ ] Display license type in item details
+  - [ ] Add option in Settings to disable license filtering
 - [ ] **Settings UI:**
-  - [ ] Add content filter toggle in Settings (default: ON/filtered)
-  - [ ] Require PIN or restriction override to disable filter
-  - [ ] Persist filter preference securely
+  - [ ] Add license filter toggle (default: ON)
+  - [ ] Persist filter preference
 - [ ] **Testing:**
   - [ ] Verify filtered content doesn't appear in any UI
   - [ ] Test parental control integration
   - [ ] Audit search to ensure no bypass methods exist
 
-#### Known Adult Collections to Filter
-- `hentai`
-- `adult` / `adults_only`
-- Any collection with explicit maturity ratings
+#### Blocked Collections (Default Blocklist)
+```
+no-preview        # IA's content warning indicator
+adultcdroms       # Mature CD-ROM software
+hentai, hentaiarchive
+adult, adults_only, adultsoftware
+adult-games, adultgames
+erotic, erotica
+xxx, porn, pornography
+nsfw, 18plus, r18
+explicit, nudity, fetish
+```
 
-#### Technical Notes
-- Internet Archive's Advanced Search API supports collection filtering
-- May need to maintain client-side blocklist for collections without ratings
-- Consider using `NSPredicate` for efficient local filtering
+#### Files Created
+```
+Internet Archive/Utilities/ContentFilter/
+├── ContentFilterModels.swift    ✅ (Preferences, filter reasons, maturity levels)
+└── ContentFilterService.swift   ✅ (Main filtering logic, license validation)
+
+Internet Archive/Models/
+├── SearchModels.swift           ✅ (Added licenseurl field)
+└── MetadataModels.swift         ✅ (Added licenseurl field)
+```
+
+#### Technical Implementation
+- **Adult content filtering (always ON):** Blocks items in known adult collections including `no-preview`
+- **Keyword filtering (always ON):** Minimal keyword list for explicit terms (xxx, porn, etc.)
+- **License filtering (default ON):** Allowlist pattern matching for Creative Commons and Public Domain licenses
+- **Query building:** Methods to build API exclusion queries
+- **Statistics tracking:** Tracks filter reasons for debugging
 
 #### Deliverable
-App filters adult/mature content by default with optional parental control integration, ensuring App Store compliance.
+App filters adult/mature content by default with optional license filtering and parental control integration, ensuring App Store compliance.
 
 ---
 
@@ -883,7 +923,36 @@ App filters adult/mature content by default with optional parental control integ
 
 Full UI rewrite using SwiftUI, recommended for long-term maintainability.
 
-### Sprint 16: Additional Features
+### Sprint 16: Xcode Project Modernization
+**Estimated Time:** 4-8 hours
+**PR Title:** `chore: Modernize Xcode project with file system synchronization`
+
+#### Goals
+- Convert main target to use `PBXFileSystemSynchronizedRootGroup` (Xcode 16+ feature)
+- Eliminate manual file reference management in project.pbxproj
+- Align with test targets that already use this feature
+
+#### Tasks
+- [ ] Backup current project.pbxproj
+- [ ] Convert "Internet Archive" folder to synchronized root group
+- [ ] Verify all source files are discovered correctly
+- [ ] Test CocoaPods integration still works
+- [ ] Update build phases if needed
+- [ ] Verify all targets compile and tests pass
+
+#### Benefits
+- Files added to disk automatically appear in Xcode
+- Reduces merge conflicts in project.pbxproj
+- Modern Xcode project structure
+
+#### Risks
+- Requires Xcode 16+ (objectVersion 77)
+- May require adjustments for CocoaPods
+- Potential build setting issues
+
+---
+
+### Sprint 17: Additional Features
 - Implement new Internet Archive APIs
 - Add search filters
 - Improve media player

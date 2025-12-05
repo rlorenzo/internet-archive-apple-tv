@@ -55,10 +55,11 @@ public struct SearchResult: Codable, Sendable {
     let downloads: Int?
     let subject: [String]?
     let collection: [String]?
+    let licenseurl: String?
 
     // Custom decoder to handle year as either String or Int
     enum CodingKeys: String, CodingKey {
-        case identifier, title, mediatype, creator, description, date, year, downloads, subject, collection
+        case identifier, title, mediatype, creator, description, date, year, downloads, subject, collection, licenseurl
     }
 
     public init(from decoder: Decoder) throws {
@@ -82,6 +83,7 @@ public struct SearchResult: Codable, Sendable {
         downloads = try? container.decode(Int.self, forKey: .downloads)
         subject = try? container.decode([String].self, forKey: .subject)
         collection = try? container.decode([String].self, forKey: .collection)
+        licenseurl = try? container.decode(String.self, forKey: .licenseurl)
     }
 
     // Memberwise initializer for creating instances programmatically
@@ -95,7 +97,8 @@ public struct SearchResult: Codable, Sendable {
         year: String? = nil,
         downloads: Int? = nil,
         subject: [String]? = nil,
-        collection: [String]? = nil
+        collection: [String]? = nil,
+        licenseurl: String? = nil
     ) {
         self.identifier = identifier
         self.title = title
@@ -107,6 +110,7 @@ public struct SearchResult: Codable, Sendable {
         self.downloads = downloads
         self.subject = subject
         self.collection = collection
+        self.licenseurl = licenseurl
     }
 
     // Computed property for safe mediatype access

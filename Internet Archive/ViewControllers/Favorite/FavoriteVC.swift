@@ -275,6 +275,7 @@ class FavoriteVC: UIViewController, UICollectionViewDelegate {
             itemVC.iDescription = item.description ?? ""
             itemVC.iMediaType = item.mediatype ?? ""
             itemVC.iImageURL = URL(string: "https://archive.org/services/get-item-image.php?identifier=\(item.identifier)")
+            itemVC.iLicenseURL = item.licenseurl
 
             self.present(itemVC, animated: true, completion: nil)
         }

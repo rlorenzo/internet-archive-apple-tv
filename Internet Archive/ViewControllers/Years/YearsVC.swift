@@ -204,6 +204,7 @@ class YearsVC: UIViewController, UITableViewDelegate, UICollectionViewDelegate {
         itemVC.iDescription = description ?? ""
         itemVC.iMediaType = mediaType ?? ""
         itemVC.iImageURL = imageURL
+        itemVC.iLicenseURL = item.licenseurl
 
         self.present(itemVC, animated: true, completion: nil)
     }

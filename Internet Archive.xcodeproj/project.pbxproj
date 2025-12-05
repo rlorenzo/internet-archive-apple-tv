@@ -7,6 +7,8 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		CF0001000000000000000001 /* ContentFilterModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF0002000000000000000001 /* ContentFilterModels.swift */; };
+		CF0001000000000000000002 /* ContentFilterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF0002000000000000000002 /* ContentFilterService.swift */; };
 		SUB0001000000000000000001 /* SubtitleModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUB0002000000000000000001 /* SubtitleModels.swift */; };
 		SUB0001000000000000000002 /* SubtitleManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUB0002000000000000000002 /* SubtitleManager.swift */; };
 		SUB0001000000000000000003 /* SRTtoVTTConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUB0002000000000000000003 /* SRTtoVTTConverter.swift */; };
@@ -96,6 +98,8 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		CF0002000000000000000001 /* ContentFilterModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentFilterModels.swift; sourceTree = "<group>"; };
+		CF0002000000000000000002 /* ContentFilterService.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContentFilterService.swift; sourceTree = "<group>"; };
 		SUB0002000000000000000001 /* SubtitleModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleModels.swift; sourceTree = "<group>"; };
 		SUB0002000000000000000002 /* SubtitleManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleManager.swift; sourceTree = "<group>"; };
 		SUB0002000000000000000003 /* SRTtoVTTConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTtoVTTConverter.swift; sourceTree = "<group>"; };
@@ -344,6 +348,15 @@
 			path = Subtitles;
 			sourceTree = "<group>";
 		};
+		CF0003000000000000000001 /* ContentFilter */ = {
+			isa = PBXGroup;
+			children = (
+				CF0002000000000000000001 /* ContentFilterModels.swift */,
+				CF0002000000000000000002 /* ContentFilterService.swift */,
+			);
+			path = ContentFilter;
+			sourceTree = "<group>";
+		};
 		48AC81922ECFF231004C9F77 /* ErrorHandling */ = {
 			isa = PBXGroup;
 			children = (
@@ -526,6 +539,7 @@
 		C3DD648B20A237E40056DEC1 /* Utilities */ = {
 			isa = PBXGroup;
 			children = (
+				CF0003000000000000000001 /* ContentFilter */,
 				3BED8E762EDFB37300F25BFA /* MockAPIManager.swift */,
 				3BED8E772EDFB37300F25BFA /* UITestingHelper.swift */,
 				48AC81922ECFF231004C9F77 /* ErrorHandling */,
@@ -893,6 +907,8 @@
 				SUB0001000000000000000005 /* SubtitleSelectionViewController.swift in Sources */,
 				SUB0001000000000000000006 /* VideoPlayerViewController.swift in Sources */,
 				SUB0001000000000000000007 /* SubtitleOverlayView.swift in Sources */,
+				CF0001000000000000000001 /* ContentFilterModels.swift in Sources */,
+				CF0001000000000000000002 /* ContentFilterService.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

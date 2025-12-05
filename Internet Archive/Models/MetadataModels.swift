@@ -58,7 +58,7 @@ struct ItemMetadataResponse: Codable, Sendable {
 }
 
 /// Metadata information for an item
-struct ItemMetadata: Codable, Sendable {
+public struct ItemMetadata: Codable, Sendable {
     let identifier: String?
     let title: String?
     let mediatype: String?
@@ -71,6 +71,7 @@ struct ItemMetadata: Codable, Sendable {
     let publicdate: String?
     let addeddate: String?
     let uploader: String?
+    let licenseurl: String?
 
     /// Memberwise initializer for testing
     init(
@@ -85,7 +86,8 @@ struct ItemMetadata: Codable, Sendable {
         collection: CollectionValue? = nil,
         publicdate: String? = nil,
         addeddate: String? = nil,
-        uploader: String? = nil
+        uploader: String? = nil,
+        licenseurl: String? = nil
     ) {
         self.identifier = identifier
         self.title = title
@@ -99,6 +101,7 @@ struct ItemMetadata: Codable, Sendable {
         self.publicdate = publicdate
         self.addeddate = addeddate
         self.uploader = uploader
+        self.licenseurl = licenseurl
     }
 
     // Subject and collection can be either String or [String]

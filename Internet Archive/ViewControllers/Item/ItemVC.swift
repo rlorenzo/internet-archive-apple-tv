@@ -32,6 +32,7 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
     var iDescription: String?
     var iImageURL: URL?
     var iMediaType: String?
+    var iLicenseURL: String?
 
     var player: AVPlayer!
 
@@ -42,7 +43,15 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
 
         txtTitle.text = iTitle
         txtArchivedBy.text = "Archived By:  \(iArchivedBy ?? "")"
-        txtDate.text = "Date:  \(iDate ?? "")"
+
+        // Build date text, optionally including license
+        var dateText = "Date:  \(iDate ?? "")"
+        if let licenseURL = iLicenseURL {
+            let licenseType = ContentFilterService.shared.getLicenseType(licenseURL)
+            dateText += "  •  License: \(licenseType)"
+        }
+        txtDate.text = dateText
+
         txtDescription.text = iDescription
 
         if let imageURL = iImageURL {

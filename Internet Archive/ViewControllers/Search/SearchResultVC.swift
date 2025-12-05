@@ -553,6 +553,7 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
         itemVC.iDescription = item.description ?? ""
         itemVC.iMediaType = item.mediatype ?? ""
         itemVC.iImageURL = imageURL
+        itemVC.iLicenseURL = item.licenseurl
 
         present(itemVC, animated: true, completion: nil)
     }
