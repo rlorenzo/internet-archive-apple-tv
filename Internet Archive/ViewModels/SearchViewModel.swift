@@ -126,7 +126,7 @@ final class SearchViewModel: ObservableObject {
         do {
             let options: [String: String] = [
                 "rows": "\(pageSize)",
-                "fl[]": "identifier,title,downloads,mediatype"
+                "fl[]": "identifier,title,mediatype,creator,description,date,year,downloads"
             ]
             let combinedQuery = "\(query) AND mediatype:(etree OR movies)"
 

@@ -12,6 +12,7 @@ import Foundation
 /// ViewModel state for music collection
 struct MusicViewState: Sendable {
     var isLoading: Bool = false
+    var hasLoaded: Bool = false
     var collection: String = "etree"
     var items: [SearchResult] = []
     var errorMessage: String?
@@ -80,6 +81,7 @@ final class MusicViewModel: ObservableObject {
             // Sort by downloads
             state.items = sortByDownloads(result.results)
             state.isLoading = false
+            state.hasLoaded = true
 
             ErrorLogger.shared.logSuccess(
                 operation: .getCollections,
@@ -88,6 +90,7 @@ final class MusicViewModel: ObservableObject {
 
         } catch {
             state.isLoading = false
+            state.hasLoaded = true
             state.errorMessage = mapErrorToMessage(error)
 
             ErrorLogger.shared.log(

@@ -7,6 +7,13 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		SUB0001000000000000000001 /* SubtitleModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUB0002000000000000000001 /* SubtitleModels.swift */; };
+		SUB0001000000000000000002 /* SubtitleManager.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUB0002000000000000000002 /* SubtitleManager.swift */; };
+		SUB0001000000000000000003 /* SRTtoVTTConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUB0002000000000000000003 /* SRTtoVTTConverter.swift */; };
+		SUB0001000000000000000004 /* SubtitleParser.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUB0002000000000000000004 /* SubtitleParser.swift */; };
+		SUB0001000000000000000005 /* SubtitleSelectionViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUB0002000000000000000005 /* SubtitleSelectionViewController.swift */; };
+		SUB0001000000000000000006 /* VideoPlayerViewController.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUB0002000000000000000006 /* VideoPlayerViewController.swift */; };
+		SUB0001000000000000000007 /* SubtitleOverlayView.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUB0002000000000000000007 /* SubtitleOverlayView.swift */; };
 		1690D8B88836415BCC8D12CF /* RequestModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = 79728E0BC82FA53973F1E113 /* RequestModels.swift */; };
 		2FD27FEB1FC9F69BFEE84841 /* Pods_Internet_ArchiveUITests.framework in Frameworks */ = {isa = PBXBuildFile; fileRef = A1789A7600134709E74AA21B /* Pods_Internet_ArchiveUITests.framework */; };
 		3B0B3A452EDCF5A500D1EA24 /* FavoritesViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B0B3A412EDCF5A500D1EA24 /* FavoritesViewModel.swift */; };
@@ -89,6 +96,13 @@
 /* End PBXContainerItemProxy section */
 
 /* Begin PBXFileReference section */
+		SUB0002000000000000000001 /* SubtitleModels.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleModels.swift; sourceTree = "<group>"; };
+		SUB0002000000000000000002 /* SubtitleManager.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleManager.swift; sourceTree = "<group>"; };
+		SUB0002000000000000000003 /* SRTtoVTTConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SRTtoVTTConverter.swift; sourceTree = "<group>"; };
+		SUB0002000000000000000004 /* SubtitleParser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleParser.swift; sourceTree = "<group>"; };
+		SUB0002000000000000000005 /* SubtitleSelectionViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleSelectionViewController.swift; sourceTree = "<group>"; };
+		SUB0002000000000000000006 /* VideoPlayerViewController.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = VideoPlayerViewController.swift; sourceTree = "<group>"; };
+		SUB0002000000000000000007 /* SubtitleOverlayView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SubtitleOverlayView.swift; sourceTree = "<group>"; };
 		1B659067B3F48E30893CC3B9 /* Pods-Internet ArchiveTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet ArchiveTests.release.xcconfig"; path = "Target Support Files/Pods-Internet ArchiveTests/Pods-Internet ArchiveTests.release.xcconfig"; sourceTree = "<group>"; };
 		281514CA691502DFDBF8A81C /* Pods-Internet Archive-Internet ArchiveUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet Archive-Internet ArchiveUITests.release.xcconfig"; path = "Target Support Files/Pods-Internet Archive-Internet ArchiveUITests/Pods-Internet Archive-Internet ArchiveUITests.release.xcconfig"; sourceTree = "<group>"; };
 		2ADF52F0E018B6676452E765 /* Pods-Internet ArchiveTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet ArchiveTests.debug.xcconfig"; path = "Target Support Files/Pods-Internet ArchiveTests/Pods-Internet ArchiveTests.debug.xcconfig"; sourceTree = "<group>"; };
@@ -270,6 +284,7 @@
 				485A33952ECD1054002A5E07 /* MetadataModels.swift */,
 				485A33962ECD1054002A5E07 /* SearchModels.swift */,
 				79728E0BC82FA53973F1E113 /* RequestModels.swift */,
+				SUB0002000000000000000001 /* SubtitleModels.swift */,
 			);
 			path = Models;
 			sourceTree = "<group>";
@@ -316,8 +331,17 @@
 				48AC81732ECFA89C004C9F77 /* CollectionView */,
 				48AC81762ECFA89C004C9F77 /* ImageLoading */,
 				48AC81792ECFA89C004C9F77 /* Loading */,
+				SUB0003000000000000000003 /* Subtitles */,
 			);
 			path = UI;
+			sourceTree = "<group>";
+		};
+		SUB0003000000000000000003 /* Subtitles */ = {
+			isa = PBXGroup;
+			children = (
+				SUB0002000000000000000007 /* SubtitleOverlayView.swift */,
+			);
+			path = Subtitles;
 			sourceTree = "<group>";
 		};
 		48AC81922ECFF231004C9F77 /* ErrorHandling */ = {
@@ -413,9 +437,27 @@
 				C3DD648920A235E00056DEC1 /* Music */,
 				C3DD648820A235D40056DEC1 /* Videos */,
 				C3DD648520A233860056DEC1 /* Account */,
+				SUB0003000000000000000001 /* Subtitles */,
+				SUB0003000000000000000002 /* Video */,
 				C3ADB04020C68C4F001B910B /* TabbarController.swift */,
 			);
 			path = ViewControllers;
+			sourceTree = "<group>";
+		};
+		SUB0003000000000000000001 /* Subtitles */ = {
+			isa = PBXGroup;
+			children = (
+				SUB0002000000000000000005 /* SubtitleSelectionViewController.swift */,
+			);
+			path = Subtitles;
+			sourceTree = "<group>";
+		};
+		SUB0003000000000000000002 /* Video */ = {
+			isa = PBXGroup;
+			children = (
+				SUB0002000000000000000006 /* VideoPlayerViewController.swift */,
+			);
+			path = Video;
 			sourceTree = "<group>";
 		};
 		C37377B820EAD3CF009CBA0F /* Slider */ = {
@@ -493,6 +535,9 @@
 				C3DD648E20A2382B0056DEC1 /* AppConstants.swift */,
 				C393F4CC20A2CDE900E58ED9 /* Global.swift */,
 				C3D372E820D1B7C100DEDF08 /* AppProgressHUD.swift */,
+				SUB0002000000000000000002 /* SubtitleManager.swift */,
+				SUB0002000000000000000003 /* SRTtoVTTConverter.swift */,
+				SUB0002000000000000000004 /* SubtitleParser.swift */,
 			);
 			path = Utilities;
 			sourceTree = "<group>";
@@ -841,6 +886,13 @@
 				C39588C620BE35A200BB23C5 /* ItemVC.swift in Sources */,
 				1690D8B88836415BCC8D12CF /* RequestModels.swift in Sources */,
 				FFF1FDC25FE208C0BBA77E21 /* VideoViewModel.swift in Sources */,
+				SUB0001000000000000000001 /* SubtitleModels.swift in Sources */,
+				SUB0001000000000000000002 /* SubtitleManager.swift in Sources */,
+				SUB0001000000000000000003 /* SRTtoVTTConverter.swift in Sources */,
+				SUB0001000000000000000004 /* SubtitleParser.swift in Sources */,
+				SUB0001000000000000000005 /* SubtitleSelectionViewController.swift in Sources */,
+				SUB0001000000000000000006 /* VideoPlayerViewController.swift in Sources */,
+				SUB0001000000000000000007 /* SubtitleOverlayView.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
