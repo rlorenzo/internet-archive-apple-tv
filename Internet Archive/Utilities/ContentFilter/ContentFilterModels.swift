@@ -45,12 +45,12 @@ public struct ContentFilterResult: Sendable {
 public struct ContentFilterPreferences: Codable, Sendable {
     /// Whether to require open licenses (CC, public domain, etc.)
     /// When enabled, only content with recognized open licenses is shown
-    /// Default: ON to suppress content without clear licensing
+    /// Default: OFF because most IA content (~93%) lacks license metadata
     var requireOpenLicense: Bool
 
     /// Default preferences
     static let `default` = ContentFilterPreferences(
-        requireOpenLicense: true  // Default ON to show only openly-licensed content
+        requireOpenLicense: false  // Default OFF - most IA content lacks license metadata
     )
 }
 

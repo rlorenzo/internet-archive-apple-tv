@@ -41,10 +41,10 @@ final class ContentFilterServiceTests: XCTestCase {
 
     // MARK: - Default State Tests
 
-    func testDefaultState_licenseFilteringEnabled() {
+    func testDefaultState_licenseFilteringDisabled() {
         let service = ContentFilterService.shared
         service.resetToDefaults()
-        XCTAssertTrue(service.isLicenseFilteringEnabled, "License filtering should be enabled by default to suppress unlicensed content")
+        XCTAssertFalse(service.isLicenseFilteringEnabled, "License filtering should be disabled by default (most IA content lacks license metadata)")
     }
 
     // MARK: - Collection Filtering Tests (Always Active)
@@ -357,12 +357,12 @@ final class ContentFilterServiceTests: XCTestCase {
         let service = ContentFilterService.shared
 
         // Modify settings
-        service.setLicenseFilteringEnabled(false)
+        service.setLicenseFilteringEnabled(true)
 
         // Reset
         service.resetToDefaults()
 
-        XCTAssertTrue(service.isLicenseFilteringEnabled, "Default should have license filtering ON")
+        XCTAssertFalse(service.isLicenseFilteringEnabled, "Default should have license filtering OFF")
     }
 
     func testSetLicenseFilteringEnabled() {
