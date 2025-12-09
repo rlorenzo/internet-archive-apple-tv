@@ -142,7 +142,7 @@ actor SRTtoVTTConverter {
             return windowsString
         }
 
-        // Fallback to UTF-8 with replacement
+        // Fallback to UTF-8 with lossy conversion (replaces invalid bytes with �)
         return String(decoding: data, as: UTF8.self)
     }
 
@@ -165,15 +165,9 @@ actor SRTtoVTTConverter {
             guard lines.count >= 2 else { continue }
 
             // Find the timing line (contains " --> ")
-            var timingLineIndex = -1
-            for (index, line) in lines.enumerated() {
-                if line.contains(" --> ") {
-                    timingLineIndex = index
-                    break
-                }
+            guard let timingLineIndex = lines.firstIndex(where: { $0.contains(" --> ") }) else {
+                continue
             }
-
-            guard timingLineIndex >= 0 else { continue }
 
             // Convert timing line (SRT uses comma for milliseconds, VTT uses period)
             let timingLine = lines[timingLineIndex]

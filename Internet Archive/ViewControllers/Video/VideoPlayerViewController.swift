@@ -14,8 +14,18 @@ final class VideoPlayerViewController: AVPlayerViewController {
 
     // MARK: - Properties
 
+    // Note: Using backing storage pattern because AVPlayerViewController may call viewDidLoad
+    // during super.init(), before we can set instance properties in our initializer.
+    // This allows us to set _subtitleTracks before super.init() is called.
+
+    /// Available subtitle tracks for the current video (backing storage)
+    private var _subtitleTracks: [SubtitleTrack] = []
+
     /// Available subtitle tracks for the current video
-    private(set) var subtitleTracks: [SubtitleTrack] = []
+    private(set) var subtitleTracks: [SubtitleTrack] {
+        get { _subtitleTracks }
+        set { _subtitleTracks = newValue }
+    }
 
     /// Currently selected subtitle track
     private(set) var selectedSubtitleTrack: SubtitleTrack?
@@ -25,6 +35,9 @@ final class VideoPlayerViewController: AVPlayerViewController {
 
     /// The item identifier for logging
     private var itemIdentifier: String?
+
+    /// Flag to defer control setup if viewDidLoad runs before init completes
+    private var needsControlSetup = false
 
     /// Subtitle overlay view
     private lazy var subtitleOverlay: SubtitleOverlayView = {
@@ -52,10 +65,19 @@ final class VideoPlayerViewController: AVPlayerViewController {
     ///   - subtitleTracks: Available subtitle tracks
     ///   - identifier: Item identifier for logging
     init(player: AVPlayer, subtitleTracks: [SubtitleTrack], identifier: String?) {
+        // Store tracks before super.init since AVPlayerViewController may trigger viewDidLoad during init
+        self._subtitleTracks = subtitleTracks
+        self.itemIdentifier = identifier
+        self.needsControlSetup = true
         super.init(nibName: nil, bundle: nil)
         self.player = player
-        self.subtitleTracks = subtitleTracks
-        self.itemIdentifier = identifier
+
+        // If viewDidLoad already ran (during super.init), setup controls now
+        if isViewLoaded && needsControlSetup {
+            setupCustomControls()
+            loadPreferredSubtitles()
+            needsControlSetup = false
+        }
     }
 
     required init?(coder: NSCoder) {
@@ -67,8 +89,13 @@ final class VideoPlayerViewController: AVPlayerViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
         setupSubtitleOverlay()
-        setupCustomControls()
-        loadPreferredSubtitles()
+
+        // Only setup controls if init has completed (tracks are set)
+        if !subtitleTracks.isEmpty || !needsControlSetup {
+            setupCustomControls()
+            loadPreferredSubtitles()
+            needsControlSetup = false
+        }
     }
 
     override func viewDidLayoutSubviews() {
@@ -93,17 +120,59 @@ final class VideoPlayerViewController: AVPlayerViewController {
     }
 
     private func setupCustomControls() {
-        // Only add subtitle button if we have subtitle tracks
+        // Only add subtitle controls if we have subtitle tracks
         guard !subtitleTracks.isEmpty else { return }
 
-        // Add custom action for subtitle menu
-        // Note: On tvOS, we use the menu button or a custom gesture
-        let menuTapRecognizer = UITapGestureRecognizer(target: self, action: #selector(showSubtitleMenu))
-        menuTapRecognizer.allowedPressTypes = [NSNumber(value: UIPress.PressType.menu.rawValue)]
-        view.addGestureRecognizer(menuTapRecognizer)
-
-        // We can also add info panel customization
+        // Add subtitle menu to the transport bar (swipe up to reveal, then navigate right)
+        setupTransportBarSubtitleMenu()
         updateSubtitleButtonAppearance()
+    }
+
+    private func setupTransportBarSubtitleMenu() {
+        // Build menu actions for each subtitle track
+        var menuActions: [UIAction] = []
+
+        // Add "Off" option
+        let offAction = UIAction(
+            title: "Off",
+            image: UIImage(systemName: "captions.bubble.slash"),
+            state: selectedSubtitleTrack == nil ? .on : .off
+        ) { [weak self] _ in
+            self?.selectSubtitleTrack(nil)
+            self?.setupTransportBarSubtitleMenu() // Refresh menu state
+        }
+        menuActions.append(offAction)
+
+        // Add each subtitle track - include format if there are duplicates
+        let displayNames = subtitleTracks.map { $0.languageDisplayName }
+        let hasDuplicateNames = Set(displayNames).count < displayNames.count
+
+        for track in subtitleTracks {
+            // Add format suffix if there are tracks with the same display name
+            let title = hasDuplicateNames
+                ? "\(track.languageDisplayName) (\(track.format.rawValue.uppercased()))"
+                : track.languageDisplayName
+
+            let action = UIAction(
+                title: title,
+                image: UIImage(systemName: "captions.bubble"),
+                state: selectedSubtitleTrack?.identifier == track.identifier ? .on : .off
+            ) { [weak self] _ in
+                self?.selectSubtitleTrack(track)
+                self?.setupTransportBarSubtitleMenu() // Refresh menu state
+            }
+            menuActions.append(action)
+        }
+
+        // Create the menu
+        let subtitleMenu = UIMenu(
+            title: "Subtitles",
+            image: UIImage(systemName: "captions.bubble"),
+            children: menuActions
+        )
+
+        // Add to transport bar custom menu items
+        transportBarCustomMenuItems = [subtitleMenu]
     }
 
     private func loadPreferredSubtitles() {

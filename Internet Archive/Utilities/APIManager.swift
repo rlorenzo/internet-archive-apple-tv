@@ -182,11 +182,17 @@ final class APIManager: NSObject {
 
         // Apply additional client-side filtering for results that may have slipped through
         if applyContentFilter {
-            let filteredDocs = ContentFilterService.shared.filter(response.response.docs)
+            let originalDocs = response.response.docs
+            let filteredDocs = ContentFilterService.shared.filter(originalDocs)
+            let filteredCount = originalDocs.count - filteredDocs.count
+
+            // Adjust numFound to reflect filtered results, preventing infinite pagination
+            let adjustedNumFound = max(0, response.response.numFound - filteredCount)
+
             return SearchResponse(
                 responseHeader: response.responseHeader,
                 response: SearchResponse.SearchResults(
-                    numFound: response.response.numFound,
+                    numFound: adjustedNumFound,
                     start: response.response.start,
                     docs: filteredDocs
                 )
@@ -260,5 +266,25 @@ final class APIManager: NSObject {
                                     encoding: URLEncoding.default)
             .serializingDecodable(FavoritesResponse.self)
             .value
+    }
+
+    /// Search for videos with subtitles (async/await)
+    /// - Parameter limit: Maximum number of results
+    /// - Returns: Array of SearchResult items that have subtitle files
+    func getVideosWithSubtitles(limit: Int = 50) async throws -> [SearchResult] {
+        let options = [
+            "rows": "\(limit)",
+            "fl[]": "identifier,title,year,downloads,date,creator,description,mediatype,collection,licenseurl",
+            "sort": "downloads desc"
+        ]
+
+        // Search for movies that have SubRip or WebVTT subtitle files
+        let response = try await searchTyped(
+            query: "mediatype:movies AND format:(SubRip OR WebVTT OR \"Closed Caption Text\")",
+            options: options,
+            applyContentFilter: true
+        )
+
+        return response.response.docs
     }
 }
