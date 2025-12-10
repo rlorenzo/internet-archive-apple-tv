@@ -82,15 +82,9 @@ final class SubtitleParser: Sendable {
         guard !lines.isEmpty else { return nil }
 
         // Find the timing line
-        var timingLineIndex = -1
-        for (index, line) in lines.enumerated() {
-            if line.contains(" --> ") {
-                timingLineIndex = index
-                break
-            }
+        guard let timingLineIndex = lines.firstIndex(where: { $0.contains(" --> ") }) else {
+            return nil
         }
-
-        guard timingLineIndex >= 0 else { return nil }
 
         // Parse timing
         let timingLine = lines[timingLineIndex]
@@ -139,23 +133,23 @@ final class SubtitleParser: Sendable {
 
         if parts.count == 3 {
             // HH:MM:SS.mmm
-            guard let h = Double(parts[0]),
-                  let m = Double(parts[1]) else { return nil }
-            hours = h
-            minutes = m
+            guard let hoursValue = Double(parts[0]),
+                  let minutesValue = Double(parts[1]) else { return nil }
+            hours = hoursValue
+            minutes = minutesValue
 
             // Handle seconds with milliseconds
             let secondsPart = parts[2].replacingOccurrences(of: ",", with: ".")
-            guard let s = Double(secondsPart) else { return nil }
-            seconds = s
+            guard let secondsValue = Double(secondsPart) else { return nil }
+            seconds = secondsValue
         } else if parts.count == 2 {
             // MM:SS.mmm
-            guard let m = Double(parts[0]) else { return nil }
-            minutes = m
+            guard let minutesValue = Double(parts[0]) else { return nil }
+            minutes = minutesValue
 
             let secondsPart = parts[1].replacingOccurrences(of: ",", with: ".")
-            guard let s = Double(secondsPart) else { return nil }
-            seconds = s
+            guard let secondsValue = Double(secondsPart) else { return nil }
+            seconds = secondsValue
         }
 
         return hours * 3600 + minutes * 60 + seconds

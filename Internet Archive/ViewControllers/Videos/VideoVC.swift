@@ -243,7 +243,14 @@ extension VideoVC: UICollectionViewDelegate {
         // Get navigation data from ViewModel
         guard let navData = viewModel.navigationData(for: indexPath.item) else { return }
 
-        // Navigate to YearsVC
+        // Check if this is the special "Subtitled Videos" entry
+        if navData.identifier == subtitledVideosIdentifier {
+            let subtitledVC = SubtitledVideosVC()
+            present(subtitledVC, animated: true, completion: nil)
+            return
+        }
+
+        // Navigate to YearsVC for normal collections
         guard let yearsVC = storyboard?.instantiateViewController(
             withIdentifier: "YearsVC"
         ) as? YearsVC else {
