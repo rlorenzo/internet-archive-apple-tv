@@ -28,7 +28,7 @@ final class SubtitleOverlayView: UIView {
 
     /// Cleanup handler that can be called from nonisolated deinit
     /// Captures player and token at setup time for safe cleanup
-    private nonisolated(unsafe) var cleanupHandler: (() -> Void)?
+    nonisolated(unsafe) private var cleanupHandler: (() -> Void)?
 
     // MARK: - UI Elements
 

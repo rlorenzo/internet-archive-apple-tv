@@ -16,8 +16,12 @@ class TabbarController: UITabBarController {
         NSClassFromString("XCTestCase") != nil
     }
 
+    private var logoImageView: UIImageView?
+
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupAppearance()
+        setupLogoWatermark()
 
         // Hide Account and Favorites tabs if API credentials are not configured (read-only mode)
         if !AppConfiguration.shared.isConfigured {
@@ -98,6 +102,35 @@ class TabbarController: UITabBarController {
                 }
             }
         }
+    }
+
+    // MARK: - Appearance
+
+    private func setupAppearance() {
+        // Set background color to match logo (#222222)
+        view.backgroundColor = UIColor(red: 0.133, green: 0.133, blue: 0.133, alpha: 1.0)
+    }
+
+    // MARK: - Logo Watermark
+
+    private func setupLogoWatermark() {
+        guard let logoImage = UIImage(named: "logo") else { return }
+
+        let imageView = UIImageView(image: logoImage)
+        imageView.contentMode = .scaleAspectFit
+        imageView.alpha = 0.7
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+
+        view.addSubview(imageView)
+
+        NSLayoutConstraint.activate([
+            imageView.trailingAnchor.constraint(equalTo: view.trailingAnchor, constant: -20),
+            imageView.bottomAnchor.constraint(equalTo: view.bottomAnchor, constant: -20),
+            imageView.widthAnchor.constraint(equalToConstant: 50),
+            imageView.heightAnchor.constraint(equalToConstant: 60)
+        ])
+
+        logoImageView = imageView
     }
 
 }

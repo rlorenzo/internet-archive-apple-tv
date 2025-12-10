@@ -36,6 +36,16 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
 
     var player: AVPlayer!
 
+    /// Label to show subtitle availability
+    private lazy var subtitleInfoLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 32)
+        label.textColor = .white
+        label.translatesAutoresizingMaskIntoConstraints = false
+        label.isHidden = true
+        return label
+    }()
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -64,6 +74,68 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
 
         self.slider.isHidden = true
         self.slider.delegate = self
+
+        // Setup subtitle info label
+        setupSubtitleInfoLabel()
+
+        // Check for subtitles if this is a video
+        if iMediaType == "movies" {
+            checkForSubtitles()
+        }
+    }
+
+    private func setupSubtitleInfoLabel() {
+        view.addSubview(subtitleInfoLabel)
+        NSLayoutConstraint.activate([
+            subtitleInfoLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 100),
+            subtitleInfoLabel.topAnchor.constraint(equalTo: txtDescription.bottomAnchor, constant: 20)
+        ])
+    }
+
+    private func checkForSubtitles() {
+        guard let identifier = iIdentifier else { return }
+
+        Task {
+            do {
+                let metadataResponse = try await APIManager.sharedManager.getMetaDataTyped(identifier: identifier)
+
+                guard let files = metadataResponse.files else { return }
+
+                let subtitleTracks = SubtitleManager.shared.extractSubtitleTracks(
+                    from: files,
+                    identifier: identifier,
+                    server: metadataResponse.server
+                )
+
+                if !subtitleTracks.isEmpty {
+                    // Build subtitle info text
+                    let trackCount = subtitleTracks.count
+                    let languages = subtitleTracks.compactMap { track -> String? in
+                        // Only include if a specific language was detected
+                        if track.languageCode != nil {
+                            return track.languageDisplayName
+                        }
+                        return nil
+                    }
+                    let uniqueLanguages = Array(Set(languages)).sorted()
+
+                    var infoText = "CC  Subtitles available"
+                    if !uniqueLanguages.isEmpty {
+                        infoText = "CC  Subtitles: \(uniqueLanguages.joined(separator: ", "))"
+                    } else if trackCount == 1 {
+                        infoText = "CC  1 subtitle track available"
+                    } else {
+                        infoText = "CC  \(trackCount) subtitle tracks available"
+                    }
+
+                    subtitleInfoLabel.text = infoText
+                    subtitleInfoLabel.isHidden = false
+                }
+            } catch {
+                // Silently fail - subtitle info is not critical
+                NSLog("Failed to check for subtitles: \(error)")
+            }
+        }
     }
 
     override func viewWillAppear(_ animated: Bool) {

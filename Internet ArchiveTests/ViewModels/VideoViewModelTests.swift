@@ -78,7 +78,8 @@ final class VideoViewModelTests: XCTestCase {
         await viewModel.loadCollection()
 
         XCTAssertFalse(viewModel.state.isLoading)
-        XCTAssertEqual(viewModel.state.items.count, 2)
+        // +1 for the "Subtitled Videos" entry added at the top
+        XCTAssertEqual(viewModel.state.items.count, 3)
         XCTAssertNil(viewModel.state.errorMessage)
         XCTAssertTrue(viewModel.state.hasItems)
     }
@@ -104,9 +105,11 @@ final class VideoViewModelTests: XCTestCase {
 
         await viewModel.loadCollection()
 
-        XCTAssertEqual(viewModel.state.items[0].identifier, "high")
-        XCTAssertEqual(viewModel.state.items[1].identifier, "medium")
-        XCTAssertEqual(viewModel.state.items[2].identifier, "low")
+        // Index 0 is the "Subtitled Videos" entry, so results start at index 1
+        XCTAssertEqual(viewModel.state.items[0].identifier, subtitledVideosIdentifier)
+        XCTAssertEqual(viewModel.state.items[1].identifier, "high")
+        XCTAssertEqual(viewModel.state.items[2].identifier, "medium")
+        XCTAssertEqual(viewModel.state.items[3].identifier, "low")
     }
 
     func testLoadCollection_withError_setsErrorMessage() async {
@@ -134,8 +137,10 @@ final class VideoViewModelTests: XCTestCase {
         await viewModel.loadCollection()
 
         XCTAssertFalse(viewModel.state.isLoading)
-        XCTAssertTrue(viewModel.state.items.isEmpty)
-        XCTAssertFalse(viewModel.state.hasItems)
+        // Still has 1 item: the "Subtitled Videos" entry
+        XCTAssertEqual(viewModel.state.items.count, 1)
+        XCTAssertEqual(viewModel.state.items[0].identifier, subtitledVideosIdentifier)
+        XCTAssertTrue(viewModel.state.hasItems)
         XCTAssertNil(viewModel.state.errorMessage)
     }
 
@@ -193,7 +198,13 @@ final class VideoViewModelTests: XCTestCase {
 
         await viewModel.loadCollection()
 
-        let item = viewModel.item(at: 0)
+        // Index 0 is the "Subtitled Videos" entry
+        let subtitledItem = viewModel.item(at: 0)
+        XCTAssertNotNil(subtitledItem)
+        XCTAssertEqual(subtitledItem?.identifier, subtitledVideosIdentifier)
+
+        // Index 1 is the first mock result
+        let item = viewModel.item(at: 1)
         XCTAssertNotNil(item)
         XCTAssertEqual(item?.identifier, "test1")
     }
@@ -215,9 +226,11 @@ final class VideoViewModelTests: XCTestCase {
 
         await viewModel.loadCollection()
 
+        // 3 items total: Subtitled Videos + 2 mock results
         XCTAssertNotNil(viewModel.item(at: 0))
         XCTAssertNotNil(viewModel.item(at: 1))
-        XCTAssertNil(viewModel.item(at: 2))
+        XCTAssertNotNil(viewModel.item(at: 2))
+        XCTAssertNil(viewModel.item(at: 3))
     }
 
     // MARK: - Navigation Data Tests
@@ -230,7 +243,8 @@ final class VideoViewModelTests: XCTestCase {
 
         await viewModel.loadCollection()
 
-        let navData = viewModel.navigationData(for: 0)
+        // Index 1 is the first mock result (index 0 is Subtitled Videos)
+        let navData = viewModel.navigationData(for: 1)
         XCTAssertNotNil(navData)
         XCTAssertEqual(navData?.collection, "documentaries")
         XCTAssertEqual(navData?.name, "Nature Documentary")
@@ -245,7 +259,8 @@ final class VideoViewModelTests: XCTestCase {
 
         await viewModel.loadCollection()
 
-        let navData = viewModel.navigationData(for: 0)
+        // Index 1 is the first mock result (index 0 is Subtitled Videos)
+        let navData = viewModel.navigationData(for: 1)
         XCTAssertEqual(navData?.name, "no_title_item")
     }
 

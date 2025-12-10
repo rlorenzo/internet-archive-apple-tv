@@ -141,6 +141,7 @@ final class SubtitleManagerTests: XCTestCase {
     }
 
     func testExtractSubtitleTracksWithCustomServer() {
+        // Note: Server parameter is now ignored - always uses archive.org for reliability
         let files = [
             FileInfo(name: "movie_english.srt")
         ]
@@ -152,9 +153,10 @@ final class SubtitleManagerTests: XCTestCase {
         )
 
         XCTAssertEqual(tracks.count, 1)
+        // Should use archive.org regardless of server parameter
         XCTAssertEqual(
             tracks[0].url.absoluteString,
-            "https://ia800100.us.archive.org/download/test-item/movie_english.srt"
+            "https://archive.org/download/test-item/movie_english.srt"
         )
     }
 
@@ -341,15 +343,17 @@ final class SubtitleManagerTests: XCTestCase {
     }
 
     func testBuildSubtitleURLWithCustomServer() {
+        // Note: Server parameter is now ignored - always uses archive.org for reliability
         let url = manager.buildSubtitleURL(
             filename: "movie_english.srt",
             identifier: "test-item",
             server: "ia800100.us.archive.org"
         )
 
+        // Should use archive.org regardless of server parameter
         XCTAssertEqual(
             url?.absoluteString,
-            "https://ia800100.us.archive.org/download/test-item/movie_english.srt"
+            "https://archive.org/download/test-item/movie_english.srt"
         )
     }
 
@@ -508,5 +512,28 @@ final class SubtitleManagerTests: XCTestCase {
         )
 
         XCTAssertNotNil(url)
+    }
+
+    // MARK: - ASR (Auto-generated) Subtitle Tests
+
+    func testParseLanguageFromASRFilename() {
+        let result = manager.parseLanguage(from: "movie.asr.srt")
+        XCTAssertNil(result.code)
+        XCTAssertEqual(result.displayName, "Auto-generated")
+        XCTAssertTrue(result.isDefault)
+    }
+
+    func testParseLanguageFromASRFilenameWithLanguage() {
+        let result = manager.parseLanguage(from: "movie_en.asr.srt")
+        XCTAssertEqual(result.code, "en")
+        XCTAssertEqual(result.displayName, "English (Auto)")
+        XCTAssertFalse(result.isDefault)
+    }
+
+    func testParseLanguageFromASRFilenameWithLanguagePrefix() {
+        let result = manager.parseLanguage(from: "movie.asr.english.srt")
+        XCTAssertEqual(result.code, "en")
+        XCTAssertEqual(result.displayName, "English (Auto)")
+        XCTAssertFalse(result.isDefault)
     }
 }

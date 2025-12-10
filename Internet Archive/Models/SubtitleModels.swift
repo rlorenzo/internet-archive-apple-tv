@@ -35,9 +35,9 @@ struct SubtitleTrack: Sendable, Equatable, Hashable {
 
 /// Supported subtitle file formats
 enum SubtitleFormat: String, Sendable, CaseIterable {
-    case srt = "srt"
-    case vtt = "vtt"
-    case webvtt = "webvtt"
+    case srt
+    case vtt
+    case webvtt
 
     /// File extension including the dot
     var fileExtension: String {
@@ -171,10 +171,8 @@ enum SubtitleLanguage: String, CaseIterable, Sendable {
     /// Initialize from a string found in a filename
     static func fromFilename(_ component: String) -> SubtitleLanguage? {
         let lowercased = component.lowercased()
-        for language in SubtitleLanguage.allCases {
-            if language.filenameVariations.contains(lowercased) {
-                return language
-            }
+        for language in SubtitleLanguage.allCases where language.filenameVariations.contains(lowercased) {
+            return language
         }
         return nil
     }
