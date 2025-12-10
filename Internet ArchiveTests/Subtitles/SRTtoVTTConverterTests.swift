@@ -214,4 +214,43 @@ final class SRTtoVTTConverterTests: XCTestCase {
 
         XCTAssertEqual(cues.count, 2)
     }
+
+    // MARK: - Encoding Tests
+
+    func testLossyUTF8DecodingPreservesValidText() {
+        // Test that valid UTF-8 text is preserved when using lossy decoding
+        let validUTF8 = "Hello World - Héllo Wörld - 你好世界"
+        let data = Data(validUTF8.utf8)
+
+        // swiftlint:disable:next optional_data_string_conversion
+        let decoded = String(decoding: data, as: UTF8.self)
+        XCTAssertEqual(decoded, validUTF8)
+    }
+
+    func testLossyUTF8DecodingHandlesInvalidBytes() {
+        // Create data with invalid UTF-8 sequence (0xFF is never valid in UTF-8)
+        var data = Data("Hello ".utf8)
+        data.append(contentsOf: [0xFF, 0xFE]) // Invalid UTF-8 bytes
+        data.append(contentsOf: Data("World".utf8))
+
+        // String(decoding:as:) replaces invalid bytes with replacement character (U+FFFD)
+        // This is the behavior we want in SRTtoVTTConverter for subtitle files with mixed encodings
+        // swiftlint:disable:next optional_data_string_conversion
+        let decoded = String(decoding: data, as: UTF8.self)
+
+        XCTAssertTrue(decoded.contains("Hello"))
+        XCTAssertTrue(decoded.contains("World"))
+        XCTAssertTrue(decoded.contains("\u{FFFD}")) // Unicode replacement character
+    }
+
+    func testLossyUTF8DecodingDoesNotReturnEmpty() {
+        // Even with entirely invalid UTF-8 data, lossy decoding produces replacement characters
+        // This ensures subtitle files with encoding issues still display something
+        let invalidData = Data([0xFF, 0xFE, 0x80, 0x81])
+
+        // swiftlint:disable:next optional_data_string_conversion
+        let decoded = String(decoding: invalidData, as: UTF8.self)
+
+        XCTAssertFalse(decoded.isEmpty)
+    }
 }
