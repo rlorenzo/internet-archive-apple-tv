@@ -39,6 +39,9 @@ final class VideoPlayerViewController: AVPlayerViewController {
     /// Flag to defer control setup if viewDidLoad runs before init completes
     private var needsControlSetup = false
 
+    /// Flag to track if KVO observer was added (to avoid removing a non-existent observer)
+    private var isObservingPlayer = false
+
     /// Subtitle overlay view
     private lazy var subtitleOverlay: SubtitleOverlayView = {
         let overlay = SubtitleOverlayView()
@@ -72,11 +75,19 @@ final class VideoPlayerViewController: AVPlayerViewController {
         super.init(nibName: nil, bundle: nil)
         self.player = player
 
-        // If viewDidLoad already ran (during super.init), setup controls now
-        if isViewLoaded && needsControlSetup {
-            setupCustomControls()
-            loadPreferredSubtitles()
-            needsControlSetup = false
+        // If viewDidLoad already ran (during super.init), we need to complete setup now
+        // that player is available
+        if isViewLoaded {
+            // Setup observer now that player is available
+            if !isObservingPlayer {
+                observePlayerItem()
+                disableNativeSubtitles()
+            }
+            if needsControlSetup {
+                setupCustomControls()
+                loadPreferredSubtitles()
+                needsControlSetup = false
+            }
         }
     }
 
@@ -90,18 +101,15 @@ final class VideoPlayerViewController: AVPlayerViewController {
         super.viewDidLoad()
         setupSubtitleOverlay()
 
+        // Set ourselves as delegate to receive transport bar visibility notifications
+        delegate = self
+
         // Only setup controls if init has completed (tracks are set)
         if !subtitleTracks.isEmpty || !needsControlSetup {
             setupCustomControls()
             loadPreferredSubtitles()
             needsControlSetup = false
         }
-    }
-
-    override func viewDidLayoutSubviews() {
-        super.viewDidLayoutSubviews()
-        // Ensure subtitle overlay matches content view
-        subtitleOverlay.frame = contentOverlayView?.bounds ?? view.bounds
     }
 
     // MARK: - Setup
@@ -116,6 +124,71 @@ final class VideoPlayerViewController: AVPlayerViewController {
                 subtitleOverlay.leadingAnchor.constraint(equalTo: contentOverlay.leadingAnchor),
                 subtitleOverlay.trailingAnchor.constraint(equalTo: contentOverlay.trailingAnchor)
             ])
+        }
+
+        // Disable AVPlayer's native subtitle/caption rendering
+        // We use our own custom overlay instead
+        disableNativeSubtitles()
+        observePlayerItem()
+    }
+
+    deinit {
+        if isObservingPlayer {
+            player?.removeObserver(self, forKeyPath: "currentItem")
+        }
+    }
+
+    /// Disable AVPlayer's automatic subtitle selection to prevent duplicate captions
+    private func disableNativeSubtitles() {
+        guard let player = player else { return }
+
+        // Observe when the player item becomes ready, then disable native subtitles
+        Task {
+            // Wait for the current item to be available
+            guard let playerItem = player.currentItem else { return }
+
+            do {
+                let asset = playerItem.asset
+
+                // Wait for the asset to load its media selection options
+                let characteristics = try await asset.load(.availableMediaCharacteristicsWithMediaSelectionOptions)
+
+                // Disable legible (subtitle/caption) tracks
+                if characteristics.contains(.legible),
+                   let legibleGroup = try await asset.loadMediaSelectionGroup(for: .legible) {
+                    // Select no option (disable subtitles)
+                    await MainActor.run {
+                        playerItem.select(nil, in: legibleGroup)
+                    }
+                }
+            } catch {
+                // Asset may not have media selection options - that's fine, ignore silently
+            }
+        }
+    }
+
+    /// Observe player item changes to disable native subtitles on new items
+    private func observePlayerItem() {
+        // Use KVO to observe currentItem changes
+        // Only add observer if player is set (may be nil if viewDidLoad runs during super.init)
+        guard player != nil else { return }
+        player?.addObserver(self, forKeyPath: "currentItem", options: [.new], context: nil)
+        isObservingPlayer = true
+    }
+
+    // swiftlint:disable:next block_based_kvo
+    override nonisolated func observeValue(
+        forKeyPath keyPath: String?,
+        of object: Any?,
+        change: [NSKeyValueChangeKey: Any]?,
+        context: UnsafeMutableRawPointer?
+    ) {
+        if keyPath == "currentItem" {
+            Task { @MainActor in
+                self.disableNativeSubtitles()
+            }
+        } else {
+            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
         }
     }
 
@@ -195,6 +268,7 @@ final class VideoPlayerViewController: AVPlayerViewController {
             loadSubtitleCues(for: track)
             SubtitleManager.shared.saveTrackSelection(track)
             updateSubtitleButtonAppearance()
+            setupTransportBarSubtitleMenu()  // Refresh menu to show correct selection
 
             ErrorLogger.shared.logSuccess(
                 operation: .unknown,
@@ -209,6 +283,9 @@ final class VideoPlayerViewController: AVPlayerViewController {
             subtitleCues = []
             SubtitleManager.shared.clearTrackSelection()
             updateSubtitleButtonAppearance()
+            setupTransportBarSubtitleMenu()  // Refresh menu to show "Off" selected
+            // Also ensure native subtitles are disabled
+            disableNativeSubtitles()
 
             ErrorLogger.shared.logSuccess(
                 operation: .unknown,
@@ -299,5 +376,24 @@ extension VideoPlayerViewController: SubtitleSelectionDelegate {
 
     func subtitleSelectionDidTurnOff(_ controller: SubtitleSelectionViewController) {
         selectSubtitleTrack(nil)
+    }
+}
+
+// MARK: - AVPlayerViewControllerDelegate
+
+extension VideoPlayerViewController: AVPlayerViewControllerDelegate {
+    /// Called when the transport bar visibility is about to change
+    /// Use this to adjust subtitle position so they don't overlap with the transport bar
+    nonisolated func playerViewController(
+        _ playerViewController: AVPlayerViewController,
+        willTransitionToVisibilityOfTransportBar visible: Bool,
+        with coordinator: AVPlayerViewControllerAnimationCoordinator
+    ) {
+        // Animate subtitle position change in sync with transport bar animation
+        coordinator.addCoordinatedAnimations({
+            Task { @MainActor in
+                self.subtitleOverlay.updateSubtitlePosition(controlsVisible: visible)
+            }
+        }, completion: nil)
     }
 }

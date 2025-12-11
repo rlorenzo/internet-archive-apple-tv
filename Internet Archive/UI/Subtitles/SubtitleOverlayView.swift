@@ -30,6 +30,15 @@ final class SubtitleOverlayView: UIView {
     /// Captures player and token at setup time for safe cleanup
     nonisolated(unsafe) private var cleanupHandler: (() -> Void)?
 
+    /// Bottom constraint for dynamic positioning based on controls visibility
+    private var bottomConstraint: NSLayoutConstraint?
+
+    /// Bottom offset when controls are hidden (closer to bottom edge)
+    private let controlsHiddenOffset: CGFloat = -60
+
+    /// Bottom offset when controls are visible (higher up to avoid transport bar)
+    private let controlsVisibleOffset: CGFloat = -220
+
     // MARK: - UI Elements
 
     /// Container for subtitle text with background
@@ -79,10 +88,14 @@ final class SubtitleOverlayView: UIView {
         addSubview(textContainer)
         textContainer.addSubview(subtitleLabel)
 
+        // Create bottom constraint separately so we can adjust it dynamically
+        let bottom = textContainer.bottomAnchor.constraint(equalTo: bottomAnchor, constant: controlsHiddenOffset)
+        bottomConstraint = bottom
+
         NSLayoutConstraint.activate([
-            // Position container at bottom with margins
+            // Position container centered horizontally with side margins
             textContainer.centerXAnchor.constraint(equalTo: centerXAnchor),
-            textContainer.bottomAnchor.constraint(equalTo: safeAreaLayoutGuide.bottomAnchor, constant: -60),
+            bottom,
             textContainer.leadingAnchor.constraint(greaterThanOrEqualTo: leadingAnchor, constant: 100),
             textContainer.trailingAnchor.constraint(lessThanOrEqualTo: trailingAnchor, constant: -100),
 
@@ -100,6 +113,22 @@ final class SubtitleOverlayView: UIView {
         isAccessibilityElement = true
         accessibilityTraits = .staticText
         accessibilityLabel = "Subtitles"
+    }
+
+    // MARK: - Position Management
+
+    /// Update subtitle position based on whether playback controls are visible
+    /// Called by VideoPlayerViewController when transport bar visibility changes
+    func updateSubtitlePosition(controlsVisible: Bool) {
+        let newOffset = controlsVisible ? controlsVisibleOffset : controlsHiddenOffset
+
+        guard bottomConstraint?.constant != newOffset else { return }
+
+        bottomConstraint?.constant = newOffset
+
+        UIView.animate(withDuration: 0.25, delay: 0, options: .curveEaseInOut) {
+            self.layoutIfNeeded()
+        }
     }
 
     // MARK: - Public API

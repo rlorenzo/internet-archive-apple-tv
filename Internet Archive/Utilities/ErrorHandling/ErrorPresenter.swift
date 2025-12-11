@@ -116,6 +116,9 @@ final class ErrorPresenter {
         case .requestFailed:
             return "Network request failed. Please check your connection and try again."
 
+        case .contentFiltered:
+            return "This content is not available."
+
         case .unknown:
             return "An unexpected error occurred. Please try again."
         }

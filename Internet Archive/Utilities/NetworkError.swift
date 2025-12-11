@@ -31,6 +31,9 @@ enum NetworkError: Error, Sendable {
     case resourceNotFound
     case invalidParameters
 
+    // Content filtering
+    case contentFiltered
+
     // Unknown errors
     case unknown(Error?)
 
@@ -65,6 +68,8 @@ enum NetworkError: Error, Sendable {
             return "Resource not found"
         case .invalidParameters:
             return "Invalid request parameters"
+        case .contentFiltered:
+            return "This content is not available"
         case .unknown(let error):
             return error?.localizedDescription ?? "Unknown error occurred"
         }
