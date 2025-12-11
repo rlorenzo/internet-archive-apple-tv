@@ -69,13 +69,79 @@ final class SubtitleManager {
             )
         }
 
+        // Deduplicate by language, preferring VTT over SRT
+        let deduplicatedTracks = deduplicateByLanguage(tracks)
+
         // Sort tracks: default first, then by language name
-        return tracks.sorted { lhs, rhs in
+        return deduplicatedTracks.sorted { lhs, rhs in
             if lhs.isDefault != rhs.isDefault {
                 return lhs.isDefault
             }
             return lhs.languageDisplayName < rhs.languageDisplayName
         }
+    }
+
+    /// Deduplicate subtitle tracks by language, preferring VTT format over SRT
+    /// - Parameter tracks: Array of subtitle tracks that may contain duplicates
+    /// - Returns: Deduplicated array with VTT preferred when both formats exist
+    private func deduplicateByLanguage(_ tracks: [SubtitleTrack]) -> [SubtitleTrack] {
+        var tracksByLanguage: [String: SubtitleTrack] = [:]
+
+        for track in tracks {
+            // Include display name to distinguish variants like "English" vs "English (Auto)"
+            let keyBase = track.languageCode ?? track.languageDisplayName
+            let key = "\(keyBase.lowercased())|\(track.languageDisplayName.lowercased())"
+
+            if let existing = tracksByLanguage[key] {
+                // Determine which track to keep based on format preference
+                let shouldReplaceExisting = track.format.isNativelySupported && !existing.format.isNativelySupported
+                let shouldTransferDefault = (existing.isDefault || track.isDefault)
+
+                if shouldReplaceExisting {
+                    // VTT replaces SRT - preserve isDefault from either track
+                    let preservedTrack = shouldTransferDefault && !track.isDefault
+                        ? SubtitleTrack(
+                            filename: track.filename,
+                            format: track.format,
+                            languageCode: track.languageCode,
+                            languageDisplayName: track.languageDisplayName,
+                            isDefault: true,
+                            url: track.url
+                        )
+                        : track
+                    tracksByLanguage[key] = preservedTrack
+                } else if !existing.format.isNativelySupported && !track.format.isNativelySupported {
+                    // Both are SRT - keep existing but transfer default flag if new track has it
+                    if track.isDefault && !existing.isDefault {
+                        tracksByLanguage[key] = SubtitleTrack(
+                            filename: existing.filename,
+                            format: existing.format,
+                            languageCode: existing.languageCode,
+                            languageDisplayName: existing.languageDisplayName,
+                            isDefault: true,
+                            url: existing.url
+                        )
+                    }
+                } else if existing.format.isNativelySupported && !track.format.isNativelySupported {
+                    // Existing is VTT, new is SRT - keep VTT but transfer default flag if SRT has it
+                    if track.isDefault && !existing.isDefault {
+                        tracksByLanguage[key] = SubtitleTrack(
+                            filename: existing.filename,
+                            format: existing.format,
+                            languageCode: existing.languageCode,
+                            languageDisplayName: existing.languageDisplayName,
+                            isDefault: true,
+                            url: existing.url
+                        )
+                    }
+                }
+                // If both are VTT, keep the first one
+            } else {
+                tracksByLanguage[key] = track
+            }
+        }
+
+        return Array(tracksByLanguage.values)
     }
 
     /// Parse language information from a subtitle filename

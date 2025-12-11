@@ -152,6 +152,9 @@ struct RetryMechanism {
             case .cookieRetrievalFailed:
                 return false
 
+            case .contentFiltered:
+                return false  // Content filtered items should not be retried
+
             case .unknown:
                 return true
             }

@@ -248,13 +248,29 @@ final class APIManager: NSObject {
     }
 
     /// Get metadata with typed response (async/await)
-    func getMetaDataTyped(identifier: String) async throws -> ItemMetadataResponse {
-        try await AF.request("\(baseURL)\(apiMetadata)\(identifier)",
-                             method: .get,
-                             encoding: URLEncoding.default,
-                             headers: headers)
-            .serializingDecodable(ItemMetadataResponse.self)
-            .value
+    /// - Parameters:
+    ///   - identifier: The item identifier
+    ///   - applyContentFilter: Whether to check content filter (default: true)
+    /// - Throws: NetworkError.contentFiltered if the item is blocked
+    func getMetaDataTyped(identifier: String, applyContentFilter: Bool = true) async throws -> ItemMetadataResponse {
+        let response = try await AF.request(
+            "\(baseURL)\(apiMetadata)\(identifier)",
+            method: .get,
+            encoding: URLEncoding.default,
+            headers: headers
+        )
+        .serializingDecodable(ItemMetadataResponse.self)
+        .value
+
+        // Apply content filtering if enabled
+        if applyContentFilter, let metadata = response.metadata {
+            let filterResult = ContentFilterService.shared.shouldFilter(metadata)
+            if filterResult.isFiltered {
+                throw NetworkError.contentFiltered
+            }
+        }
+
+        return response
     }
 
     /// Get favorite items with typed response (async/await)
