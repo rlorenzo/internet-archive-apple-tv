@@ -38,8 +38,8 @@ class MusicVC: UIViewController {
 
     // MARK: - Private Properties
 
-    private var dataSource: ItemDataSource?
-    private var imagePrefetcher: ImagePrefetcher?
+    private var homeDataSource: HomeDataSource?
+    private var continueListeningItems: [PlaybackProgress] = []
 
     // MARK: - Testing Support
 
@@ -60,9 +60,15 @@ class MusicVC: UIViewController {
 
         configureCollectionView()
         configureDataSource()
-        configureImagePrefetching()
         bindViewModel()
         loadData()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        // Refresh Continue Listening each time the tab appears
+        loadContinueListening()
     }
 
     // MARK: - Configuration
@@ -74,7 +80,7 @@ class MusicVC: UIViewController {
         collectionView.backgroundColor = .clear
         view.backgroundColor = .clear
 
-        // Set modern compositional layout
+        // Set modern compositional layout (will be updated based on Continue Listening)
         collectionView.collectionViewLayout = CompositionalLayoutBuilder.standardGrid
 
         // Register modern cell
@@ -89,6 +95,19 @@ class MusicVC: UIViewController {
             forCellWithReuseIdentifier: SkeletonItemCell.reuseIdentifier
         )
 
+        // Register Continue Listening cell
+        collectionView.register(
+            ContinueWatchingCell.self,
+            forCellWithReuseIdentifier: ContinueWatchingCell.reuseIdentifier
+        )
+
+        // Register section header
+        collectionView.register(
+            ContinueSectionHeaderView.self,
+            forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+            withReuseIdentifier: ContinueSectionHeaderView.reuseIdentifier
+        )
+
         // Set delegate for selection
         collectionView.delegate = self
     }
@@ -96,39 +115,69 @@ class MusicVC: UIViewController {
     func configureDataSource() {
         guard let collectionView = collectionView else { return }
 
-        dataSource = ItemDataSource(
+        homeDataSource = HomeDataSource(
             collectionView: collectionView
-        ) { [weak self] collectionView, indexPath, itemViewModel in
+        ) { [weak self] collectionView, indexPath, item in
             guard let self = self else { return UICollectionViewCell() }
 
-            // Return skeleton cell if loading
-            if self.viewModel.state.isLoading {
+            switch item {
+            case .progress(let progress):
+                // Continue Listening cell
                 guard let cell = collectionView.dequeueReusableCell(
-                    withReuseIdentifier: SkeletonItemCell.reuseIdentifier,
+                    withReuseIdentifier: ContinueWatchingCell.reuseIdentifier,
                     for: indexPath
-                ) as? SkeletonItemCell else {
+                ) as? ContinueWatchingCell else {
                     return UICollectionViewCell()
                 }
-                cell.startAnimating()
+                cell.configure(with: progress)
+                return cell
+
+            case .item(let itemViewModel):
+                // Return skeleton cell if loading
+                if self.viewModel.state.isLoading {
+                    guard let cell = collectionView.dequeueReusableCell(
+                        withReuseIdentifier: SkeletonItemCell.reuseIdentifier,
+                        for: indexPath
+                    ) as? SkeletonItemCell else {
+                        return UICollectionViewCell()
+                    }
+                    cell.startAnimating()
+                    return cell
+                }
+
+                // Return normal cell with data
+                guard let cell = collectionView.dequeueReusableCell(
+                    withReuseIdentifier: ModernItemCell.reuseIdentifier,
+                    for: indexPath
+                ) as? ModernItemCell else {
+                    return UICollectionViewCell()
+                }
+
+                cell.configure(with: itemViewModel)
                 return cell
             }
+        }
 
-            // Return normal cell with data
-            guard let cell = collectionView.dequeueReusableCell(
-                withReuseIdentifier: ModernItemCell.reuseIdentifier,
+        // Configure supplementary view (section header)
+        homeDataSource?.supplementaryViewProvider = { [weak self] collectionView, kind, indexPath in
+            guard kind == UICollectionView.elementKindSectionHeader else { return nil }
+
+            guard let header = collectionView.dequeueReusableSupplementaryView(
+                ofKind: kind,
+                withReuseIdentifier: ContinueSectionHeaderView.reuseIdentifier,
                 for: indexPath
-            ) as? ModernItemCell else {
-                return UICollectionViewCell()
+            ) as? ContinueSectionHeaderView else {
+                return nil
             }
 
-            cell.configure(with: itemViewModel)
-            return cell
-        }
-    }
+            // Determine section title
+            let hasContinueListening = !(self?.continueListeningItems.isEmpty ?? true)
+            if hasContinueListening && indexPath.section == 0 {
+                header.configure(with: "Continue Listening")
+            }
 
-    func configureImagePrefetching() {
-        guard let collectionView = collectionView, let dataSource = dataSource else { return }
-        imagePrefetcher = ImagePrefetcher(collectionView: collectionView, dataSource: dataSource)
+            return header
+        }
     }
 
     // MARK: - ViewModel Binding
@@ -155,7 +204,7 @@ class MusicVC: UIViewController {
         } else if !state.items.isEmpty {
             hideEmptyState()
             Task {
-                await applySnapshot(items: state.items)
+                await applySnapshot(items: state.items, continueListening: continueListeningItems)
             }
         }
     }
@@ -168,29 +217,70 @@ class MusicVC: UIViewController {
         }
     }
 
+    private func loadContinueListening() {
+        let items = PlaybackProgressManager.shared.getContinueListeningItems()
+        let hasChanged = items != continueListeningItems
+        continueListeningItems = items
+
+        // Update layout if Continue Listening status changed
+        if hasChanged {
+            updateLayout()
+
+            // Refresh snapshot if we have data
+            if !viewModel.state.isLoading && !viewModel.state.items.isEmpty {
+                Task {
+                    await applySnapshot(items: viewModel.state.items, continueListening: continueListeningItems)
+                }
+            }
+        }
+    }
+
+    private func updateLayout() {
+        guard let collectionView = collectionView else { return }
+        let hasContinueListening = !continueListeningItems.isEmpty
+        collectionView.collectionViewLayout = CompositionalLayoutBuilder.createMusicHomeLayout(
+            hasContinueListening: hasContinueListening
+        )
+    }
+
     // MARK: - Snapshot Management
 
-    private func applySnapshot(items: [SearchResult]) async {
-        guard let dataSource = dataSource else { return }
+    private func applySnapshot(items: [SearchResult], continueListening: [PlaybackProgress]) async {
+        guard let homeDataSource = homeDataSource else { return }
 
-        var snapshot = ItemSnapshot()
+        var snapshot = HomeSnapshot()
+
+        // Add Continue Listening section if we have items
+        if !continueListening.isEmpty {
+            snapshot.appendSections([.continueListening])
+            let progressItems = continueListening.map { HomeScreenItem.progress($0) }
+            snapshot.appendItems(progressItems, toSection: .continueListening)
+        }
+
+        // Add main section
         snapshot.appendSections([.main])
-
-        let viewModels = items.map { ItemViewModel(item: $0, section: .main) }
+        let viewModels = items.map { HomeScreenItem.item(ItemViewModel(item: $0, section: .main)) }
         snapshot.appendItems(viewModels, toSection: .main)
 
-        await dataSource.apply(snapshot, animatingDifferences: true)
+        await homeDataSource.apply(snapshot, animatingDifferences: true)
     }
 
     func showSkeletonLoading() {
-        guard let dataSource = dataSource else { return }
+        guard let homeDataSource = homeDataSource else { return }
 
-        var snapshot = ItemSnapshot()
+        var snapshot = HomeSnapshot()
+
+        // Include Continue Listening section if we have items (keeps layout consistent)
+        if !continueListeningItems.isEmpty {
+            snapshot.appendSections([.continueListening])
+            let progressItems = continueListeningItems.map { HomeScreenItem.progress($0) }
+            snapshot.appendItems(progressItems, toSection: .continueListening)
+        }
+
         snapshot.appendSections([.main])
 
         // Create 20 placeholder items for skeleton
-        let placeholders = (0..<20).map { index -> ItemViewModel in
-            // Create placeholder SearchResult
+        let placeholders = (0..<20).map { index -> HomeScreenItem in
             let placeholder = SearchResult(
                 identifier: "skeleton-\(index)",
                 title: "",
@@ -203,12 +293,12 @@ class MusicVC: UIViewController {
                 subject: [],
                 collection: []
             )
-            return ItemViewModel(item: placeholder, section: .main)
+            return HomeScreenItem.item(ItemViewModel(item: placeholder, section: .main))
         }
         snapshot.appendItems(placeholders, toSection: .main)
 
         Task { @MainActor in
-            await dataSource.apply(snapshot, animatingDifferences: false)
+            await homeDataSource.apply(snapshot, animatingDifferences: false)
         }
     }
 
@@ -217,6 +307,27 @@ class MusicVC: UIViewController {
     func displayEmptyState(_ emptyStateView: EmptyStateView) {
         hideEmptyState()
         showEmptyState(emptyStateView)
+    }
+
+    // MARK: - Continue Listening Actions
+
+    private func navigateToItem(with progress: PlaybackProgress) {
+        // Navigate to ItemVC with the progress item
+        guard let itemVC = storyboard?.instantiateViewController(
+            withIdentifier: "ItemVC"
+        ) as? ItemVC else {
+            return
+        }
+
+        // Set item properties
+        itemVC.iIdentifier = progress.itemIdentifier
+        itemVC.iTitle = progress.title
+        itemVC.iMediaType = progress.mediaType
+        if let thumbnailURL = progress.thumbnailURL {
+            itemVC.iImageURL = thumbnailURL
+        }
+
+        present(itemVC, animated: true, completion: nil)
     }
 
     // MARK: - Testing Helpers
@@ -240,8 +351,21 @@ extension MusicVC: UICollectionViewDelegate {
         // Don't allow selection while loading
         guard !viewModel.state.isLoading else { return }
 
+        // Check if this is a Continue Listening item
+        let hasContinueListening = !continueListeningItems.isEmpty
+        if hasContinueListening && indexPath.section == 0 {
+            // Continue Listening section
+            guard indexPath.item < continueListeningItems.count else { return }
+            let progress = continueListeningItems[indexPath.item]
+            navigateToItem(with: progress)
+            return
+        }
+
+        // Main section
+        let mainIndex = indexPath.item
+
         // Get navigation data from ViewModel
-        guard let navData = viewModel.navigationData(for: indexPath.item) else { return }
+        guard let navData = viewModel.navigationData(for: mainIndex) else { return }
 
         // Navigate to YearsVC
         guard let yearsVC = storyboard?.instantiateViewController(

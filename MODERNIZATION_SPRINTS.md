@@ -921,84 +921,105 @@ Internet Archive/Utilities/ErrorHandling/RetryMechanism.swift    ✅ (Don't retr
 
 ---
 
-### Sprint 15: UI/UX Refinements
+### Sprint 15: Continue Watching / Resume Playback ✅ COMPLETED
 
-**Estimated Time:** 25-35 hours
-**PR Title:** `feat: UI/UX improvements for better user experience`
-**Status:** Planned
+**Estimated Time:** 15-20 hours
+**PR Title:** `feat(video): Add "Continue Watching" with playback progress tracking`
+**Status:** Complete
 
 #### Goals
 
-- Improve video playback experience with resume functionality
-- Enhance accessibility for VoiceOver users
-- Better content organization and discovery
-- Polish existing UI elements
+- Implement video playback progress tracking with resume functionality
+- Add "Continue Watching" horizontal section to VideoVC and MusicVC
+- Create visually appealing cells with progress indicators
+- Persist playback state across app sessions
 
 #### Tasks
 
 **Resume Playback:**
 
-- [ ] Track video playback position (store progress in UserDefaults/CoreData)
-- [ ] Show "Resume" vs "Play from Beginning" options when returning to a video
-- [ ] Create "Continue Watching" section on home screen
-- [ ] Allow users to remove videos from Continue Watching list
-- [ ] Show progress indicator on video thumbnails
+- [x] Track video playback position (store progress in UserDefaults)
+- [x] Create `PlaybackProgress` model for persisting video/audio position
+- [x] Create `PlaybackProgressManager` with UserDefaults-backed storage
+- [x] Save progress automatically during playback and on pause/exit
+- [x] Auto-resume playback when returning to a video
+- [x] Remove completed items (>95% watched) from Continue Watching
 
-**Accessibility Audit:**
+**Continue Watching UI:**
 
-- [ ] Audit all screens for VoiceOver compatibility
-- [ ] Ensure proper accessibility labels on all interactive elements
-- [ ] Test focus navigation with Siri Remote
-- [ ] Add accessibility hints for complex actions
-- [ ] Ensure proper heading hierarchy
-- [ ] Test with accessibility settings (larger text, reduce motion, etc.)
+- [x] Create "Continue Watching" horizontal section on VideoVC home screen
+- [x] Create "Continue Listening" horizontal section on MusicVC home screen
+- [x] Create `ContinueWatchingCell` with thumbnail, title, progress bar
+- [x] Create `ContinueSectionHeaderView` for section titles
+- [x] Show time remaining (e.g., "12 min remaining") on cells
+- [x] Add focus animations with scale, shadow, and play icon overlay
+- [x] Implement accessibility labels for VoiceOver
 
-**Item Description Formatting:**
+**Layout Integration:**
 
-- [ ] Parse and render HTML/newlines in item descriptions
-- [ ] Preserve paragraph breaks and lists in description text
-- [ ] Add "Read More" expansion for long descriptions
-- [ ] Support basic text formatting (bold, italic) if present
+- [x] Add compositional layout sections for Continue Watching
+- [x] Update `CompositionalLayoutBuilder` with `createContinueWatchingSection`
+- [x] Update `DiffableDataSource+Extensions` with `ContinueWatchingSection` enum
+- [x] Integrate with existing VideoVC and MusicVC diffable data sources
 
-**Music Player UI Improvements:**
+**Testing:**
 
-- [ ] Show album art prominently during playback
-- [ ] Add Now Playing screen with track list
-- [ ] Show track progress and duration
-- [ ] Add shuffle/repeat controls
-- [ ] Improve playlist navigation
-- [ ] Show artist/album info during playback
+- [x] Create `PlaybackProgressTests.swift` (model unit tests)
+- [x] Create `PlaybackProgressManagerTests.swift` (manager unit tests)
+- [x] Update `DiffableDataSourceTests.swift` for new section types
+- [x] Build verification (zero errors)
+- [x] SwiftLint verification (zero violations)
 
-**Additional Refinements:**
-
-- [ ] Improve loading states with skeleton screens
-- [ ] Add pull-to-refresh where appropriate
-- [ ] Smooth transitions between screens
-- [ ] Improve empty state messages
-- [ ] Add visual feedback for user actions (favorites, etc.)
-
-#### Files to Create/Modify
+#### Files Created
 
 ```
-Internet Archive/Utilities/
-└── PlaybackProgressManager.swift    # Track video progress
-
 Internet Archive/Models/
-└── PlaybackProgress.swift           # Progress data model
+└── PlaybackProgress.swift              ✅ (Progress data model with computed properties)
+
+Internet Archive/Utilities/
+└── PlaybackProgressManager.swift       ✅ (UserDefaults-backed progress storage)
+
+Internet Archive/UI/CollectionView/
+├── ContinueWatchingCell.swift          ✅ (Cell with progress bar and focus effects)
+└── ContinueSectionHeaderView.swift     ✅ (Section header view)
+
+Internet ArchiveTests/Models/
+└── PlaybackProgressTests.swift         ✅ (16 tests)
+
+Internet ArchiveTests/Utilities/
+└── PlaybackProgressManagerTests.swift  ✅ (12 tests)
+```
+
+#### Files Modified
+
+```
+Internet Archive/UI/CollectionView/
+├── CompositionalLayoutBuilder.swift    ✅ (Added Continue Watching layouts)
+├── DiffableDataSource+Extensions.swift ✅ (Added ContinueWatchingSection enum)
+└── ModernItemCell.swift                ✅ (Minor adjustments)
 
 Internet Archive/ViewControllers/
-├── Home/ContinueWatchingVC.swift    # Continue watching section
-└── Item/ItemVC.swift                # Resume playback UI
+├── Videos/VideoVC.swift                ✅ (Integrated Continue Watching section)
+├── Music/MusicVC.swift                 ✅ (Integrated Continue Listening section)
+├── Item/ItemVC.swift                   ✅ (Resume playback on video selection)
+└── Video/VideoPlayerViewController.swift ✅ (Save progress during playback)
 
-Internet Archive/UI/
-├── DescriptionTextView.swift        # Rich text description display
-└── MusicPlayer/
-    ├── NowPlayingView.swift         # Now playing screen
-    └── TrackListView.swift          # Track list display
+Internet ArchiveTests/UI/
+└── DiffableDataSourceTests.swift       ✅ (Updated for new section types)
+
+Internet Archive.xcodeproj/project.pbxproj ✅ (Added new files)
 ```
 
+#### Technical Implementation
+
+- **PlaybackProgress Model:** Codable struct with computed properties for progress percentage, time remaining, formatted strings
+- **PlaybackProgressManager:** Actor-based manager with UserDefaults persistence, automatic cleanup of old/completed items
+- **ContinueWatchingCell:** Custom cell with thumbnail, title, time remaining label, progress bar, and tvOS focus animations
+- **Layout:** Horizontal scrolling section using compositional layout with `orthogonalScrollingBehavior = .continuous`
+- **Data Source:** Multi-section diffable data source with `ContinueWatchingSection` and `MainSection` enums
+
 #### Deliverable
-Enhanced user experience with resume playback, better accessibility, improved content display, and polished music player UI.
+✅ Video player now tracks playback progress, shows "Continue Watching" section at top of VideoVC/MusicVC with visual progress indicators, and automatically resumes playback where users left off. 28 unit tests verify model and manager behavior.
 
 ---
 

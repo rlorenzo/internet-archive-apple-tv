@@ -38,8 +38,8 @@ class VideoVC: UIViewController {
 
     // MARK: - Private Properties
 
-    private var dataSource: ItemDataSource?
-    private var imagePrefetcher: ImagePrefetcher?
+    private var homeDataSource: HomeDataSource?
+    private var continueWatchingItems: [PlaybackProgress] = []
 
     // MARK: - Testing Support
 
@@ -60,9 +60,15 @@ class VideoVC: UIViewController {
 
         configureCollectionView()
         configureDataSource()
-        configureImagePrefetching()
         bindViewModel()
         loadData()
+    }
+
+    override func viewWillAppear(_ animated: Bool) {
+        super.viewWillAppear(animated)
+
+        // Refresh Continue Watching each time the tab appears
+        loadContinueWatching()
     }
 
     // MARK: - Configuration
@@ -74,7 +80,7 @@ class VideoVC: UIViewController {
         collectionView.backgroundColor = .clear
         view.backgroundColor = .clear
 
-        // Set modern compositional layout
+        // Set modern compositional layout (will be updated based on Continue Watching)
         collectionView.collectionViewLayout = CompositionalLayoutBuilder.standardGrid
 
         // Register modern cell
@@ -89,6 +95,19 @@ class VideoVC: UIViewController {
             forCellWithReuseIdentifier: SkeletonItemCell.reuseIdentifier
         )
 
+        // Register Continue Watching cell
+        collectionView.register(
+            ContinueWatchingCell.self,
+            forCellWithReuseIdentifier: ContinueWatchingCell.reuseIdentifier
+        )
+
+        // Register section header
+        collectionView.register(
+            ContinueSectionHeaderView.self,
+            forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+            withReuseIdentifier: ContinueSectionHeaderView.reuseIdentifier
+        )
+
         // Set delegate for selection
         collectionView.delegate = self
     }
@@ -96,39 +115,69 @@ class VideoVC: UIViewController {
     func configureDataSource() {
         guard let collectionView = collectionView else { return }
 
-        dataSource = ItemDataSource(
+        homeDataSource = HomeDataSource(
             collectionView: collectionView
-        ) { [weak self] collectionView, indexPath, itemViewModel in
+        ) { [weak self] collectionView, indexPath, item in
             guard let self = self else { return UICollectionViewCell() }
 
-            // Return skeleton cell if loading
-            if self.viewModel.state.isLoading {
+            switch item {
+            case .progress(let progress):
+                // Continue Watching cell
                 guard let cell = collectionView.dequeueReusableCell(
-                    withReuseIdentifier: SkeletonItemCell.reuseIdentifier,
+                    withReuseIdentifier: ContinueWatchingCell.reuseIdentifier,
                     for: indexPath
-                ) as? SkeletonItemCell else {
+                ) as? ContinueWatchingCell else {
                     return UICollectionViewCell()
                 }
-                cell.startAnimating()
+                cell.configure(with: progress)
+                return cell
+
+            case .item(let itemViewModel):
+                // Return skeleton cell if loading
+                if self.viewModel.state.isLoading {
+                    guard let cell = collectionView.dequeueReusableCell(
+                        withReuseIdentifier: SkeletonItemCell.reuseIdentifier,
+                        for: indexPath
+                    ) as? SkeletonItemCell else {
+                        return UICollectionViewCell()
+                    }
+                    cell.startAnimating()
+                    return cell
+                }
+
+                // Return normal cell with data
+                guard let cell = collectionView.dequeueReusableCell(
+                    withReuseIdentifier: ModernItemCell.reuseIdentifier,
+                    for: indexPath
+                ) as? ModernItemCell else {
+                    return UICollectionViewCell()
+                }
+
+                cell.configure(with: itemViewModel)
                 return cell
             }
+        }
 
-            // Return normal cell with data
-            guard let cell = collectionView.dequeueReusableCell(
-                withReuseIdentifier: ModernItemCell.reuseIdentifier,
+        // Configure supplementary view (section header)
+        homeDataSource?.supplementaryViewProvider = { [weak self] collectionView, kind, indexPath in
+            guard kind == UICollectionView.elementKindSectionHeader else { return nil }
+
+            guard let header = collectionView.dequeueReusableSupplementaryView(
+                ofKind: kind,
+                withReuseIdentifier: ContinueSectionHeaderView.reuseIdentifier,
                 for: indexPath
-            ) as? ModernItemCell else {
-                return UICollectionViewCell()
+            ) as? ContinueSectionHeaderView else {
+                return nil
             }
 
-            cell.configure(with: itemViewModel)
-            return cell
-        }
-    }
+            // Determine section title
+            let hasContinueWatching = !(self?.continueWatchingItems.isEmpty ?? true)
+            if hasContinueWatching && indexPath.section == 0 {
+                header.configure(with: "Continue Watching")
+            }
 
-    func configureImagePrefetching() {
-        guard let collectionView = collectionView, let dataSource = dataSource else { return }
-        imagePrefetcher = ImagePrefetcher(collectionView: collectionView, dataSource: dataSource)
+            return header
+        }
     }
 
     // MARK: - ViewModel Binding
@@ -155,7 +204,7 @@ class VideoVC: UIViewController {
         } else if !state.items.isEmpty {
             hideEmptyState()
             Task {
-                await applySnapshot(items: state.items)
+                await applySnapshot(items: state.items, continueWatching: continueWatchingItems)
             }
         }
     }
@@ -168,29 +217,70 @@ class VideoVC: UIViewController {
         }
     }
 
+    private func loadContinueWatching() {
+        let items = PlaybackProgressManager.shared.getContinueWatchingItems()
+        let hasChanged = items != continueWatchingItems
+        continueWatchingItems = items
+
+        // Update layout if Continue Watching status changed
+        if hasChanged {
+            updateLayout()
+
+            // Refresh snapshot if we have data
+            if !viewModel.state.isLoading && !viewModel.state.items.isEmpty {
+                Task {
+                    await applySnapshot(items: viewModel.state.items, continueWatching: continueWatchingItems)
+                }
+            }
+        }
+    }
+
+    private func updateLayout() {
+        guard let collectionView = collectionView else { return }
+        let hasContinueWatching = !continueWatchingItems.isEmpty
+        collectionView.collectionViewLayout = CompositionalLayoutBuilder.createVideoHomeLayout(
+            hasContinueWatching: hasContinueWatching
+        )
+    }
+
     // MARK: - Snapshot Management
 
-    private func applySnapshot(items: [SearchResult]) async {
-        guard let dataSource = dataSource else { return }
+    private func applySnapshot(items: [SearchResult], continueWatching: [PlaybackProgress]) async {
+        guard let homeDataSource = homeDataSource else { return }
 
-        var snapshot = ItemSnapshot()
+        var snapshot = HomeSnapshot()
+
+        // Add Continue Watching section if we have items
+        if !continueWatching.isEmpty {
+            snapshot.appendSections([.continueWatching])
+            let progressItems = continueWatching.map { HomeScreenItem.progress($0) }
+            snapshot.appendItems(progressItems, toSection: .continueWatching)
+        }
+
+        // Add main section
         snapshot.appendSections([.main])
-
-        let viewModels = items.map { ItemViewModel(item: $0, section: .main) }
+        let viewModels = items.map { HomeScreenItem.item(ItemViewModel(item: $0, section: .main)) }
         snapshot.appendItems(viewModels, toSection: .main)
 
-        await dataSource.apply(snapshot, animatingDifferences: true)
+        await homeDataSource.apply(snapshot, animatingDifferences: true)
     }
 
     func showSkeletonLoading() {
-        guard let dataSource = dataSource else { return }
+        guard let homeDataSource = homeDataSource else { return }
 
-        var snapshot = ItemSnapshot()
+        var snapshot = HomeSnapshot()
+
+        // Include Continue Watching section if we have items (keeps layout consistent)
+        if !continueWatchingItems.isEmpty {
+            snapshot.appendSections([.continueWatching])
+            let progressItems = continueWatchingItems.map { HomeScreenItem.progress($0) }
+            snapshot.appendItems(progressItems, toSection: .continueWatching)
+        }
+
         snapshot.appendSections([.main])
 
         // Create 20 placeholder items for skeleton
-        let placeholders = (0..<20).map { index -> ItemViewModel in
-            // Create placeholder SearchResult
+        let placeholders = (0..<20).map { index -> HomeScreenItem in
             let placeholder = SearchResult(
                 identifier: "skeleton-\(index)",
                 title: "",
@@ -203,12 +293,12 @@ class VideoVC: UIViewController {
                 subject: [],
                 collection: []
             )
-            return ItemViewModel(item: placeholder, section: .main)
+            return HomeScreenItem.item(ItemViewModel(item: placeholder, section: .main))
         }
         snapshot.appendItems(placeholders, toSection: .main)
 
         Task { @MainActor in
-            await dataSource.apply(snapshot, animatingDifferences: false)
+            await homeDataSource.apply(snapshot, animatingDifferences: false)
         }
     }
 
@@ -217,6 +307,27 @@ class VideoVC: UIViewController {
     func displayEmptyState(_ emptyStateView: EmptyStateView) {
         hideEmptyState()
         showEmptyState(emptyStateView)
+    }
+
+    // MARK: - Continue Watching Actions
+
+    private func navigateToItem(with progress: PlaybackProgress) {
+        // Navigate to ItemVC with the progress item
+        guard let itemVC = storyboard?.instantiateViewController(
+            withIdentifier: "ItemVC"
+        ) as? ItemVC else {
+            return
+        }
+
+        // Set item properties
+        itemVC.iIdentifier = progress.itemIdentifier
+        itemVC.iTitle = progress.title
+        itemVC.iMediaType = progress.mediaType
+        if let thumbnailURL = progress.thumbnailURL {
+            itemVC.iImageURL = thumbnailURL
+        }
+
+        present(itemVC, animated: true, completion: nil)
     }
 
     // MARK: - Testing Helpers
@@ -240,8 +351,21 @@ extension VideoVC: UICollectionViewDelegate {
         // Don't allow selection while loading
         guard !viewModel.state.isLoading else { return }
 
+        // Check if this is a Continue Watching item
+        let hasContinueWatching = !continueWatchingItems.isEmpty
+        if hasContinueWatching && indexPath.section == 0 {
+            // Continue Watching section
+            guard indexPath.item < continueWatchingItems.count else { return }
+            let progress = continueWatchingItems[indexPath.item]
+            navigateToItem(with: progress)
+            return
+        }
+
+        // Main section - adjust index if we have Continue Watching section
+        let mainIndex = indexPath.item
+
         // Get navigation data from ViewModel
-        guard let navData = viewModel.navigationData(for: indexPath.item) else { return }
+        guard let navData = viewModel.navigationData(for: mainIndex) else { return }
 
         // Navigate to YearsVC
         guard let yearsVC = storyboard?.instantiateViewController(

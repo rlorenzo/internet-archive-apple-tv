@@ -30,7 +30,9 @@ final class DiffableDataSourceTests: XCTestCase {
 
     func testCollectionSection_allCases() {
         let allCases = CollectionSection.allCases
-        XCTAssertEqual(allCases.count, 4)
+        XCTAssertEqual(allCases.count, 6)
+        XCTAssertTrue(allCases.contains(.continueWatching))
+        XCTAssertTrue(allCases.contains(.continueListening))
         XCTAssertTrue(allCases.contains(.main))
         XCTAssertTrue(allCases.contains(.videos))
         XCTAssertTrue(allCases.contains(.music))
@@ -38,10 +40,12 @@ final class DiffableDataSourceTests: XCTestCase {
     }
 
     func testCollectionSection_rawValues() {
-        XCTAssertEqual(CollectionSection.main.rawValue, 0)
-        XCTAssertEqual(CollectionSection.videos.rawValue, 1)
-        XCTAssertEqual(CollectionSection.music.rawValue, 2)
-        XCTAssertEqual(CollectionSection.people.rawValue, 3)
+        XCTAssertEqual(CollectionSection.continueWatching.rawValue, 0)
+        XCTAssertEqual(CollectionSection.continueListening.rawValue, 1)
+        XCTAssertEqual(CollectionSection.main.rawValue, 2)
+        XCTAssertEqual(CollectionSection.videos.rawValue, 3)
+        XCTAssertEqual(CollectionSection.music.rawValue, 4)
+        XCTAssertEqual(CollectionSection.people.rawValue, 5)
     }
 
     func testCollectionSection_isHashable() {
