@@ -147,7 +147,7 @@ extension PlaybackProgress {
     }
 
     /// Create a progress entry for video content
-    static func video(
+    static func video( // swiftlint:disable:this function_parameter_count
         identifier: String,
         filename: String,
         currentTime: Double,
@@ -168,7 +168,7 @@ extension PlaybackProgress {
     }
 
     /// Create a progress entry for audio content
-    static func audio(
+    static func audio( // swiftlint:disable:this function_parameter_count
         identifier: String,
         filename: String,
         currentTime: Double,
