@@ -9,9 +9,6 @@ import Foundation
 
 // Note: Uses CollectionServiceProtocol defined in CollectionViewModel.swift
 
-/// Special identifier for the "Subtitled Videos" collection
-let subtitledVideosIdentifier = "__subtitled_videos__"
-
 /// ViewModel state for video collection
 struct VideoViewState: Sendable {
     var isLoading: Bool = false
@@ -82,22 +79,7 @@ final class VideoViewModel: ObservableObject {
             state.collection = result.collection
 
             // Sort by downloads
-            var sortedItems = sortByDownloads(result.results)
-
-            // Add "Subtitled Videos" entry at the top for testing CC functionality
-            let subtitledEntry = SearchResult(
-                identifier: subtitledVideosIdentifier,
-                title: "Subtitled Videos (CC Test)",
-                mediatype: "collection",
-                creator: nil,
-                description: "Videos with closed captions/subtitles for testing",
-                date: nil,
-                year: nil,
-                downloads: Int.max, // Ensure it stays at the top
-                subject: nil,
-                collection: nil
-            )
-            sortedItems.insert(subtitledEntry, at: 0)
+            let sortedItems = sortByDownloads(result.results)
 
             state.items = sortedItems
             state.isLoading = false

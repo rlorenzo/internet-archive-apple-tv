@@ -69,7 +69,6 @@
 		C3F7738120A4F47D002A3BD2 /* Asses.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = C3F7738020A4F47D002A3BD2 /* Asses.xcassets */; };
 		CF0001000000000000000001 /* ContentFilterModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF0002000000000000000001 /* ContentFilterModels.swift */; };
 		CF0001000000000000000002 /* ContentFilterService.swift in Sources */ = {isa = PBXBuildFile; fileRef = CF0002000000000000000002 /* ContentFilterService.swift */; };
-		F92BC4FB008DC6C370C8F2C2 /* SubtitledVideosVC.swift in Sources */ = {isa = PBXBuildFile; fileRef = 37508BFF884D4EEF44F63EBE /* SubtitledVideosVC.swift */; };
 		FFF1FDC25FE208C0BBA77E21 /* VideoViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A026F81D336612FB451D836 /* VideoViewModel.swift */; };
 		LAUNCH000000000000001 /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = LAUNCH000000000000002 /* LaunchScreen.storyboard */; };
 		SUB0001000000000000000001 /* SubtitleModels.swift in Sources */ = {isa = PBXBuildFile; fileRef = SUB0002000000000000000001 /* SubtitleModels.swift */; };
@@ -102,7 +101,6 @@
 		1B659067B3F48E30893CC3B9 /* Pods-Internet ArchiveTests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet ArchiveTests.release.xcconfig"; path = "Target Support Files/Pods-Internet ArchiveTests/Pods-Internet ArchiveTests.release.xcconfig"; sourceTree = "<group>"; };
 		281514CA691502DFDBF8A81C /* Pods-Internet Archive-Internet ArchiveUITests.release.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet Archive-Internet ArchiveUITests.release.xcconfig"; path = "Target Support Files/Pods-Internet Archive-Internet ArchiveUITests/Pods-Internet Archive-Internet ArchiveUITests.release.xcconfig"; sourceTree = "<group>"; };
 		2ADF52F0E018B6676452E765 /* Pods-Internet ArchiveTests.debug.xcconfig */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = text.xcconfig; name = "Pods-Internet ArchiveTests.debug.xcconfig"; path = "Target Support Files/Pods-Internet ArchiveTests/Pods-Internet ArchiveTests.debug.xcconfig"; sourceTree = "<group>"; };
-		37508BFF884D4EEF44F63EBE /* SubtitledVideosVC.swift */ = {isa = PBXFileReference; includeInIndex = 1; lastKnownFileType = sourcecode.swift; path = SubtitledVideosVC.swift; sourceTree = "<group>"; };
 		3B0B3A402EDCF5A500D1EA24 /* CollectionViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CollectionViewModel.swift; sourceTree = "<group>"; };
 		3B0B3A412EDCF5A500D1EA24 /* FavoritesViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FavoritesViewModel.swift; sourceTree = "<group>"; };
 		3B0B3A422EDCF5A500D1EA24 /* LoginViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LoginViewModel.swift; sourceTree = "<group>"; };
@@ -484,7 +482,6 @@
 			children = (
 				C3827AF020A47392000D4780 /* VideoNC.swift */,
 				C3260C6B20A2287F00C32ACA /* VideoVC.swift */,
-				37508BFF884D4EEF44F63EBE /* SubtitledVideosVC.swift */,
 			);
 			path = Videos;
 			sourceTree = "<group>";
@@ -912,7 +909,6 @@
 				SUB0001000000000000000007 /* SubtitleOverlayView.swift in Sources */,
 				CF0001000000000000000001 /* ContentFilterModels.swift in Sources */,
 				CF0001000000000000000002 /* ContentFilterService.swift in Sources */,
-				F92BC4FB008DC6C370C8F2C2 /* SubtitledVideosVC.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
