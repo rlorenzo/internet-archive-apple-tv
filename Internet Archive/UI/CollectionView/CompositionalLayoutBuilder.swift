@@ -192,3 +192,136 @@ extension CompositionalLayoutBuilder {
         createListLayout(itemHeight: 80, spacing: 20)
     }
 }
+
+// MARK: - Continue Watching Layouts
+
+extension CompositionalLayoutBuilder {
+
+    /// Creates a horizontal scrolling section for Continue Watching/Listening
+    /// - Parameter environment: Layout environment
+    /// - Returns: Configured section for horizontal scrolling
+    static func createContinueWatchingSection(environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
+        // Item size - larger for featured appearance
+        let itemSize = NSCollectionLayoutSize(
+            widthDimension: .absolute(400),
+            heightDimension: .absolute(320)
+        )
+        let item = NSCollectionLayoutItem(layoutSize: itemSize)
+
+        // Group - horizontal, single item
+        let groupSize = NSCollectionLayoutSize(
+            widthDimension: .absolute(400),
+            heightDimension: .absolute(320)
+        )
+        let group = NSCollectionLayoutGroup.horizontal(
+            layoutSize: groupSize,
+            subitems: [item]
+        )
+
+        // Section - horizontal scrolling
+        let section = NSCollectionLayoutSection(group: group)
+        section.orthogonalScrollingBehavior = .continuous
+        section.interGroupSpacing = 40
+        section.contentInsets = NSDirectionalEdgeInsets(
+            top: 20,
+            leading: 60,
+            bottom: 40,
+            trailing: 60
+        )
+
+        // Add section header
+        let headerSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1.0),
+            heightDimension: .absolute(60)
+        )
+        let header = NSCollectionLayoutBoundarySupplementaryItem(
+            layoutSize: headerSize,
+            elementKind: UICollectionView.elementKindSectionHeader,
+            alignment: .top
+        )
+        section.boundarySupplementaryItems = [header]
+
+        return section
+    }
+
+    /// Creates a standard grid section for main content
+    /// - Parameter environment: Layout environment
+    /// - Returns: Configured section for grid display
+    static func createMainGridSection(environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
+        let columns = 5
+        let spacing: CGFloat = 40
+
+        // Item
+        let itemSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1.0 / CGFloat(columns)),
+            heightDimension: .fractionalHeight(1.0)
+        )
+        let item = NSCollectionLayoutItem(layoutSize: itemSize)
+        item.contentInsets = NSDirectionalEdgeInsets(
+            top: spacing / 2,
+            leading: spacing / 2,
+            bottom: spacing / 2,
+            trailing: spacing / 2
+        )
+
+        // Group
+        let groupHeight = environment.container.contentSize.width / CGFloat(columns) / 0.75
+        let groupSize = NSCollectionLayoutSize(
+            widthDimension: .fractionalWidth(1.0),
+            heightDimension: .absolute(groupHeight)
+        )
+        let group = NSCollectionLayoutGroup.horizontal(
+            layoutSize: groupSize,
+            subitems: [item]
+        )
+
+        // Section
+        let section = NSCollectionLayoutSection(group: group)
+        section.contentInsets = NSDirectionalEdgeInsets(
+            top: spacing,
+            leading: spacing,
+            bottom: spacing,
+            trailing: spacing
+        )
+
+        return section
+    }
+
+    /// Creates a layout for VideoVC with optional Continue Watching section at top
+    /// - Parameter hasContinueWatching: Whether to include Continue Watching section
+    /// - Returns: Configured compositional layout
+    static func createVideoHomeLayout(hasContinueWatching: Bool) -> UICollectionViewLayout {
+        let layout = UICollectionViewCompositionalLayout { sectionIndex, environment in
+            if hasContinueWatching {
+                if sectionIndex == 0 {
+                    return createContinueWatchingSection(environment: environment)
+                } else {
+                    return createMainGridSection(environment: environment)
+                }
+            } else {
+                return createMainGridSection(environment: environment)
+            }
+        }
+
+        return layout
+    }
+
+    /// Creates a layout for MusicVC with optional Continue Listening section at top
+    /// - Parameter hasContinueListening: Whether to include Continue Listening section
+    /// - Returns: Configured compositional layout
+    static func createMusicHomeLayout(hasContinueListening: Bool) -> UICollectionViewLayout {
+        let layout = UICollectionViewCompositionalLayout { sectionIndex, environment in
+            if hasContinueListening {
+                if sectionIndex == 0 {
+                    return createContinueWatchingSection(environment: environment)
+                } else {
+                    return createMainGridSection(environment: environment)
+                }
+            } else {
+                return createMainGridSection(environment: environment)
+            }
+        }
+
+        return layout
+    }
+}

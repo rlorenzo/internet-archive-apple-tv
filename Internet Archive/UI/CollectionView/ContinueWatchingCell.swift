@@ -1,21 +1,20 @@
 //
-//  ModernItemCell.swift
+//  ContinueWatchingCell.swift
 //  Internet Archive
 //
-//
-//  Copyright © 2025 Internet Archive. All rights reserved.
+//  Cell for displaying Continue Watching/Listening items with progress indicator
 //
 
 import UIKit
 import AlamofireImage
 
-/// Modern collection view cell with liquid glass effects and enhanced focus
+/// Collection view cell for Continue Watching/Listening sections
 @MainActor
-final class ModernItemCell: UICollectionViewCell {
+final class ContinueWatchingCell: UICollectionViewCell {
 
     // MARK: - Properties
 
-    static let reuseIdentifier = "ModernItemCell"
+    static let reuseIdentifier = "ContinueWatchingCell"
 
     private let imageView: UIImageView = {
         let imageView = UIImageView()
@@ -29,10 +28,19 @@ final class ModernItemCell: UICollectionViewCell {
 
     private let titleLabel: UILabel = {
         let label = UILabel()
-        label.font = .systemFont(ofSize: 28, weight: .medium)
+        label.font = .systemFont(ofSize: 26, weight: .medium)
         label.textColor = .label
-        label.textAlignment = .center
+        label.textAlignment = .left
         label.numberOfLines = 2
+        label.translatesAutoresizingMaskIntoConstraints = false
+        return label
+    }()
+
+    private let timeRemainingLabel: UILabel = {
+        let label = UILabel()
+        label.font = .systemFont(ofSize: 22, weight: .regular)
+        label.textColor = .secondaryLabel
+        label.textAlignment = .left
         label.translatesAutoresizingMaskIntoConstraints = false
         return label
     }()
@@ -44,17 +52,24 @@ final class ModernItemCell: UICollectionViewCell {
         progress.translatesAutoresizingMaskIntoConstraints = false
         progress.layer.cornerRadius = 2
         progress.clipsToBounds = true
-        progress.isHidden = true
         return progress
+    }()
+
+    private let playIconView: UIImageView = {
+        let imageView = UIImageView()
+        imageView.image = UIImage(systemName: "play.circle.fill")
+        imageView.tintColor = .white
+        imageView.contentMode = .scaleAspectFit
+        imageView.translatesAutoresizingMaskIntoConstraints = false
+        imageView.alpha = 0
+        return imageView
     }()
 
     private let glassEffectView: UIVisualEffectView = {
         let view: UIVisualEffectView
         if #available(tvOS 26.0, *) {
-            // Liquid Glass for tvOS 26+
             view = UIVisualEffectView(effect: UIBlurEffect(style: .regular))
         } else {
-            // Standard blur for tvOS 17-25
             view = UIVisualEffectView(effect: UIBlurEffect(style: .light))
         }
         view.layer.cornerRadius = 12
@@ -99,7 +114,9 @@ final class ModernItemCell: UICollectionViewCell {
         contentView.addSubview(imageView)
         contentView.addSubview(glassEffectView)
         contentView.addSubview(progressBar)
+        contentView.addSubview(playIconView)
         contentView.addSubview(titleLabel)
+        contentView.addSubview(timeRemainingLabel)
 
         // Configure corner radius
         contentView.layer.cornerRadius = 12
@@ -108,11 +125,11 @@ final class ModernItemCell: UICollectionViewCell {
 
     private func setupConstraints() {
         NSLayoutConstraint.activate([
-            // Image view
+            // Image view - takes up most of the cell height
             imageView.topAnchor.constraint(equalTo: contentView.topAnchor),
             imageView.leadingAnchor.constraint(equalTo: contentView.leadingAnchor),
             imageView.trailingAnchor.constraint(equalTo: contentView.trailingAnchor),
-            imageView.heightAnchor.constraint(equalTo: contentView.heightAnchor, multiplier: 0.75),
+            imageView.heightAnchor.constraint(equalTo: contentView.heightAnchor, multiplier: 0.65),
 
             // Glass effect view (same frame as image)
             glassEffectView.topAnchor.constraint(equalTo: imageView.topAnchor),
@@ -126,11 +143,22 @@ final class ModernItemCell: UICollectionViewCell {
             progressBar.bottomAnchor.constraint(equalTo: imageView.bottomAnchor),
             progressBar.heightAnchor.constraint(equalToConstant: 4),
 
-            // Title label
+            // Play icon - centered on image
+            playIconView.centerXAnchor.constraint(equalTo: imageView.centerXAnchor),
+            playIconView.centerYAnchor.constraint(equalTo: imageView.centerYAnchor),
+            playIconView.widthAnchor.constraint(equalToConstant: 60),
+            playIconView.heightAnchor.constraint(equalToConstant: 60),
+
+            // Title label - below image
             titleLabel.topAnchor.constraint(equalTo: imageView.bottomAnchor, constant: 10),
-            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 10),
-            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
-            titleLabel.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -10)
+            titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
+            titleLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -8),
+
+            // Time remaining label - below title
+            timeRemainingLabel.topAnchor.constraint(equalTo: titleLabel.bottomAnchor, constant: 4),
+            timeRemainingLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 8),
+            timeRemainingLabel.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -8),
+            timeRemainingLabel.bottomAnchor.constraint(lessThanOrEqualTo: contentView.bottomAnchor, constant: -8)
         ])
     }
 
@@ -141,43 +169,32 @@ final class ModernItemCell: UICollectionViewCell {
 
     // MARK: - Configuration
 
-    func configure(with viewModel: ItemViewModel) {
-        let item = viewModel.item
-
+    func configure(with progress: PlaybackProgress) {
         // Set title
-        titleLabel.text = item.title
-        accessibilityLabel = item.title
+        titleLabel.text = progress.title ?? "Untitled"
+        accessibilityLabel = progress.title
+
+        // Set time remaining
+        timeRemainingLabel.text = progress.formattedTimeRemaining
+
+        // Set progress
+        progressBar.progress = Float(progress.progressPercentage)
 
         // Load image
-        if let imageURL = item.imageURL {
+        if let thumbnailURL = progress.thumbnailURL {
             imageView.af.setImage(
-                withURL: imageURL,
-                placeholderImage: UIImage(systemName: "film"),
+                withURL: thumbnailURL,
+                placeholderImage: UIImage(systemName: progress.isVideo ? "film" : "music.note"),
                 filter: nil,
                 imageTransition: .crossDissolve(0.3)
             )
         } else {
-            imageView.image = UIImage(systemName: "film")
+            imageView.image = UIImage(systemName: progress.isVideo ? "film" : "music.note")
         }
 
-        // Check for saved progress
-        if let progress = PlaybackProgressManager.shared.getProgress(for: item.identifier) {
-            setProgress(progress.progressPercentage)
-        } else {
-            setProgress(nil)
-        }
-    }
-
-    /// Set the progress indicator
-    /// - Parameter progress: Progress value from 0.0 to 1.0, or nil to hide
-    func setProgress(_ progress: Double?) {
-        if let progress = progress, progress > 0, progress < 0.95 {
-            progressBar.isHidden = false
-            progressBar.progress = Float(progress)
-        } else {
-            progressBar.isHidden = true
-            progressBar.progress = 0
-        }
+        // Accessibility
+        accessibilityValue = progress.formattedTimeRemaining
+        accessibilityHint = "Double-tap to resume"
     }
 
     // MARK: - Reuse
@@ -187,9 +204,10 @@ final class ModernItemCell: UICollectionViewCell {
         imageView.af.cancelImageRequest()
         imageView.image = nil
         titleLabel.text = nil
-        accessibilityLabel = nil
-        progressBar.isHidden = true
+        timeRemainingLabel.text = nil
         progressBar.progress = 0
+        accessibilityLabel = nil
+        accessibilityValue = nil
     }
 
     // MARK: - Focus Engine
@@ -224,14 +242,15 @@ final class ModernItemCell: UICollectionViewCell {
         layer.borderWidth = 4
         layer.borderColor = UIColor.white.cgColor
 
-        // Glass effect (subtle overlay)
+        // Glass effect
         if #available(tvOS 26.0, *) {
-            // Enhanced liquid glass on focus
             glassEffectView.alpha = 0.2
         } else {
-            // Standard blur effect
             glassEffectView.alpha = 0.1
         }
+
+        // Show play icon
+        playIconView.alpha = 1
 
         // Label emphasis
         titleLabel.textColor = .white
@@ -249,6 +268,9 @@ final class ModernItemCell: UICollectionViewCell {
 
         // Remove glass effect
         glassEffectView.alpha = 0
+
+        // Hide play icon
+        playIconView.alpha = 0
 
         // Reset label
         titleLabel.textColor = .label

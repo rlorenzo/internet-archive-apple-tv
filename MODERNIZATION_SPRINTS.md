@@ -921,28 +921,152 @@ Internet Archive/Utilities/ErrorHandling/RetryMechanism.swift    ✅ (Don't retr
 
 ---
 
-### Sprint 15: UI/UX Refinements
+### Sprint 15: Continue Watching / Resume Playback ✅ COMPLETED
 
-**Estimated Time:** 25-35 hours
-**PR Title:** `feat: UI/UX improvements for better user experience`
-**Status:** Planned
+**Estimated Time:** 15-20 hours
+**PR Title:** `feat(video): Add "Continue Watching" with playback progress tracking`
+**Status:** Complete
 
 #### Goals
 
-- Improve video playback experience with resume functionality
-- Enhance accessibility for VoiceOver users
-- Better content organization and discovery
-- Polish existing UI elements
+- Implement video playback progress tracking with resume functionality
+- Add "Continue Watching" horizontal section to VideoVC and MusicVC
+- Create visually appealing cells with progress indicators
+- Persist playback state across app sessions
 
 #### Tasks
 
 **Resume Playback:**
 
-- [ ] Track video playback position (store progress in UserDefaults/CoreData)
-- [ ] Show "Resume" vs "Play from Beginning" options when returning to a video
-- [ ] Create "Continue Watching" section on home screen
-- [ ] Allow users to remove videos from Continue Watching list
-- [ ] Show progress indicator on video thumbnails
+- [x] Track video playback position (store progress in UserDefaults)
+- [x] Create `PlaybackProgress` model for persisting video/audio position
+- [x] Create `PlaybackProgressManager` with UserDefaults-backed storage
+- [x] Save progress automatically during playback and on pause/exit
+- [x] Auto-resume playback when returning to a video
+- [x] Remove completed items (>95% watched) from Continue Watching
+
+**Continue Watching UI:**
+
+- [x] Create "Continue Watching" horizontal section on VideoVC home screen
+- [x] Create "Continue Listening" horizontal section on MusicVC home screen
+- [x] Create `ContinueWatchingCell` with thumbnail, title, progress bar
+- [x] Create `ContinueSectionHeaderView` for section titles
+- [x] Show time remaining (e.g., "12 min remaining") on cells
+- [x] Add focus animations with scale, shadow, and play icon overlay
+- [x] Implement accessibility labels for VoiceOver
+
+**Layout Integration:**
+
+- [x] Add compositional layout sections for Continue Watching
+- [x] Update `CompositionalLayoutBuilder` with `createContinueWatchingSection`
+- [x] Update `DiffableDataSource+Extensions` with `ContinueWatchingSection` enum
+- [x] Integrate with existing VideoVC and MusicVC diffable data sources
+
+**Testing:**
+
+- [x] Create `PlaybackProgressTests.swift` (model unit tests)
+- [x] Create `PlaybackProgressManagerTests.swift` (manager unit tests)
+- [x] Update `DiffableDataSourceTests.swift` for new section types
+- [x] Build verification (zero errors)
+- [x] SwiftLint verification (zero violations)
+
+#### Files Created
+
+```
+Internet Archive/Models/
+└── PlaybackProgress.swift              ✅ (Progress data model with computed properties)
+
+Internet Archive/Utilities/
+└── PlaybackProgressManager.swift       ✅ (UserDefaults-backed progress storage)
+
+Internet Archive/UI/CollectionView/
+├── ContinueWatchingCell.swift          ✅ (Cell with progress bar and focus effects)
+└── ContinueSectionHeaderView.swift     ✅ (Section header view)
+
+Internet ArchiveTests/Models/
+└── PlaybackProgressTests.swift         ✅ (16 tests)
+
+Internet ArchiveTests/Utilities/
+└── PlaybackProgressManagerTests.swift  ✅ (12 tests)
+```
+
+#### Files Modified
+
+```
+Internet Archive/UI/CollectionView/
+├── CompositionalLayoutBuilder.swift    ✅ (Added Continue Watching layouts)
+├── DiffableDataSource+Extensions.swift ✅ (Added ContinueWatchingSection enum)
+└── ModernItemCell.swift                ✅ (Minor adjustments)
+
+Internet Archive/ViewControllers/
+├── Videos/VideoVC.swift                ✅ (Integrated Continue Watching section)
+├── Music/MusicVC.swift                 ✅ (Integrated Continue Listening section)
+├── Item/ItemVC.swift                   ✅ (Resume playback on video selection)
+└── Video/VideoPlayerViewController.swift ✅ (Save progress during playback)
+
+Internet ArchiveTests/UI/
+└── DiffableDataSourceTests.swift       ✅ (Updated for new section types)
+
+Internet Archive.xcodeproj/project.pbxproj ✅ (Added new files)
+```
+
+#### Technical Implementation
+
+- **PlaybackProgress Model:** Codable struct with computed properties for progress percentage, time remaining, formatted strings
+- **PlaybackProgressManager:** Actor-based manager with UserDefaults persistence, automatic cleanup of old/completed items
+- **ContinueWatchingCell:** Custom cell with thumbnail, title, time remaining label, progress bar, and tvOS focus animations
+- **Layout:** Horizontal scrolling section using compositional layout with `orthogonalScrollingBehavior = .continuous`
+- **Data Source:** Multi-section diffable data source with `ContinueWatchingSection` and `MainSection` enums
+
+#### Deliverable
+✅ Video player now tracks playback progress, shows "Continue Watching" section at top of VideoVC/MusicVC with visual progress indicators, and automatically resumes playback where users left off. 28 unit tests verify model and manager behavior.
+
+---
+
+### Sprint 16: Xcode Project Modernization
+**Estimated Time:** 4-8 hours
+**PR Title:** `chore: Modernize Xcode project with file system synchronization`
+**Status:** Planned
+
+#### Goals
+- Convert main target to use `PBXFileSystemSynchronizedRootGroup` (Xcode 16+ feature)
+- Eliminate manual file reference management in project.pbxproj
+- Align with test targets that already use this feature
+
+#### Tasks
+- [ ] Backup current project.pbxproj
+- [ ] Convert "Internet Archive" folder to synchronized root group
+- [ ] Verify all source files are discovered correctly
+- [ ] Test CocoaPods integration still works
+- [ ] Update build phases if needed
+- [ ] Verify all targets compile and tests pass
+
+#### Benefits
+- Files added to disk automatically appear in Xcode
+- Reduces merge conflicts in project.pbxproj
+- Modern Xcode project structure
+
+#### Risks
+- Requires Xcode 16+ (objectVersion 77)
+- May require adjustments for CocoaPods
+- Potential build setting issues
+
+---
+
+### Sprint 17: UI/UX Refinements
+
+**Estimated Time:** 20-30 hours
+**PR Title:** `feat: UI/UX improvements for better user experience`
+**Status:** Planned
+
+#### Goals
+
+- Enhance accessibility for VoiceOver users
+- Better content organization and discovery
+- Polish existing UI elements
+- Improve music player experience
+
+#### Tasks
 
 **Accessibility Audit:**
 
@@ -980,16 +1104,6 @@ Internet Archive/Utilities/ErrorHandling/RetryMechanism.swift    ✅ (Don't retr
 #### Files to Create/Modify
 
 ```
-Internet Archive/Utilities/
-└── PlaybackProgressManager.swift    # Track video progress
-
-Internet Archive/Models/
-└── PlaybackProgress.swift           # Progress data model
-
-Internet Archive/ViewControllers/
-├── Home/ContinueWatchingVC.swift    # Continue watching section
-└── Item/ItemVC.swift                # Resume playback UI
-
 Internet Archive/UI/
 ├── DescriptionTextView.swift        # Rich text description display
 └── MusicPlayer/
@@ -998,40 +1112,11 @@ Internet Archive/UI/
 ```
 
 #### Deliverable
-Enhanced user experience with resume playback, better accessibility, improved content display, and polished music player UI.
+Enhanced user experience with better accessibility, improved content display, and polished music player UI.
 
 ---
 
-### Sprint 16: Xcode Project Modernization
-**Estimated Time:** 4-8 hours
-**PR Title:** `chore: Modernize Xcode project with file system synchronization`
-
-#### Goals
-- Convert main target to use `PBXFileSystemSynchronizedRootGroup` (Xcode 16+ feature)
-- Eliminate manual file reference management in project.pbxproj
-- Align with test targets that already use this feature
-
-#### Tasks
-- [ ] Backup current project.pbxproj
-- [ ] Convert "Internet Archive" folder to synchronized root group
-- [ ] Verify all source files are discovered correctly
-- [ ] Test CocoaPods integration still works
-- [ ] Update build phases if needed
-- [ ] Verify all targets compile and tests pass
-
-#### Benefits
-- Files added to disk automatically appear in Xcode
-- Reduces merge conflicts in project.pbxproj
-- Modern Xcode project structure
-
-#### Risks
-- Requires Xcode 16+ (objectVersion 77)
-- May require adjustments for CocoaPods
-- Potential build setting issues
-
----
-
-### Sprint 17: SwiftUI Migration (Optional)
+### Sprint 18: SwiftUI Migration (Optional)
 
 **Estimated Time:** 80-120 hours
 **PR Title:** `feat: Migrate to SwiftUI for tvOS`
@@ -1040,7 +1125,7 @@ Full UI rewrite using SwiftUI, recommended for long-term maintainability.
 
 ---
 
-### Sprint 18: Additional Features
+### Sprint 19: Additional Features
 
 - Implement new Internet Archive APIs
 - Add search filters

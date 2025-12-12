@@ -33,8 +33,23 @@ final class VideoPlayerViewController: AVPlayerViewController {
     /// Current subtitle cues
     private var subtitleCues: [SubtitleCue] = []
 
-    /// The item identifier for logging
+    /// The item identifier for logging and progress tracking
     private var itemIdentifier: String?
+
+    /// The video filename for progress tracking
+    private var videoFilename: String?
+
+    /// The video title for progress display
+    private var videoTitle: String?
+
+    /// The thumbnail URL for Continue Watching display
+    private var thumbnailURL: String?
+
+    /// Timer for periodic progress saving
+    private var progressSaveTimer: Timer?
+
+    /// Whether we should resume from a saved position
+    private var resumeFromTime: Double?
 
     /// Flag to defer control setup if viewDidLoad runs before init completes
     private var needsControlSetup = false
@@ -62,15 +77,31 @@ final class VideoPlayerViewController: AVPlayerViewController {
 
     // MARK: - Initialization
 
-    /// Create a video player with subtitle support
+    /// Create a video player with subtitle support and progress tracking
     /// - Parameters:
     ///   - player: The AVPlayer instance
     ///   - subtitleTracks: Available subtitle tracks
-    ///   - identifier: Item identifier for logging
-    init(player: AVPlayer, subtitleTracks: [SubtitleTrack], identifier: String?) {
+    ///   - identifier: Item identifier for logging and progress tracking
+    ///   - filename: Video filename for progress tracking
+    ///   - title: Video title for Continue Watching display
+    ///   - thumbnailURL: Thumbnail URL for Continue Watching display
+    ///   - resumeFromTime: Optional time to resume from (in seconds)
+    init(
+        player: AVPlayer,
+        subtitleTracks: [SubtitleTrack],
+        identifier: String?,
+        filename: String? = nil,
+        title: String? = nil,
+        thumbnailURL: String? = nil,
+        resumeFromTime: Double? = nil
+    ) {
         // Store tracks before super.init since AVPlayerViewController may trigger viewDidLoad during init
         self._subtitleTracks = subtitleTracks
         self.itemIdentifier = identifier
+        self.videoFilename = filename
+        self.videoTitle = title
+        self.thumbnailURL = thumbnailURL
+        self.resumeFromTime = resumeFromTime
         self.needsControlSetup = true
         super.init(nibName: nil, bundle: nil)
         self.player = player
@@ -110,6 +141,30 @@ final class VideoPlayerViewController: AVPlayerViewController {
             loadPreferredSubtitles()
             needsControlSetup = false
         }
+
+        // Start progress tracking
+        startProgressTracking()
+
+        // Handle resume if needed
+        if let resumeTime = resumeFromTime, resumeTime > 0 {
+            seekToResumePosition(resumeTime)
+        }
+
+        // Observe app backgrounding to save progress
+        NotificationCenter.default.addObserver(
+            self,
+            selector: #selector(appWillResignActive),
+            name: UIApplication.willResignActiveNotification,
+            object: nil
+        )
+    }
+
+    override func viewWillDisappear(_ animated: Bool) {
+        super.viewWillDisappear(animated)
+
+        // Save progress when leaving the player
+        saveCurrentProgress()
+        stopProgressTracking()
     }
 
     // MARK: - Setup
@@ -136,6 +191,9 @@ final class VideoPlayerViewController: AVPlayerViewController {
         if isObservingPlayer {
             player?.removeObserver(self, forKeyPath: "currentItem")
         }
+        // Note: progressSaveTimer is invalidated in viewWillDisappear/stopProgressTracking
+        // Cannot access Timer from deinit due to Swift 6 Sendable requirements
+        NotificationCenter.default.removeObserver(self)
     }
 
     /// Disable AVPlayer's automatic subtitle selection to prevent duplicate captions
@@ -255,6 +313,82 @@ final class VideoPlayerViewController: AVPlayerViewController {
         if let preferredTrack = SubtitleManager.shared.preferredTrack(from: subtitleTracks) {
             selectSubtitleTrack(preferredTrack)
         }
+    }
+
+    // MARK: - Progress Tracking
+
+    /// Start periodic progress saving
+    private func startProgressTracking() {
+        // Only track if we have the required info
+        guard itemIdentifier != nil, videoFilename != nil else { return }
+
+        // Save progress every 10 seconds
+        progressSaveTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
+            Task { @MainActor in
+                self?.saveCurrentProgress()
+            }
+        }
+    }
+
+    /// Stop progress tracking
+    private func stopProgressTracking() {
+        progressSaveTimer?.invalidate()
+        progressSaveTimer = nil
+    }
+
+    /// Save current playback progress
+    private func saveCurrentProgress() {
+        guard let identifier = itemIdentifier,
+              let filename = videoFilename,
+              let player = player,
+              let currentItem = player.currentItem else {
+            return
+        }
+
+        let currentTime = player.currentTime().seconds
+
+        // Don't save if at the very beginning (less than 10 seconds)
+        guard currentTime >= 10 else { return }
+
+        // Get duration and save progress on MainActor
+        Task { [weak self] in
+            guard let self else { return }
+            do {
+                let duration = try await currentItem.asset.load(.duration)
+                let durationSeconds = duration.seconds
+
+                // Don't save if duration is invalid
+                guard durationSeconds > 0, !durationSeconds.isNaN, !durationSeconds.isInfinite else { return }
+
+                let progress = PlaybackProgress.video(
+                    identifier: identifier,
+                    filename: filename,
+                    currentTime: currentTime,
+                    duration: durationSeconds,
+                    title: videoTitle,
+                    imageURL: thumbnailURL
+                )
+
+                await MainActor.run {
+                    PlaybackProgressManager.shared.saveProgress(progress)
+                }
+            } catch {
+                // Duration not available yet, skip saving
+            }
+        }
+    }
+
+    /// Seek to the resume position
+    private func seekToResumePosition(_ time: Double) {
+        guard let player = player else { return }
+
+        let targetTime = CMTime(seconds: time, preferredTimescale: 600)
+        player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
+    }
+
+    /// Called when app is going to background
+    @objc private func appWillResignActive() {
+        saveCurrentProgress()
     }
 
     // MARK: - Subtitle Management
