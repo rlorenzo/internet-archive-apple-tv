@@ -1026,6 +1026,7 @@ Internet Archive.xcodeproj/project.pbxproj ✅ (Added new files)
 ### Sprint 16: Xcode Project Modernization
 **Estimated Time:** 4-8 hours
 **PR Title:** `chore: Modernize Xcode project with file system synchronization`
+**Status:** Planned
 
 #### Goals
 - Convert main target to use `PBXFileSystemSynchronizedRootGroup` (Xcode 16+ feature)
@@ -1052,7 +1053,70 @@ Internet Archive.xcodeproj/project.pbxproj ✅ (Added new files)
 
 ---
 
-### Sprint 17: SwiftUI Migration (Optional)
+### Sprint 17: UI/UX Refinements
+
+**Estimated Time:** 20-30 hours
+**PR Title:** `feat: UI/UX improvements for better user experience`
+**Status:** Planned
+
+#### Goals
+
+- Enhance accessibility for VoiceOver users
+- Better content organization and discovery
+- Polish existing UI elements
+- Improve music player experience
+
+#### Tasks
+
+**Accessibility Audit:**
+
+- [ ] Audit all screens for VoiceOver compatibility
+- [ ] Ensure proper accessibility labels on all interactive elements
+- [ ] Test focus navigation with Siri Remote
+- [ ] Add accessibility hints for complex actions
+- [ ] Ensure proper heading hierarchy
+- [ ] Test with accessibility settings (larger text, reduce motion, etc.)
+
+**Item Description Formatting:**
+
+- [ ] Parse and render HTML/newlines in item descriptions
+- [ ] Preserve paragraph breaks and lists in description text
+- [ ] Add "Read More" expansion for long descriptions
+- [ ] Support basic text formatting (bold, italic) if present
+
+**Music Player UI Improvements:**
+
+- [ ] Show album art prominently during playback
+- [ ] Add Now Playing screen with track list
+- [ ] Show track progress and duration
+- [ ] Add shuffle/repeat controls
+- [ ] Improve playlist navigation
+- [ ] Show artist/album info during playback
+
+**Additional Refinements:**
+
+- [ ] Improve loading states with skeleton screens
+- [ ] Add pull-to-refresh where appropriate
+- [ ] Smooth transitions between screens
+- [ ] Improve empty state messages
+- [ ] Add visual feedback for user actions (favorites, etc.)
+
+#### Files to Create/Modify
+
+```
+Internet Archive/UI/
+├── DescriptionTextView.swift        # Rich text description display
+└── MusicPlayer/
+    ├── NowPlayingView.swift         # Now playing screen
+    └── TrackListView.swift          # Track list display
+```
+
+#### Deliverable
+Enhanced user experience with better accessibility, improved content display, and polished music player UI.
+
+---
+
+### Sprint 18: SwiftUI Migration (Optional)
 
 **Estimated Time:** 80-120 hours
 **PR Title:** `feat: Migrate to SwiftUI for tvOS`
@@ -1061,7 +1125,7 @@ Full UI rewrite using SwiftUI, recommended for long-term maintainability.
 
 ---
 
-### Sprint 18: Additional Features
+### Sprint 19: Additional Features
 
 - Implement new Internet Archive APIs
 - Add search filters
