@@ -51,6 +51,10 @@ final class SkeletonView: UIView {
 
         gradientLayer.locations = [0, 0.5, 1]
         layer.addSublayer(gradientLayer)
+
+        // Hide from accessibility (loading indicator, not interactive)
+        isAccessibilityElement = false
+        accessibilityElementsHidden = true
     }
 
     // MARK: - Layout
@@ -121,6 +125,10 @@ final class SkeletonItemCell: UICollectionViewCell {
             titleSkeleton.trailingAnchor.constraint(equalTo: contentView.trailingAnchor, constant: -10),
             titleSkeleton.heightAnchor.constraint(equalToConstant: 24)
         ])
+
+        // Hide from accessibility (loading indicator)
+        isAccessibilityElement = false
+        accessibilityElementsHidden = true
     }
 
     func startAnimating() {

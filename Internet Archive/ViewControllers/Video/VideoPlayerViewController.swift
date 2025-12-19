@@ -57,6 +57,9 @@ final class VideoPlayerViewController: AVPlayerViewController {
     /// Flag to track if KVO observer was added (to avoid removing a non-existent observer)
     private var isObservingPlayer = false
 
+    /// Reference to player for cleanup in deinit (nonisolated access)
+    nonisolated(unsafe) private var playerForCleanup: AVPlayer?
+
     /// Subtitle overlay view
     private lazy var subtitleOverlay: SubtitleOverlayView = {
         let overlay = SubtitleOverlayView()
@@ -105,6 +108,7 @@ final class VideoPlayerViewController: AVPlayerViewController {
         self.needsControlSetup = true
         super.init(nibName: nil, bundle: nil)
         self.player = player
+        self.playerForCleanup = player
 
         // If viewDidLoad already ran (during super.init), we need to complete setup now
         // that player is available
@@ -189,7 +193,8 @@ final class VideoPlayerViewController: AVPlayerViewController {
 
     deinit {
         if isObservingPlayer {
-            player?.removeObserver(self, forKeyPath: "currentItem")
+            // Use nonisolated(unsafe) playerForCleanup since deinit cannot access @MainActor isolated player
+            playerForCleanup?.removeObserver(self, forKeyPath: "currentItem")
         }
         // Note: progressSaveTimer is invalidated in viewWillDisappear/stopProgressTracking
         // Cannot access Timer from deinit due to Swift 6 Sendable requirements
@@ -360,14 +365,14 @@ final class VideoPlayerViewController: AVPlayerViewController {
                 // Don't save if duration is invalid
                 guard durationSeconds > 0, !durationSeconds.isNaN, !durationSeconds.isInfinite else { return }
 
-                let progress = PlaybackProgress.video(
+                let progress = PlaybackProgress.video(MediaProgressInfo(
                     identifier: identifier,
                     filename: filename,
                     currentTime: currentTime,
                     duration: durationSeconds,
                     title: videoTitle,
                     imageURL: thumbnailURL
-                )
+                ))
 
                 await MainActor.run {
                     PlaybackProgressManager.shared.saveProgress(progress)

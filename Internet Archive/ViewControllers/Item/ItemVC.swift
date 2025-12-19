@@ -43,8 +43,23 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
     /// Timer for saving audio progress
     private var audioProgressTimer: Timer?
 
+    /// Time observer token for slider updates during playback
+    private var timeObserverToken: Any?
+
+    /// Reference to the player that created the time observer (to avoid removing from wrong instance)
+    private weak var playerWithTimeObserver: AVPlayer?
+
     /// Saved progress for resume functionality
     private var savedProgress: PlaybackProgress?
+
+    /// Flag to track when user is scrubbing the slider
+    private var isScrubbing: Bool = false
+
+    /// Flag to track if playback was active before scrubbing began
+    private var wasPlayingBeforeScrub: Bool = false
+
+    /// Flag to redirect focus to play button when select is pressed on slider
+    private var shouldFocusPlayButton: Bool = false
 
     /// Resume button (shown when there's saved progress)
     private lazy var btnResume: UIButton = {
@@ -88,6 +103,14 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
         return label
     }()
 
+    override var preferredFocusEnvironments: [UIFocusEnvironment] {
+        if shouldFocusPlayButton {
+            shouldFocusPlayButton = false
+            return [btnPlay]
+        }
+        return super.preferredFocusEnvironments
+    }
+
     override func viewDidLoad() {
         super.viewDidLoad()
 
@@ -116,10 +139,20 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
 
         self.slider.isHidden = true
         self.slider.delegate = self
+        // Hide the time marker bubble - we show time in leftLabel/rightLabel instead
+        // Keep the seek line visible for position indication
+        self.slider.seekerLabel.isHidden = true
+        self.slider.seekerLabelBackgroundView.isHidden = true
+
+        // Add gesture recognizers to slider for select and menu buttons
+        setupSliderGestures()
 
         // Setup resume button and subtitle info label
         setupResumeButton()
         setupSubtitleInfoLabel()
+
+        // Setup accessibility
+        setupAccessibility()
 
         // Check for subtitles if this is a video
         if iMediaType == "movies" {
@@ -155,6 +188,103 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
             subtitleInfoLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 100),
             subtitleInfoLabel.topAnchor.constraint(equalTo: txtDescription.bottomAnchor, constant: 20)
         ])
+    }
+
+    private func setupSliderGestures() {
+        // Add tap gesture for select button (Enter) on the slider
+        let selectTapGesture = UITapGestureRecognizer(target: self, action: #selector(sliderSelectPressed))
+        selectTapGesture.allowedPressTypes = [NSNumber(value: UIPress.PressType.select.rawValue)]
+        slider.addGestureRecognizer(selectTapGesture)
+
+        // Add tap gesture for menu button (Escape) on the slider
+        let menuTapGesture = UITapGestureRecognizer(target: self, action: #selector(sliderMenuPressed))
+        menuTapGesture.allowedPressTypes = [NSNumber(value: UIPress.PressType.menu.rawValue)]
+        slider.addGestureRecognizer(menuTapGesture)
+    }
+
+    @objc private func sliderSelectPressed() {
+        // Move focus to play button when select is pressed on slider
+        shouldFocusPlayButton = true
+        setNeedsFocusUpdate()
+        updateFocusIfNeeded()
+    }
+
+    @objc private func sliderMenuPressed() {
+        // Move focus to play button when menu is pressed on slider (instead of dismissing)
+        shouldFocusPlayButton = true
+        setNeedsFocusUpdate()
+        updateFocusIfNeeded()
+    }
+
+    // MARK: - Accessibility
+
+    private func setupAccessibility() {
+        // Play button accessibility
+        btnPlay.accessibilityLabel = "Play"
+        btnPlay.accessibilityHint = "Double-tap to start playback"
+
+        // Favorite button accessibility
+        updateFavoriteAccessibility()
+
+        // Resume button accessibility
+        btnResume.accessibilityLabel = "Resume"
+        btnResume.accessibilityHint = "Double-tap to continue watching from where you left off"
+
+        // Start Over button accessibility
+        btnStartOver.accessibilityLabel = "Start Over"
+        btnStartOver.accessibilityHint = "Double-tap to start playback from the beginning"
+
+        // Time remaining label accessibility
+        resumeTimeLabel.accessibilityTraits = .staticText
+
+        // Title accessibility
+        txtTitle.accessibilityTraits = .header
+
+        // Description accessibility
+        txtDescription.accessibilityLabel = iDescription ?? "No description available"
+        txtDescription.accessibilityHint = "Double-tap to expand and read full description"
+
+        // Item image accessibility
+        itemImage.isAccessibilityElement = true
+        itemImage.accessibilityLabel = "Item thumbnail for \(iTitle ?? "media item")"
+        itemImage.accessibilityTraits = .image
+
+        // Subtitle info accessibility
+        subtitleInfoLabel.accessibilityTraits = .staticText
+
+        // Slider accessibility
+        slider.isAccessibilityElement = true
+        slider.accessibilityTraits = .adjustable
+        slider.accessibilityLabel = "Playback position"
+        slider.accessibilityHint = "Swipe up or down to adjust playback position"
+    }
+
+    /// Update favorite button accessibility based on current state
+    private func updateFavoriteAccessibility() {
+        let isFavorited = btnFavorite.tag == 1
+        btnFavorite.accessibilityLabel = "Favorite"
+        btnFavorite.accessibilityValue = isFavorited ? "Favorited" : "Not favorited"
+        btnFavorite.accessibilityHint = isFavorited
+            ? "Double-tap to remove from favorites"
+            : "Double-tap to add to favorites"
+    }
+
+    /// Update play button accessibility based on playback state
+    private func updatePlayButtonAccessibility(isPlaying: Bool) {
+        if isPlaying {
+            btnPlay.accessibilityLabel = "Pause"
+            btnPlay.accessibilityHint = "Double-tap to pause playback"
+        } else {
+            btnPlay.accessibilityLabel = "Play"
+            btnPlay.accessibilityHint = "Double-tap to start playback"
+        }
+    }
+
+    /// Update slider accessibility value with current time
+    private func updateSliderAccessibility(currentTime: Double, duration: Double) {
+        let currentFormatted = format(forTime: currentTime)
+        let durationFormatted = format(forTime: duration)
+        slider.accessibilityValue = "\(currentFormatted) of \(durationFormatted)"
     }
 
     private func checkForSubtitles() {
@@ -271,16 +401,30 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
     override func viewWillDisappear(_ animated: Bool) {
         super.viewWillDisappear(animated)
 
-        // Save audio progress and clean up timer when leaving
+        // Stop playback when leaving the view
         if btnPlay.tag == 1 {
+            // Save progress before stopping
             saveAudioProgress()
+            // Stop the player and cleanup
+            stopPlaying()
         }
         stopAudioProgressTracking()
     }
 
     @IBAction func onPlay(_ sender: Any) {
         if self.btnPlay.tag == 1 {
-            stopPlaying()
+            // Toggle between pause and resume
+            if player.rate == 0 {
+                // Currently paused, resume playback
+                player.play()
+                btnPlay.setImage(UIImage(systemName: "pause.fill"), for: .normal)
+                updatePlayButtonAccessibility(isPlaying: true)
+            } else {
+                // Currently playing, pause
+                player.pause()
+                btnPlay.setImage(UIImage(systemName: "play.fill"), for: .normal)
+                updatePlayButtonAccessibility(isPlaying: false)
+            }
             return
         }
 
@@ -485,6 +629,13 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
             Global.removeFavoriteData(identifier: identifier)
         }
 
+        // Update accessibility state
+        updateFavoriteAccessibility()
+
+        // Announce change to VoiceOver users
+        let announcement = btnFavorite.tag == 1 ? "Added to favorites" : "Removed from favorites"
+        UIAccessibility.post(notification: .announcement, argument: announcement)
+
         // Note: FavoriteItemParams would be used when saveFavoriteItem API is implemented
         // For now, just log the local save operation
         _ = FavoriteItemParams(
@@ -528,34 +679,54 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
     func startPlaying(resumeTime: Double? = nil) {
         self.player.play()
         self.btnPlay.tag = 1
-        self.btnPlay.setImage(UIImage(named: "stop.png"), for: .normal)
-        self.slider.leftLabel.text = format(forTime: 0.0)
+        self.btnPlay.setImage(UIImage(systemName: "pause.fill"), for: .normal)
+        updatePlayButtonAccessibility(isPlaying: true)
 
-        // Load duration asynchronously using modern API
+        // Initialize slider labels with placeholder until duration loads
+        self.slider.leftLabel.text = format(forTime: 0.0)
+        self.slider.rightLabel.text = "--:--"
+
+        // Load duration asynchronously using modern API, then show slider
         Task {
             if let asset = player.currentItem?.asset {
                 do {
                     let duration = try await asset.load(.duration)
                     self.slider.max = duration.seconds
+                    self.slider.rightLabel.text = self.format(forTime: -duration.seconds)
 
                     // Seek to resume position after duration is loaded
                     if let resumeTime = resumeTime, resumeTime > 0 {
                         let targetTime = CMTime(seconds: resumeTime, preferredTimescale: 600)
                         await self.player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
                         self.slider.set(value: resumeTime, animated: false)
+                        self.slider.leftLabel.text = self.format(forTime: resumeTime)
+                        self.slider.rightLabel.text = self.format(forTime: resumeTime - duration.seconds)
                     }
+
+                    // Show slider after duration is loaded
+                    self.slider.isHidden = false
                 } catch {
-                    // Fallback: duration will remain at default
+                    // Fallback: show slider anyway with default values
+                    self.slider.isHidden = false
                 }
+            } else {
+                // No asset, show slider anyway
+                self.slider.isHidden = false
             }
         }
-
-        self.slider.isHidden = false
+        // Show play button and hide resume buttons when playback starts
+        btnPlay.isHidden = false
+        btnResume.isHidden = true
+        btnStartOver.isHidden = true
+        resumeTimeLabel.isHidden = true
         UIApplication.shared.isIdleTimerDisabled = true
 
         // Remove any existing observer before adding a new one to prevent duplicates
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: nil)
         NotificationCenter.default.addObserver(self, selector: #selector(self.playerDidFinishPlaying), name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: player.currentItem)
+
+        // Start periodic time observer to update slider during playback
+        startTimeObserver()
 
         // Start audio progress tracking
         startAudioProgressTracking()
@@ -564,6 +735,9 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
     func stopPlaying() {
         // Remove playback observer
         NotificationCenter.default.removeObserver(self, name: NSNotification.Name.AVPlayerItemDidPlayToEndTime, object: nil)
+
+        // Stop time observer
+        stopTimeObserver()
 
         // Save audio progress before stopping
         saveAudioProgress()
@@ -575,6 +749,7 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
 
         self.btnPlay.tag = 0
         self.btnPlay.setImage(UIImage(named: "play.png"), for: .normal)
+        updatePlayButtonAccessibility(isPlaying: false)
         UIApplication.shared.isIdleTimerDisabled = false
         self.slider.set(value: 0.0, animated: false)
         self.slider.isHidden = true
@@ -616,14 +791,14 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
         // Don't save if at the very beginning (less than 10 seconds) or invalid duration
         guard currentTime >= 10, duration > 0 else { return }
 
-        let progress = PlaybackProgress.audio(
+        let progress = PlaybackProgress.audio(MediaProgressInfo(
             identifier: identifier,
             filename: filename,
             currentTime: currentTime,
             duration: duration,
             title: iTitle,
             imageURL: iImageURL?.absoluteString
-        )
+        ))
 
         PlaybackProgressManager.shared.saveProgress(progress)
     }
@@ -634,11 +809,56 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
         let seconds = Int(time * sign) % 60
         return (sign < 0 ? "-" : "") + "\(minutes):" + String(format: "%02d", seconds)
     }
+
+    // MARK: - Playback Time Observer
+
+    /// Start periodic time observer to update slider during playback
+    private func startTimeObserver() {
+        // Remove any existing observer first
+        stopTimeObserver()
+
+        // Store reference to the player creating the observer
+        playerWithTimeObserver = player
+
+        // Update slider every 0.5 seconds
+        let interval = CMTime(seconds: 0.5, preferredTimescale: CMTimeScale(NSEC_PER_SEC))
+        timeObserverToken = player.addPeriodicTimeObserver(forInterval: interval, queue: .main) { [weak self] time in
+            Task { @MainActor in
+                guard let self = self else { return }
+
+                // Don't update slider while user is scrubbing
+                guard !self.isScrubbing else { return }
+
+                let currentTime = time.seconds
+
+                // Only update if the value is valid
+                guard currentTime.isFinite, currentTime >= 0 else { return }
+
+                // Update slider value (this will trigger didChangeValue delegate)
+                self.slider.set(value: currentTime, animated: false)
+
+                // Update left label with current time
+                self.slider.leftLabel.text = self.format(forTime: currentTime)
+            }
+        }
+    }
+
+    /// Stop the periodic time observer
+    private func stopTimeObserver() {
+        if let token = timeObserverToken, let observerPlayer = playerWithTimeObserver {
+            observerPlayer.removeTimeObserver(token)
+            timeObserverToken = nil
+            playerWithTimeObserver = nil
+        }
+    }
 }
 
 extension ItemVC: @preconcurrency SliderDelegate {
-    func sliderDidTap(slider: Slider) {
-        print("tapped")
+    func sliderDidTap(_ slider: Slider) {
+        // When user presses select on the slider, move focus to the play/pause button
+        shouldFocusPlayButton = true
+        setNeedsFocusUpdate()
+        updateFocusIfNeeded()
     }
 
     func slider(_ slider: Slider, textWithValue value: Double) -> String {
@@ -647,5 +867,45 @@ extension ItemVC: @preconcurrency SliderDelegate {
 
     func slider(_ slider: Slider, didChangeValue value: Double) {
         slider.rightLabel.text = format(forTime: value - slider.max)
+
+        // Update left label during scrubbing
+        if isScrubbing {
+            slider.leftLabel.text = format(forTime: value)
+        }
+
+        // Update accessibility value for VoiceOver
+        updateSliderAccessibility(currentTime: value, duration: slider.max)
+    }
+
+    func sliderDidBeginScrubbing(_ slider: Slider) {
+        isScrubbing = true
+        // Capture playing state before pausing (rate > 0 means playing)
+        wasPlayingBeforeScrub = player?.rate != 0
+        // Pause playback while scrubbing for smoother experience
+        player?.pause()
+    }
+
+    func sliderDidEndScrubbing(_ slider: Slider) {
+        // Gesture ended but deceleration may still be in progress
+        // Wait for sliderDidFinishScrubbing to perform the seek
+    }
+
+    func sliderDidFinishScrubbing(_ slider: Slider) {
+        // Deceleration complete - seek to the final position
+        seekToSliderPosition()
+        isScrubbing = false
+        // Resume playback only if we were actually playing before scrubbing
+        if wasPlayingBeforeScrub {
+            player?.play()
+        }
+    }
+
+    /// Seek the player to the current slider position
+    private func seekToSliderPosition() {
+        guard let player = player else { return }
+        let targetTime = CMTime(seconds: slider.value, preferredTimescale: 600)
+        Task {
+            await player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
+        }
     }
 }

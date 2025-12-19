@@ -31,6 +31,42 @@ class PeopleVC: UIViewController, UICollectionViewDelegate {
         super.viewDidLoad()
         configureMovieCollectionView()
         configureMusicCollectionView()
+        setupAccessibility()
+    }
+
+    // MARK: - Accessibility
+
+    private func setupAccessibility() {
+        // Section labels as headers
+        lblMovies.accessibilityTraits = .header
+        lblMusic.accessibilityTraits = .header
+
+        // Collection view labels
+        clsMovies.accessibilityLabel = "Movies by this person"
+        clsMusic.accessibilityLabel = "Music by this person"
+    }
+
+    /// Announce content loaded for VoiceOver users
+    private func announceContentLoaded() {
+        let movieCount = movieItems.count
+        let musicCount = musicItems.count
+        let totalCount = movieCount + musicCount
+
+        if totalCount == 0 {
+            UIAccessibility.post(notification: .announcement, argument: "No content found for this person")
+            return
+        }
+
+        var parts: [String] = []
+        if movieCount > 0 {
+            parts.append("\(movieCount) movie\(movieCount == 1 ? "" : "s")")
+        }
+        if musicCount > 0 {
+            parts.append("\(musicCount) music item\(musicCount == 1 ? "" : "s")")
+        }
+
+        let announcement = "Found \(parts.joined(separator: " and "))"
+        UIAccessibility.post(notification: .announcement, argument: announcement)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -181,6 +217,9 @@ class PeopleVC: UIViewController, UICollectionViewDelegate {
                 self.clsMusic.isHidden = false
                 self.lblMovies.isHidden = false
                 self.lblMusic.isHidden = false
+
+                // Announce for VoiceOver users
+                self.announceContentLoaded()
 
                 AppProgressHUD.sharedManager.hide()
 

@@ -85,6 +85,15 @@ final class EmptyStateView: UIView {
             imageView.widthAnchor.constraint(equalToConstant: 200),
             imageView.heightAnchor.constraint(equalToConstant: 200)
         ])
+
+        // Accessibility: Make the view accessible as a group
+        isAccessibilityElement = true
+        accessibilityTraits = .staticText
+
+        // Hide individual elements from accessibility (we'll use the group)
+        imageView.isAccessibilityElement = false
+        titleLabel.isAccessibilityElement = false
+        messageLabel.isAccessibilityElement = false
     }
 
     // MARK: - Configuration
@@ -94,6 +103,13 @@ final class EmptyStateView: UIView {
         titleLabel.text = title
         messageLabel.text = message
         messageLabel.isHidden = message == nil
+
+        // Update accessibility label
+        if let message = message {
+            accessibilityLabel = "\(title). \(message)"
+        } else {
+            accessibilityLabel = title
+        }
     }
 }
 

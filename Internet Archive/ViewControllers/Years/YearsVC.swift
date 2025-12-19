@@ -48,6 +48,7 @@ class YearsVC: UIViewController, UITableViewDelegate, UICollectionViewDelegate {
 
         configureTableView()
         configureCollectionView()
+        setupAccessibility()
 
         AppProgressHUD.sharedManager.show(view: self.view)
 
@@ -91,6 +92,20 @@ class YearsVC: UIViewController, UITableViewDelegate, UICollectionViewDelegate {
         }
     }
 
+    // MARK: - Accessibility
+
+    private func setupAccessibility() {
+        // Title label as header
+        lblTitle.accessibilityTraits = .header
+
+        // Table view accessibility
+        tableView.accessibilityLabel = "Years list"
+        tableView.accessibilityHint = "Select a year to view items from that time period"
+
+        // Collection view accessibility
+        collectionView.accessibilityLabel = "Items from selected year"
+    }
+
     // MARK: - Configuration
 
     private func configureTableView() {
@@ -99,7 +114,7 @@ class YearsVC: UIViewController, UITableViewDelegate, UICollectionViewDelegate {
             guard let yearCell = tableView.dequeueReusableCell(withIdentifier: "YearCell", for: indexPath) as? YearCell else {
                 return UITableViewCell()
             }
-            yearCell.lblYear.text = year
+            yearCell.configure(with: year)
             yearCell.lblYear.textColor = .label
 
             return yearCell

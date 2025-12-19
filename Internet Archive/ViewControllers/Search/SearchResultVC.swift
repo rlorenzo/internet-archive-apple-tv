@@ -61,6 +61,10 @@ final class SectionHeaderView: UICollectionReusableView {
             titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor),
             titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8)
         ])
+
+        // Accessibility: Mark as header
+        isAccessibilityElement = true
+        accessibilityTraits = .header
     }
 
     @available(*, unavailable)
@@ -70,6 +74,7 @@ final class SectionHeaderView: UICollectionReusableView {
 
     func configure(with title: String) {
         titleLabel.text = title
+        accessibilityLabel = "\(title) section"
     }
 }
 
@@ -176,6 +181,42 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
         configureCombinedDataSource()
         bindViewModel()
         setupSearchDebounce()
+        setupAccessibility()
+    }
+
+    // MARK: - Accessibility
+
+    private func setupAccessibility() {
+        // Filter segmented control accessibility
+        filterSegmentedControl.accessibilityLabel = "Search results filter"
+        filterSegmentedControl.accessibilityHint = "Select which type of results to display"
+
+        // Labels accessibility
+        lblMovies.accessibilityTraits = .header
+        lblMusic.accessibilityTraits = .header
+    }
+
+    /// Announce search results count for VoiceOver users
+    private func announceSearchResults() {
+        let videoCount = videoItems.count
+        let musicCount = musicItems.count
+        let totalCount = videoCount + musicCount
+
+        var announcement: String
+        if totalCount == 0 {
+            announcement = "No results found"
+        } else {
+            var parts: [String] = []
+            if videoCount > 0 {
+                parts.append("\(videoCount) video\(videoCount == 1 ? "" : "s")")
+            }
+            if musicCount > 0 {
+                parts.append("\(musicCount) music item\(musicCount == 1 ? "" : "s")")
+            }
+            announcement = "Found \(parts.joined(separator: " and "))"
+        }
+
+        UIAccessibility.post(notification: .announcement, argument: announcement)
     }
 
     private func setupFilterControl() {
@@ -379,6 +420,9 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
         } else {
             hideAllResults()
         }
+
+        // Announce results count for VoiceOver users
+        announceSearchResults()
 
         // Apply snapshots for all modes
         Task {

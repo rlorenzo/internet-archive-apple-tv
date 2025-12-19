@@ -377,14 +377,14 @@ final class PlaybackProgressTests: XCTestCase {
     // MARK: - Factory Methods Tests
 
     func testVideoFactoryMethod() {
-        let progress = PlaybackProgress.video(
+        let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-video",
             filename: "movie.mp4",
             currentTime: 120,
             duration: 3600,
             title: "My Movie",
             imageURL: "https://example.com/img"
-        )
+        ))
 
         XCTAssertEqual(progress.itemIdentifier, "test-video")
         XCTAssertEqual(progress.filename, "movie.mp4")
@@ -397,14 +397,13 @@ final class PlaybackProgressTests: XCTestCase {
     }
 
     func testAudioFactoryMethod() {
-        let progress = PlaybackProgress.audio(
+        let progress = PlaybackProgress.audio(MediaProgressInfo(
             identifier: "test-audio",
             filename: "track.mp3",
             currentTime: 60,
             duration: 300,
-            title: "My Track",
-            imageURL: nil
-        )
+            title: "My Track"
+        ))
 
         XCTAssertEqual(progress.itemIdentifier, "test-audio")
         XCTAssertEqual(progress.filename, "track.mp3")
@@ -495,22 +494,20 @@ final class PlaybackProgressTests: XCTestCase {
 
     func testCodableArrayEncodeAndDecode() throws {
         let items = [
-            PlaybackProgress.video(
+            PlaybackProgress.video(MediaProgressInfo(
                 identifier: "video-1",
                 filename: "movie.mp4",
                 currentTime: 100,
                 duration: 3600,
-                title: "Movie 1",
-                imageURL: nil
-            ),
-            PlaybackProgress.audio(
+                title: "Movie 1"
+            )),
+            PlaybackProgress.audio(MediaProgressInfo(
                 identifier: "audio-1",
                 filename: "track.mp3",
                 currentTime: 60,
                 duration: 300,
-                title: "Track 1",
-                imageURL: nil
-            )
+                title: "Track 1"
+            ))
         ]
 
         let encoder = JSONEncoder()
@@ -522,5 +519,151 @@ final class PlaybackProgressTests: XCTestCase {
         XCTAssertEqual(decoded.count, 2)
         XCTAssertEqual(decoded[0].itemIdentifier, "video-1")
         XCTAssertEqual(decoded[1].itemIdentifier, "audio-1")
+    }
+}
+
+// MARK: - MediaProgressInfo Tests
+
+final class MediaProgressInfoTests: XCTestCase {
+
+    func testInit_withAllParameters() {
+        let info = MediaProgressInfo(
+            identifier: "test-id",
+            filename: "video.mp4",
+            currentTime: 120.5,
+            duration: 3600.0,
+            title: "Test Title",
+            imageURL: "https://example.com/image.jpg"
+        )
+
+        XCTAssertEqual(info.identifier, "test-id")
+        XCTAssertEqual(info.filename, "video.mp4")
+        XCTAssertEqual(info.currentTime, 120.5)
+        XCTAssertEqual(info.duration, 3600.0)
+        XCTAssertEqual(info.title, "Test Title")
+        XCTAssertEqual(info.imageURL, "https://example.com/image.jpg")
+    }
+
+    func testInit_withRequiredParametersOnly() {
+        let info = MediaProgressInfo(
+            identifier: "test-id",
+            filename: "audio.mp3",
+            currentTime: 60.0,
+            duration: 300.0
+        )
+
+        XCTAssertEqual(info.identifier, "test-id")
+        XCTAssertEqual(info.filename, "audio.mp3")
+        XCTAssertEqual(info.currentTime, 60.0)
+        XCTAssertEqual(info.duration, 300.0)
+        XCTAssertNil(info.title)
+        XCTAssertNil(info.imageURL)
+    }
+
+    func testInit_withTitleOnly() {
+        let info = MediaProgressInfo(
+            identifier: "test-id",
+            filename: "video.mp4",
+            currentTime: 0,
+            duration: 100,
+            title: "My Video"
+        )
+
+        XCTAssertEqual(info.title, "My Video")
+        XCTAssertNil(info.imageURL)
+    }
+
+    func testInit_withImageURLOnly() {
+        let info = MediaProgressInfo(
+            identifier: "test-id",
+            filename: "video.mp4",
+            currentTime: 0,
+            duration: 100,
+            imageURL: "https://example.com/thumb.png"
+        )
+
+        XCTAssertNil(info.title)
+        XCTAssertEqual(info.imageURL, "https://example.com/thumb.png")
+    }
+
+    func testVideoFactoryMethod_usesMediaProgressInfo() {
+        let info = MediaProgressInfo(
+            identifier: "video-123",
+            filename: "movie.mp4",
+            currentTime: 500,
+            duration: 7200,
+            title: "Epic Movie",
+            imageURL: "https://archive.org/image.jpg"
+        )
+
+        let progress = PlaybackProgress.video(info)
+
+        XCTAssertEqual(progress.itemIdentifier, "video-123")
+        XCTAssertEqual(progress.filename, "movie.mp4")
+        XCTAssertEqual(progress.currentTime, 500)
+        XCTAssertEqual(progress.duration, 7200)
+        XCTAssertEqual(progress.title, "Epic Movie")
+        XCTAssertEqual(progress.imageURL, "https://archive.org/image.jpg")
+        XCTAssertEqual(progress.mediaType, "movies")
+    }
+
+    func testAudioFactoryMethod_usesMediaProgressInfo() {
+        let info = MediaProgressInfo(
+            identifier: "audio-456",
+            filename: "track.mp3",
+            currentTime: 90,
+            duration: 240,
+            title: "Great Song"
+        )
+
+        let progress = PlaybackProgress.audio(info)
+
+        XCTAssertEqual(progress.itemIdentifier, "audio-456")
+        XCTAssertEqual(progress.filename, "track.mp3")
+        XCTAssertEqual(progress.currentTime, 90)
+        XCTAssertEqual(progress.duration, 240)
+        XCTAssertEqual(progress.title, "Great Song")
+        XCTAssertNil(progress.imageURL)
+        XCTAssertEqual(progress.mediaType, "etree")
+    }
+
+    func testMediaProgressInfo_mutableProperties() {
+        var info = MediaProgressInfo(
+            identifier: "test",
+            filename: "file.mp4",
+            currentTime: 0,
+            duration: 100
+        )
+
+        // Title and imageURL are mutable (var)
+        info.title = "Updated Title"
+        info.imageURL = "https://new-url.com/image.jpg"
+
+        XCTAssertEqual(info.title, "Updated Title")
+        XCTAssertEqual(info.imageURL, "https://new-url.com/image.jpg")
+    }
+
+    func testMediaProgressInfo_withZeroValues() {
+        let info = MediaProgressInfo(
+            identifier: "empty",
+            filename: "empty.mp4",
+            currentTime: 0,
+            duration: 0
+        )
+
+        XCTAssertEqual(info.currentTime, 0)
+        XCTAssertEqual(info.duration, 0)
+    }
+
+    func testMediaProgressInfo_withLargeValues() {
+        let info = MediaProgressInfo(
+            identifier: "long-video",
+            filename: "documentary.mp4",
+            currentTime: 36000, // 10 hours in seconds
+            duration: 72000    // 20 hours in seconds
+        )
+
+        XCTAssertEqual(info.currentTime, 36000)
+        XCTAssertEqual(info.duration, 72000)
     }
 }
