@@ -27,14 +27,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
     // MARK: - Save and Retrieve Tests
 
     func testSaveAndRetrieveProgress() {
-        let progress = PlaybackProgress.video(
+        let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
             currentTime: 100,
             duration: 3600,
-            title: "Test Video",
-            imageURL: nil
-        )
+            title: "Test Video"
+        ))
 
         manager.saveProgress(progress)
 
@@ -44,14 +43,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
     }
 
     func testGetProgressByIdentifierOnly() {
-        let progress = PlaybackProgress.video(
+        let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
             currentTime: 100,
             duration: 3600,
-            title: "Test Video",
-            imageURL: nil
-        )
+            title: "Test Video"
+        ))
 
         manager.saveProgress(progress)
 
@@ -91,23 +89,21 @@ final class PlaybackProgressManagerTests: XCTestCase {
     }
 
     func testSaveProgressUpdatesExisting() {
-        let progress1 = PlaybackProgress.video(
+        let progress1 = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
             currentTime: 100,
             duration: 3600,
-            title: "Test Video",
-            imageURL: nil
-        )
+            title: "Test Video"
+        ))
 
-        let progress2 = PlaybackProgress.video(
+        let progress2 = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
             currentTime: 200,
             duration: 3600,
-            title: "Test Video Updated",
-            imageURL: nil
-        )
+            title: "Test Video Updated"
+        ))
 
         manager.saveProgress(progress1)
         manager.saveProgress(progress2)
@@ -122,14 +118,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
     }
 
     func testSaveProgressRemovesCompleteItems() {
-        let progress = PlaybackProgress.video(
+        let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
             currentTime: 3500,
             duration: 3600, // 97% complete
-            title: "Test Video",
-            imageURL: nil
-        )
+            title: "Test Video"
+        ))
 
         manager.saveProgress(progress)
 
@@ -138,14 +133,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
     }
 
     func testRemoveProgressByIdentifierAndFilename() {
-        let progress = PlaybackProgress.video(
+        let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
             currentTime: 100,
             duration: 3600,
-            title: "Test Video",
-            imageURL: nil
-        )
+            title: "Test Video"
+        ))
 
         manager.saveProgress(progress)
         manager.removeProgress(for: "test-item", filename: "video.mp4")
@@ -155,23 +149,21 @@ final class PlaybackProgressManagerTests: XCTestCase {
     }
 
     func testRemoveProgressByIdentifier() {
-        let progress1 = PlaybackProgress.video(
+        let progress1 = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video1.mp4",
             currentTime: 100,
             duration: 3600,
-            title: "Video 1",
-            imageURL: nil
-        )
+            title: "Video 1"
+        ))
 
-        let progress2 = PlaybackProgress.video(
+        let progress2 = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video2.mp4",
             currentTime: 200,
             duration: 3600,
-            title: "Video 2",
-            imageURL: nil
-        )
+            title: "Video 2"
+        ))
 
         manager.saveProgress(progress1)
         manager.saveProgress(progress2)
@@ -184,23 +176,21 @@ final class PlaybackProgressManagerTests: XCTestCase {
     // MARK: - Continue Watching/Listening Tests
 
     func testGetContinueWatchingItemsOnlyReturnsVideos() {
-        let video = PlaybackProgress.video(
+        let video = PlaybackProgress.video(MediaProgressInfo(
             identifier: "video-item",
             filename: "video.mp4",
             currentTime: 100,
             duration: 3600,
-            title: "Test Video",
-            imageURL: nil
-        )
+            title: "Test Video"
+        ))
 
-        let audio = PlaybackProgress.audio(
+        let audio = PlaybackProgress.audio(MediaProgressInfo(
             identifier: "audio-item",
             filename: "track.mp3",
             currentTime: 60,
             duration: 300,
-            title: "Test Track",
-            imageURL: nil
-        )
+            title: "Test Track"
+        ))
 
         manager.saveProgress(video)
         manager.saveProgress(audio)
@@ -211,23 +201,21 @@ final class PlaybackProgressManagerTests: XCTestCase {
     }
 
     func testGetContinueListeningItemsOnlyReturnsAudio() {
-        let video = PlaybackProgress.video(
+        let video = PlaybackProgress.video(MediaProgressInfo(
             identifier: "video-item",
             filename: "video.mp4",
             currentTime: 100,
             duration: 3600,
-            title: "Test Video",
-            imageURL: nil
-        )
+            title: "Test Video"
+        ))
 
-        let audio = PlaybackProgress.audio(
+        let audio = PlaybackProgress.audio(MediaProgressInfo(
             identifier: "audio-item",
             filename: "track.mp3",
             currentTime: 60,
             duration: 300,
-            title: "Test Track",
-            imageURL: nil
-        )
+            title: "Test Track"
+        ))
 
         manager.saveProgress(video)
         manager.saveProgress(audio)
@@ -238,14 +226,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
     }
 
     func testContinueWatchingExcludesCompleteItems() {
-        let incomplete = PlaybackProgress.video(
+        let incomplete = PlaybackProgress.video(MediaProgressInfo(
             identifier: "incomplete-video",
             filename: "video.mp4",
             currentTime: 1800,
             duration: 3600, // 50%
-            title: "Incomplete",
-            imageURL: nil
-        )
+            title: "Incomplete"
+        ))
 
         manager.saveProgress(incomplete)
 
@@ -288,14 +275,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
 
     func testContinueWatchingRespectsLimit() {
         for index in 0..<10 {
-            let progress = PlaybackProgress.video(
+            let progress = PlaybackProgress.video(MediaProgressInfo(
                 identifier: "video-\(index)",
                 filename: "video.mp4",
                 currentTime: 100,
                 duration: 3600,
-                title: "Video \(index)",
-                imageURL: nil
-            )
+                title: "Video \(index)"
+            ))
             manager.saveProgress(progress)
         }
 
@@ -306,14 +292,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
     // MARK: - Has Resumable Progress Tests
 
     func testHasResumableProgressTrue() {
-        let progress = PlaybackProgress.video(
+        let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
             currentTime: 100, // More than 10 seconds
             duration: 3600,
-            title: "Test Video",
-            imageURL: nil
-        )
+            title: "Test Video"
+        ))
 
         manager.saveProgress(progress)
 
@@ -321,14 +306,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
     }
 
     func testHasResumableProgressFalseUnder10Seconds() {
-        let progress = PlaybackProgress.video(
+        let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
             currentTime: 5, // Less than 10 seconds
             duration: 3600,
-            title: "Test Video",
-            imageURL: nil
-        )
+            title: "Test Video"
+        ))
 
         manager.saveProgress(progress)
 
@@ -344,23 +328,21 @@ final class PlaybackProgressManagerTests: XCTestCase {
     func testProgressCount() {
         XCTAssertEqual(manager.progressCount, 0)
 
-        let progress1 = PlaybackProgress.video(
+        let progress1 = PlaybackProgress.video(MediaProgressInfo(
             identifier: "video-1",
             filename: "video.mp4",
             currentTime: 100,
             duration: 3600,
-            title: "Video 1",
-            imageURL: nil
-        )
+            title: "Video 1"
+        ))
 
-        let progress2 = PlaybackProgress.audio(
+        let progress2 = PlaybackProgress.audio(MediaProgressInfo(
             identifier: "audio-1",
             filename: "track.mp3",
             currentTime: 60,
             duration: 300,
-            title: "Track 1",
-            imageURL: nil
-        )
+            title: "Track 1"
+        ))
 
         manager.saveProgress(progress1)
         XCTAssertEqual(manager.progressCount, 1)
@@ -372,14 +354,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
     // MARK: - Clear All Tests
 
     func testClearAllProgress() {
-        let progress = PlaybackProgress.video(
+        let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
             currentTime: 100,
             duration: 3600,
-            title: "Test Video",
-            imageURL: nil
-        )
+            title: "Test Video"
+        ))
 
         manager.saveProgress(progress)
         XCTAssertEqual(manager.progressCount, 1)
@@ -403,14 +384,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
             imageURL: nil
         )
 
-        let recentProgress = PlaybackProgress.video(
+        let recentProgress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "recent-item",
             filename: "video.mp4",
             currentTime: 100,
             duration: 3600,
-            title: "Recent Video",
-            imageURL: nil
-        )
+            title: "Recent Video"
+        ))
 
         // Add old progress directly (bypassing date update)
         // Since saveProgress always creates new date, we need to test via internal state
@@ -444,14 +424,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
     // MARK: - Persistence Tests
 
     func testProgressPersistsAcrossManagerAccess() {
-        let progress = PlaybackProgress.video(
+        let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "persist-test",
             filename: "video.mp4",
             currentTime: 100,
             duration: 3600,
-            title: "Persistence Test",
-            imageURL: nil
-        )
+            title: "Persistence Test"
+        ))
 
         manager.saveProgress(progress)
 
@@ -477,23 +456,21 @@ final class PlaybackProgressManagerTests: XCTestCase {
     }
 
     func testSaveProgressWithSameIdentifierDifferentFilenames() {
-        let progress1 = PlaybackProgress.video(
+        let progress1 = PlaybackProgress.video(MediaProgressInfo(
             identifier: "same-item",
             filename: "video1.mp4",
             currentTime: 100,
             duration: 3600,
-            title: "Video 1",
-            imageURL: nil
-        )
+            title: "Video 1"
+        ))
 
-        let progress2 = PlaybackProgress.video(
+        let progress2 = PlaybackProgress.video(MediaProgressInfo(
             identifier: "same-item",
             filename: "video2.mp4",
             currentTime: 200,
             duration: 3600,
-            title: "Video 2",
-            imageURL: nil
-        )
+            title: "Video 2"
+        ))
 
         manager.saveProgress(progress1)
         manager.saveProgress(progress2)

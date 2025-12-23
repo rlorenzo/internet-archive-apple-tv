@@ -61,7 +61,31 @@ class VideoVC: UIViewController {
         configureCollectionView()
         configureDataSource()
         bindViewModel()
+        setupAccessibility()
         loadData()
+    }
+
+    // MARK: - Accessibility
+
+    private func setupAccessibility() {
+        // Collection view accessibility
+        collectionView?.accessibilityLabel = "Video collections"
+    }
+
+    /// Announce loading state for VoiceOver users
+    private func announceLoadingState() {
+        UIAccessibility.post(notification: .announcement, argument: "Loading videos")
+    }
+
+    /// Announce content loaded for VoiceOver users
+    private func announceContentLoaded(itemCount: Int, continueWatchingCount: Int) {
+        var announcement: String
+        if continueWatchingCount > 0 {
+            announcement = "\(continueWatchingCount) item\(continueWatchingCount == 1 ? "" : "s") to continue watching, \(itemCount) video collection\(itemCount == 1 ? "" : "s") available"
+        } else {
+            announcement = "\(itemCount) video collection\(itemCount == 1 ? "" : "s") available"
+        }
+        UIAccessibility.post(notification: .announcement, argument: announcement)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -195,6 +219,7 @@ class VideoVC: UIViewController {
         if state.isLoading {
             hideEmptyState()
             showSkeletonLoading()
+            announceLoadingState()
         } else if let errorMessage = state.errorMessage {
             displayEmptyState(.networkError())
             Global.showServiceUnavailableAlert(target: self)
@@ -206,6 +231,7 @@ class VideoVC: UIViewController {
             Task {
                 await applySnapshot(items: state.items, continueWatching: continueWatchingItems)
             }
+            announceContentLoaded(itemCount: state.items.count, continueWatchingCount: continueWatchingItems.count)
         }
     }
 

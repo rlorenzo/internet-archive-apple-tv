@@ -137,6 +137,7 @@ final class ModernItemCell: UICollectionViewCell {
     private func setupAccessibility() {
         isAccessibilityElement = true
         accessibilityTraits = .button
+        accessibilityHint = "Double-tap to view details"
     }
 
     // MARK: - Configuration

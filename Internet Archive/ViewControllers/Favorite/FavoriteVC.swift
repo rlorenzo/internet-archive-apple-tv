@@ -54,6 +54,48 @@ class FavoriteVC: UIViewController, UICollectionViewDelegate {
         configureMusicCollectionView()
         configurePeopleCollectionView()
         bindViewModel()
+        setupAccessibility()
+    }
+
+    // MARK: - Accessibility
+
+    private func setupAccessibility() {
+        // Section labels as headers
+        lblMovies.accessibilityTraits = .header
+        lblMusic.accessibilityTraits = .header
+        lblPeople.accessibilityTraits = .header
+
+        // Collection view labels
+        clsMovie.accessibilityLabel = "Favorite movies"
+        clsMusic.accessibilityLabel = "Favorite music"
+        clsPeople.accessibilityLabel = "Favorite people"
+    }
+
+    /// Announce favorites loaded for VoiceOver users
+    private func announceFavoritesLoaded() {
+        let movieCount = movieItems.count
+        let musicCount = musicItems.count
+        let peopleCount = peoples.count
+        let totalCount = movieCount + musicCount + peopleCount
+
+        if totalCount == 0 {
+            UIAccessibility.post(notification: .announcement, argument: "No favorites found")
+            return
+        }
+
+        var parts: [String] = []
+        if movieCount > 0 {
+            parts.append("\(movieCount) movie\(movieCount == 1 ? "" : "s")")
+        }
+        if musicCount > 0 {
+            parts.append("\(musicCount) music item\(musicCount == 1 ? "" : "s")")
+        }
+        if peopleCount > 0 {
+            parts.append("\(peopleCount) \(peopleCount == 1 ? "person" : "people")")
+        }
+
+        let announcement = "Found \(parts.joined(separator: ", ")) in favorites"
+        UIAccessibility.post(notification: .announcement, argument: announcement)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -107,6 +149,9 @@ class FavoriteVC: UIViewController, UICollectionViewDelegate {
         } else {
             hideAllCollections()
         }
+
+        // Announce for VoiceOver users
+        announceFavoritesLoaded()
     }
 
     private func hideAllCollections() {

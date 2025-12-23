@@ -29,7 +29,20 @@ class LoginVC: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
+        setupAccessibility()
         bindViewModel()
+    }
+
+    // MARK: - Accessibility
+
+    private func setupAccessibility() {
+        // Email text field
+        txtEmail.accessibilityLabel = "Email address"
+        txtEmail.accessibilityHint = "Enter your Internet Archive account email"
+
+        // Password text field
+        txtPassword.accessibilityLabel = "Password"
+        txtPassword.accessibilityHint = "Enter your account password"
     }
 
     // MARK: - ViewModel Binding
@@ -52,6 +65,8 @@ class LoginVC: UIViewController {
 
         if let errorMessage = state.errorMessage {
             Global.showAlert(title: "Error", message: errorMessage, target: self)
+            // Announce error to VoiceOver users
+            UIAccessibility.post(notification: .announcement, argument: "Error: \(errorMessage)")
         }
 
         if state.isLoggedIn {

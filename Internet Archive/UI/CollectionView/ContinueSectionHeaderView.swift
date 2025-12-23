@@ -45,12 +45,17 @@ final class ContinueSectionHeaderView: UICollectionReusableView {
             titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor, constant: -60),
             titleLabel.centerYAnchor.constraint(equalTo: centerYAnchor)
         ])
+
+        // Accessibility: Mark as header
+        isAccessibilityElement = true
+        accessibilityTraits = .header
     }
 
     // MARK: - Configuration
 
     func configure(with title: String) {
         titleLabel.text = title
+        accessibilityLabel = "\(title) section"
     }
 
     // MARK: - Reuse

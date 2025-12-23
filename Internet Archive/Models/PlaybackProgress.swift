@@ -147,44 +147,58 @@ extension PlaybackProgress {
     }
 
     /// Create a progress entry for video content
-    static func video( // swiftlint:disable:this function_parameter_count
-        identifier: String,
-        filename: String,
-        currentTime: Double,
-        duration: Double,
-        title: String?,
-        imageURL: String?
-    ) -> PlaybackProgress {
+    static func video(_ info: MediaProgressInfo) -> PlaybackProgress {
         PlaybackProgress(
-            itemIdentifier: identifier,
-            filename: filename,
-            currentTime: currentTime,
-            duration: duration,
+            itemIdentifier: info.identifier,
+            filename: info.filename,
+            currentTime: info.currentTime,
+            duration: info.duration,
             lastWatchedDate: Date(),
-            title: title,
+            title: info.title,
             mediaType: "movies",
-            imageURL: imageURL
+            imageURL: info.imageURL
         )
     }
 
     /// Create a progress entry for audio content
-    static func audio( // swiftlint:disable:this function_parameter_count
+    static func audio(_ info: MediaProgressInfo) -> PlaybackProgress {
+        PlaybackProgress(
+            itemIdentifier: info.identifier,
+            filename: info.filename,
+            currentTime: info.currentTime,
+            duration: info.duration,
+            lastWatchedDate: Date(),
+            title: info.title,
+            mediaType: "etree",
+            imageURL: info.imageURL
+        )
+    }
+}
+
+// MARK: - Supporting Types
+
+/// Parameters for creating a PlaybackProgress entry
+struct MediaProgressInfo {
+    let identifier: String
+    let filename: String
+    let currentTime: Double
+    let duration: Double
+    var title: String?
+    var imageURL: String?
+
+    init(
         identifier: String,
         filename: String,
         currentTime: Double,
         duration: Double,
-        title: String?,
-        imageURL: String?
-    ) -> PlaybackProgress {
-        PlaybackProgress(
-            itemIdentifier: identifier,
-            filename: filename,
-            currentTime: currentTime,
-            duration: duration,
-            lastWatchedDate: Date(),
-            title: title,
-            mediaType: "etree",
-            imageURL: imageURL
-        )
+        title: String? = nil,
+        imageURL: String? = nil
+    ) {
+        self.identifier = identifier
+        self.filename = filename
+        self.currentTime = currentTime
+        self.duration = duration
+        self.title = title
+        self.imageURL = imageURL
     }
 }

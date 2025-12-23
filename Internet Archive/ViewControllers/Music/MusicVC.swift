@@ -61,7 +61,31 @@ class MusicVC: UIViewController {
         configureCollectionView()
         configureDataSource()
         bindViewModel()
+        setupAccessibility()
         loadData()
+    }
+
+    // MARK: - Accessibility
+
+    private func setupAccessibility() {
+        // Collection view accessibility
+        collectionView?.accessibilityLabel = "Music collections"
+    }
+
+    /// Announce loading state for VoiceOver users
+    private func announceLoadingState() {
+        UIAccessibility.post(notification: .announcement, argument: "Loading music")
+    }
+
+    /// Announce content loaded for VoiceOver users
+    private func announceContentLoaded(itemCount: Int, continueListeningCount: Int) {
+        var announcement: String
+        if continueListeningCount > 0 {
+            announcement = "\(continueListeningCount) item\(continueListeningCount == 1 ? "" : "s") to continue listening, \(itemCount) music collection\(itemCount == 1 ? "" : "s") available"
+        } else {
+            announcement = "\(itemCount) music collection\(itemCount == 1 ? "" : "s") available"
+        }
+        UIAccessibility.post(notification: .announcement, argument: announcement)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -195,6 +219,7 @@ class MusicVC: UIViewController {
         if state.isLoading {
             hideEmptyState()
             showSkeletonLoading()
+            announceLoadingState()
         } else if let errorMessage = state.errorMessage {
             displayEmptyState(.networkError())
             Global.showServiceUnavailableAlert(target: self)
@@ -206,6 +231,7 @@ class MusicVC: UIViewController {
             Task {
                 await applySnapshot(items: state.items, continueListening: continueListeningItems)
             }
+            announceContentLoaded(itemCount: state.items.count, continueListeningCount: continueListeningItems.count)
         }
     }
 

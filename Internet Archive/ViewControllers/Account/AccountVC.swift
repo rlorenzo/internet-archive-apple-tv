@@ -21,9 +21,23 @@ class AccountVC: UIViewController {
         } else {
             txtDescription.text = "You are logged into the Internet Archive"
         }
+
+        setupAccessibility()
     }
 
+    // MARK: - Accessibility
+
+    private func setupAccessibility() {
+        // Description label
+        txtDescription.accessibilityTraits = .staticText
+    }
+
+    // MARK: - Actions
+
     @IBAction func onLogout(_ sender: Any) {
+        // Announce logout for VoiceOver users
+        UIAccessibility.post(notification: .announcement, argument: "Logging out")
+
         Global.saveUserData(userData: [
             "username": "",
             "email": "",
