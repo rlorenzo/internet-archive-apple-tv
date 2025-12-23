@@ -507,8 +507,8 @@
                             <constraint firstItem="n45-cf-aUC" firstAttribute="leading" relation="greaterThanOrEqual" secondItem="gTj-0p-dfq" secondAttribute="trailing" constant="8" symbolic="YES" id="jSq-oN-5u7"/>
                             <constraint firstAttribute="trailing" secondItem="i6S-0L-18M" secondAttribute="trailing" constant="80" id="nhW-DX-nUv"/>
                             <constraint firstItem="n45-cf-aUC" firstAttribute="top" secondItem="swD-4Z-bcL" secondAttribute="top" constant="150" id="oF4-lP-wyD"/>
-                            <constraint firstItem="gTj-0p-dfq" firstAttribute="top" secondItem="8zo-WY-PKb" secondAttribute="bottom" constant="50" id="pPN-nu-4fm"/>
-                            <constraint firstItem="8zo-WY-PKb" firstAttribute="top" secondItem="UXv-NV-8pA" secondAttribute="bottom" constant="50" id="rs0-Ag-Oy5"/>
+                            <constraint firstItem="gTj-0p-dfq" firstAttribute="top" secondItem="8zo-WY-PKb" secondAttribute="bottom" constant="16" id="pPN-nu-4fm"/>
+                            <constraint firstItem="8zo-WY-PKb" firstAttribute="top" secondItem="UXv-NV-8pA" secondAttribute="bottom" constant="16" id="rs0-Ag-Oy5"/>
                             <constraint firstItem="UXv-NV-8pA" firstAttribute="leading" secondItem="swD-4Z-bcL" secondAttribute="leading" constant="100" id="vM5-86-Z67"/>
                             <constraint firstAttribute="bottom" secondItem="oHA-yS-gNz" secondAttribute="bottom" constant="150" id="w8Y-YG-EK4"/>
                             <constraint firstAttribute="bottom" secondItem="fgN-UY-LaF" secondAttribute="bottom" constant="150" id="z0P-1I-IeM"/>

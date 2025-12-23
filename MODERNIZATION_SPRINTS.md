@@ -1139,12 +1139,21 @@ Current State: ModernItemCell, ContinueWatchingCell, SubtitleOverlayView, and Su
 - [ ] Manual VoiceOver testing recommended (user task)
 - [ ] Focus navigation verification with Siri Remote (user task)
 
-**Item Description Formatting:**
+**Item Description Formatting:** ✅ COMPLETED
 
-- [ ] Parse and render HTML/newlines in item descriptions
-- [ ] Preserve paragraph breaks and lists in description text
-- [ ] Add "Read More" expansion for long descriptions
-- [ ] Support basic text formatting (bold, italic) if present
+- [x] Parse and render HTML/newlines in item descriptions
+- [x] Preserve paragraph breaks and lists in description text
+- [x] Add "Read More" expansion for long descriptions
+- [x] Support basic text formatting (bold, italic) if present
+
+*Files Created:*
+- `Internet Archive/Utilities/HTMLToAttributedString.swift` - HTML-to-NSAttributedString converter
+- `Internet Archive/UI/DescriptionTextView.swift` - Custom focusable description view
+- `Internet ArchiveTests/Utilities/HTMLToAttributedStringTests.swift` - 50+ unit tests
+- `Internet ArchiveTests/UI/DescriptionTextViewTests.swift` - 32 unit tests
+
+*Files Modified:*
+- `Internet Archive/ViewControllers/Item/ItemVC.swift` - Integrated DescriptionTextView
 
 **Music Player UI Improvements:**
 
@@ -1187,7 +1196,92 @@ Full UI rewrite using SwiftUI, recommended for long-term maintainability.
 
 ---
 
-### Sprint 19: Additional Features
+### Sprint 19: CocoaPods to Swift Package Manager Migration
+
+**Estimated Time:** 15-25 hours
+**PR Title:** `chore: Migrate from CocoaPods to Swift Package Manager`
+**Priority:** Medium (CocoaPods entering read-only mode in 2026)
+
+#### Background
+CocoaPods has announced it will transition to read-only mode in 2026. Swift Package Manager (SPM) is now Apple's recommended dependency management solution and offers better Xcode integration, faster dependency resolution, and first-party support.
+
+#### Goals
+- Migrate all dependencies from CocoaPods to Swift Package Manager
+- Remove Podfile, Podfile.lock, and Pods directory
+- Simplify project structure
+- Improve build times with SPM caching
+
+#### Current Dependencies to Migrate
+
+| CocoaPod | SPM Equivalent | Notes |
+|----------|----------------|-------|
+| Alamofire ~> 5.9 | [Alamofire](https://github.com/Alamofire/Alamofire) | Native SPM support |
+| AlamofireImage ~> 4.3 | [AlamofireImage](https://github.com/Alamofire/AlamofireImage) | Native SPM support |
+| SVProgressHUD ~> 2.3.1 | [SVProgressHUD](https://github.com/SVProgressHUD/SVProgressHUD) | Native SPM support |
+| MBProgressHUD ~> 1.2.0 | [MBProgressHUD](https://github.com/jdg/MBProgressHUD) | Native SPM support |
+| TvOSMoreButton ~> 1.4.1 | Manual vendoring or fork | No official SPM support - may need to vendor |
+| TvOSTextViewer ~> 1.1.1 | Manual vendoring or fork | No official SPM support - may need to vendor |
+| SwiftSoup ~> 2.7 | [SwiftSoup](https://github.com/scinfu/SwiftSoup) | Native SPM support |
+| SwiftLint (Debug only) | [SwiftLintPlugins](https://github.com/realm/SwiftLint) | Build tool plugin |
+
+#### Tasks
+
+**Phase 1: Preparation**
+- [ ] Audit all dependencies for SPM compatibility
+- [ ] Fork/vendor TvOSMoreButton with SPM support (if no official package)
+- [ ] Fork/vendor TvOSTextViewer with SPM support (if no official package)
+- [ ] Create feature branch for migration
+
+**Phase 2: Project Migration**
+- [ ] Add Package.swift manifest (or use Xcode's native SPM integration)
+- [ ] Add each dependency via Xcode → File → Add Package Dependencies
+- [ ] Configure package products for each target
+- [ ] Update import statements if package names differ
+
+**Phase 3: SwiftLint Migration**
+- [ ] Convert SwiftLint to SPM build tool plugin
+- [ ] Update build phases to remove CocoaPods SwiftLint
+- [ ] Verify lint still runs on build
+
+**Phase 4: Cleanup**
+- [ ] Remove Podfile, Podfile.lock
+- [ ] Remove Pods/ directory
+- [ ] Remove CocoaPods-related build phases from Xcode project
+- [ ] Update .gitignore (remove Pods/, add .swiftpm/)
+- [ ] Delete `Internet Archive.xcworkspace` (use .xcodeproj directly)
+
+**Phase 5: Documentation & CI**
+- [ ] Update DEVELOPMENT_SETUP.md with SPM instructions
+- [ ] Update CI workflows to use SPM (remove `pod install`)
+- [ ] Update README.md setup section
+- [ ] Update CLAUDE.md build commands
+
+#### Technical Considerations
+
+**TvOSMoreButton/TvOSTextViewer Options:**
+1. **Fork & Add SPM Support:** Create forks with Package.swift manifests
+2. **Vendor Directly:** Copy source files into project (simplest)
+3. **Replace with Native:** Reimplement functionality with modern tvOS APIs
+
+**SwiftLint as Build Tool Plugin:**
+```swift
+// Package.swift
+.package(url: "https://github.com/realm/SwiftLint.git", from: "0.54.0")
+```
+
+**Benefits:**
+- No `pod install` step in setup
+- Faster CI builds (SPM caches dependencies)
+- Better Xcode integration
+- Single project file instead of workspace
+- First-party Apple support
+
+#### Deliverable
+Project fully migrated to Swift Package Manager with no CocoaPods dependencies. Simplified project structure with faster dependency resolution.
+
+---
+
+### Sprint 20: Additional Features
 
 - Implement new Internet Archive APIs
 - Add search filters

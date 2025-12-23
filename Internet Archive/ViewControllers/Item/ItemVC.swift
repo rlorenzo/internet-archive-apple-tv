@@ -24,6 +24,15 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
     @IBOutlet weak var txtDate: UILabel!
     @IBOutlet weak var txtDescription: TvOSMoreButton!
     @IBOutlet weak var itemImage: UIImageView!
+
+    /// Custom description view with HTML formatting support
+    private lazy var descriptionTextView: DescriptionTextView = {
+        let view = DescriptionTextView()
+        view.translatesAutoresizingMaskIntoConstraints = false
+        view.numberOfLines = 6
+        view.trailingText = "... More"
+        return view
+    }()
     @IBOutlet weak var slider: Slider!
 
     var iIdentifier: String?
@@ -127,13 +136,12 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
         }
         txtDate.text = dateText
 
-        txtDescription.text = iDescription
+        // Setup custom description view with HTML formatting
+        setupDescriptionView()
 
         if let imageURL = iImageURL {
             itemImage.af.setImage(withURL: imageURL)
         }
-
-        txtDescription.buttonWasPressed = onMoreButtonPressed
         btnPlay.imageView?.contentMode = .scaleAspectFit
         btnFavorite.imageView?.contentMode = .scaleAspectFit
 
@@ -186,8 +194,104 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
         view.addSubview(subtitleInfoLabel)
         NSLayoutConstraint.activate([
             subtitleInfoLabel.leadingAnchor.constraint(equalTo: view.leadingAnchor, constant: 100),
-            subtitleInfoLabel.topAnchor.constraint(equalTo: txtDescription.bottomAnchor, constant: 20)
+            subtitleInfoLabel.topAnchor.constraint(equalTo: descriptionTextView.bottomAnchor, constant: 20)
         ])
+    }
+
+    /// Setup the custom description view with HTML formatting
+    private func setupDescriptionView() {
+        // Hide the original TvOSMoreButton
+        txtDescription.isHidden = true
+
+        // Add custom description view
+        view.addSubview(descriptionTextView)
+
+        // Position it where txtDescription was (using same constraints)
+        NSLayoutConstraint.activate([
+            descriptionTextView.leadingAnchor.constraint(equalTo: txtDescription.leadingAnchor),
+            descriptionTextView.trailingAnchor.constraint(equalTo: txtDescription.trailingAnchor),
+            descriptionTextView.topAnchor.constraint(equalTo: txtDescription.topAnchor),
+            descriptionTextView.heightAnchor.constraint(greaterThanOrEqualToConstant: 100)
+        ])
+
+        // Always fetch description from metadata API to get properly formatted HTML
+        // The search API strips HTML tags including <br> line breaks
+        descriptionTextView.setPlainText("Loading description...")
+        fetchDescription()
+
+        // Set callback for "Read More" action
+        descriptionTextView.onReadMorePressed = { [weak self] in
+            self?.showFullDescription()
+        }
+    }
+
+    /// Fetch the item metadata from the API (description, date, creator)
+    private func fetchDescription() {
+        guard let identifier = iIdentifier else {
+            // Fall back to existing description or show "No description available"
+            showFallbackDescription()
+            return
+        }
+
+        Task { @MainActor in
+            do {
+                let metadata = try await APIManager.sharedManager.getMetaDataTyped(identifier: identifier)
+
+                // Update description
+                if let description = metadata.metadata?.description, !description.isEmpty {
+                    self.iDescription = description
+                    self.descriptionTextView.setDescription(description)
+                } else {
+                    // API returned no description, fall back to existing
+                    self.showFallbackDescription()
+                }
+
+                // Update date if empty - fall back to publicdate/addeddate
+                if self.iDate == nil || self.iDate?.isEmpty == true {
+                    if let date = metadata.metadata?.date, !date.isEmpty {
+                        self.updateDateLabel(date)
+                    } else if let publicdate = metadata.metadata?.publicdate, !publicdate.isEmpty {
+                        self.updateDateLabel(publicdate, prefix: "Added")
+                    } else if let addeddate = metadata.metadata?.addeddate, !addeddate.isEmpty {
+                        self.updateDateLabel(addeddate, prefix: "Added")
+                    }
+                }
+
+                // Update "Archived By" if empty - fall back to creator from metadata
+                if self.iArchivedBy == nil || self.iArchivedBy?.isEmpty == true {
+                    if let creator = metadata.metadata?.creator, !creator.isEmpty {
+                        self.txtArchivedBy.text = "Archived By:  \(creator)"
+                    } else if let uploader = metadata.metadata?.uploader, !uploader.isEmpty {
+                        // Use uploader as fallback, but strip email domain for privacy
+                        let displayName = uploader.components(separatedBy: "@").first ?? uploader
+                        self.txtArchivedBy.text = "Archived By:  \(displayName)"
+                    }
+                }
+            } catch {
+                // Network error - fall back to existing description if available
+                self.showFallbackDescription()
+            }
+        }
+    }
+
+    /// Show the existing description or "No description available" as fallback
+    private func showFallbackDescription() {
+        if let description = iDescription, !description.isEmpty {
+            descriptionTextView.setDescription(description)
+        } else {
+            descriptionTextView.setPlainText("No description available")
+        }
+    }
+
+    /// Update the date label with formatted date
+    private func updateDateLabel(_ dateString: String, prefix: String = "Date") {
+        let formattedDate = Global.formatDate(string: dateString) ?? dateString
+        var dateText = "\(prefix):  \(formattedDate)"
+        if let licenseURL = iLicenseURL {
+            let licenseType = ContentFilterService.shared.getLicenseType(licenseURL)
+            dateText += "  •  License: \(licenseType)"
+        }
+        txtDate.text = dateText
     }
 
     private func setupSliderGestures() {
@@ -240,9 +344,8 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
         // Title accessibility
         txtTitle.accessibilityTraits = .header
 
-        // Description accessibility
-        txtDescription.accessibilityLabel = iDescription ?? "No description available"
-        txtDescription.accessibilityHint = "Double-tap to expand and read full description"
+        // Description accessibility (handled by DescriptionTextView)
+        // Note: DescriptionTextView sets its own accessibility properties
 
         // Item image accessibility
         itemImage.isAccessibilityElement = true
@@ -650,13 +753,14 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
         )
     }
 
-    private func onMoreButtonPressed(text: String?) {
-        guard let text = text else {
+    /// Show the full description in TvOSTextViewer with HTML stripped
+    private func showFullDescription() {
+        guard let description = descriptionTextView.plainText, !description.isEmpty else {
             return
         }
 
         let textViewerController = TvOSTextViewerViewController()
-        textViewerController.text = text
+        textViewerController.text = description
         textViewerController.textEdgeInsets = UIEdgeInsets(top: 100, left: 250, bottom: 100, right: 250)
         present(textViewerController, animated: true, completion: nil)
     }
