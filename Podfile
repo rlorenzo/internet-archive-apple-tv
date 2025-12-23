@@ -16,7 +16,7 @@ target 'Internet Archive' do
   pod 'TvOSMoreButton', '~> 1.4.1'
   pod 'TvOSTextViewer', '~> 1.1.1'
   pod 'MBProgressHUD', '~> 1.2.0'
-  pod 'SwiftSoup', '~> 2.7'  # HTML parsing for description text
+  pod 'SwiftSoup', '~> 2.11'  # HTML parsing for description text
 
   # Development tools
   pod 'SwiftLint', :configurations => ['Debug']

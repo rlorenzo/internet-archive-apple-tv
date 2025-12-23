@@ -17,7 +17,7 @@ DEPENDENCIES:
   - MBProgressHUD (~> 1.2.0)
   - SVProgressHUD (~> 2.3.1)
   - SwiftLint
-  - SwiftSoup (~> 2.7)
+  - SwiftSoup (~> 2.11)
   - TvOSMoreButton (~> 1.4.1)
   - TvOSTextViewer (~> 1.1.1)
 
