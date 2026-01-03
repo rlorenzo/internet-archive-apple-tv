@@ -95,6 +95,60 @@ class MusicVC: UIViewController {
         loadContinueListening()
     }
 
+    override func viewDidLayoutSubviews() {
+        super.viewDidLayoutSubviews()
+
+        // Adjust collection view frame to respect safe area (tab bar at top on tvOS)
+        guard let collectionView = collectionView else { return }
+        let safeAreaTop = view.safeAreaInsets.top
+        if collectionView.frame.origin.y < safeAreaTop {
+            collectionView.frame.origin.y = safeAreaTop
+            collectionView.frame.size.height = view.bounds.height - safeAreaTop
+        }
+    }
+
+    // MARK: - Focus Handling
+
+    override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
+        super.didUpdateFocus(in: context, with: coordinator)
+
+        guard let collectionView = collectionView,
+              let nextView = context.nextFocusedView,
+              nextView.isDescendant(of: collectionView),
+              let layout = collectionView.collectionViewLayout as? FocusableCompositionalLayout else {
+            return
+        }
+
+        // Find the cell containing the focused view
+        var currentView: UIView? = nextView
+        var cell: UICollectionViewCell?
+        while let view = currentView {
+            if let collectionCell = view as? UICollectionViewCell {
+                cell = collectionCell
+                break
+            }
+            currentView = view.superview
+        }
+
+        guard let focusedCell = cell,
+              let indexPath = collectionView.indexPath(for: focusedCell) else {
+            return
+        }
+
+        // Skip for Continue Listening section (horizontal scrolling)
+        let hasContinueListening = !continueListeningItems.isEmpty
+        if hasContinueListening && indexPath.section == 0 {
+            return
+        }
+
+        // Calculate the target offset to position focused row at top
+        if let attributes = collectionView.layoutAttributesForItem(at: IndexPath(item: 0, section: indexPath.section)) {
+            let targetY = attributes.frame.origin.y - collectionView.contentInset.top
+            let targetX = collectionView.contentOffset.x
+            layout.pendingContentOffset = CGPoint(x: targetX, y: max(0, targetY))
+        }
+    }
+
     // MARK: - Configuration
 
     func configureCollectionView() {
@@ -103,6 +157,12 @@ class MusicVC: UIViewController {
         // Configure appearance
         collectionView.backgroundColor = .clear
         view.backgroundColor = .clear
+
+        // Clip content that scrolls above the collection view bounds
+        collectionView.clipsToBounds = true
+
+        // Disable automatic inset adjustment - we handle safe area manually in viewDidLayoutSubviews
+        collectionView.contentInsetAdjustmentBehavior = .never
 
         // Set modern compositional layout (will be updated based on Continue Listening)
         collectionView.collectionViewLayout = CompositionalLayoutBuilder.standardGrid

@@ -164,6 +164,12 @@ struct FileInfo: Codable, Sendable {
     let height: String?
     let width: String?
 
+    // Audio track metadata (from Internet Archive API)
+    let track: String?      // Track number (e.g., "01", "02", "1/12")
+    let title: String?      // Track title (e.g., "Let The Good Times Roll")
+    let album: String?      // Album name (e.g., "1989-12-08 - Great Western LA Forum")
+    let creator: String?    // Artist name (e.g., "Grateful Dead")
+
     /// Memberwise initializer for testing
     init(
         name: String,
@@ -177,7 +183,11 @@ struct FileInfo: Codable, Sendable {
         mtime: String? = nil,
         length: String? = nil,
         height: String? = nil,
-        width: String? = nil
+        width: String? = nil,
+        track: String? = nil,
+        title: String? = nil,
+        album: String? = nil,
+        creator: String? = nil
     ) {
         self.name = name
         self.source = source
@@ -191,6 +201,10 @@ struct FileInfo: Codable, Sendable {
         self.length = length
         self.height = height
         self.width = width
+        self.track = track
+        self.title = title
+        self.album = album
+        self.creator = creator
     }
 
     // Computed properties for type-safe access
@@ -201,7 +215,49 @@ struct FileInfo: Codable, Sendable {
 
     var durationInSeconds: Double? {
         guard let length = length else { return nil }
-        return Double(length)
+
+        // Try parsing as plain seconds first (e.g., "312.45")
+        if let seconds = Double(length) {
+            return seconds
+        }
+
+        // Parse MM:SS or HH:MM:SS format (e.g., "06:21" or "1:23:45")
+        let components = length.split(separator: ":")
+        switch components.count {
+        case 2:
+            // MM:SS format
+            guard let minutes = Double(components[0]),
+                  let seconds = Double(components[1]) else { return nil }
+            return minutes * 60 + seconds
+        case 3:
+            // HH:MM:SS format
+            guard let hours = Double(components[0]),
+                  let minutes = Double(components[1]),
+                  let seconds = Double(components[2]) else { return nil }
+            return hours * 3600 + minutes * 60 + seconds
+        default:
+            return nil
+        }
+    }
+
+    /// Parse track number from various formats ("01", "1", "01/12")
+    var trackNumber: Int? {
+        guard let track = track else { return nil }
+        // Handle "01/12" format - take the first part
+        let cleanTrack = track.components(separatedBy: "/").first ?? track
+        return Int(cleanTrack.trimmingCharacters(in: .whitespaces))
+    }
+
+    /// Display title - use track title if available, otherwise derive from filename
+    var displayTitle: String {
+        if let title = title, !title.isEmpty {
+            return title
+        }
+        // Fall back to filename without extension
+        return name
+            .replacingOccurrences(of: ".mp3", with: "")
+            .replacingOccurrences(of: ".flac", with: "")
+            .replacingOccurrences(of: ".ogg", with: "")
     }
 
     // Convert to dictionary for backward compatibility (temporary)
@@ -218,6 +274,10 @@ struct FileInfo: Codable, Sendable {
         if let length = length { dict["length"] = length }
         if let height = height { dict["height"] = height }
         if let width = width { dict["width"] = width }
+        if let track = track { dict["track"] = track }
+        if let title = title { dict["title"] = title }
+        if let album = album { dict["album"] = album }
+        if let creator = creator { dict["creator"] = creator }
         return dict
     }
 }

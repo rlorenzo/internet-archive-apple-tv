@@ -54,8 +54,8 @@ final class VideoPlayerViewController: AVPlayerViewController {
     /// Flag to defer control setup if viewDidLoad runs before init completes
     private var needsControlSetup = false
 
-    /// Flag to track if KVO observer was added (to avoid removing a non-existent observer)
-    private var isObservingPlayer = false
+    /// KVO observation token for player's currentItem
+    private var playerItemObservation: NSKeyValueObservation?
 
     /// Reference to player for cleanup in deinit (nonisolated access)
     nonisolated(unsafe) private var playerForCleanup: AVPlayer?
@@ -114,7 +114,7 @@ final class VideoPlayerViewController: AVPlayerViewController {
         // that player is available
         if isViewLoaded {
             // Setup observer now that player is available
-            if !isObservingPlayer {
+            if playerItemObservation == nil {
                 observePlayerItem()
                 disableNativeSubtitles()
             }
@@ -192,10 +192,8 @@ final class VideoPlayerViewController: AVPlayerViewController {
     }
 
     deinit {
-        if isObservingPlayer {
-            // Use nonisolated(unsafe) playerForCleanup since deinit cannot access @MainActor isolated player
-            playerForCleanup?.removeObserver(self, forKeyPath: "currentItem")
-        }
+        // Block-based KVO observation is automatically invalidated when the token is deallocated
+        playerItemObservation?.invalidate()
         // Note: progressSaveTimer is invalidated in viewWillDisappear/stopProgressTracking
         // Cannot access Timer from deinit due to Swift 6 Sendable requirements
         NotificationCenter.default.removeObserver(self)
@@ -232,26 +230,13 @@ final class VideoPlayerViewController: AVPlayerViewController {
 
     /// Observe player item changes to disable native subtitles on new items
     private func observePlayerItem() {
-        // Use KVO to observe currentItem changes
+        // Use block-based KVO to observe currentItem changes
         // Only add observer if player is set (may be nil if viewDidLoad runs during super.init)
-        guard player != nil else { return }
-        player?.addObserver(self, forKeyPath: "currentItem", options: [.new], context: nil)
-        isObservingPlayer = true
-    }
-
-    // swiftlint:disable:next block_based_kvo
-    override nonisolated func observeValue(
-        forKeyPath keyPath: String?,
-        of object: Any?,
-        change: [NSKeyValueChangeKey: Any]?,
-        context: UnsafeMutableRawPointer?
-    ) {
-        if keyPath == "currentItem" {
+        guard let player = player else { return }
+        playerItemObservation = player.observe(\.currentItem, options: [.new]) { [weak self] _, _ in
             Task { @MainActor in
-                self.disableNativeSubtitles()
+                self?.disableNativeSubtitles()
             }
-        } else {
-            super.observeValue(forKeyPath: keyPath, of: object, change: change, context: context)
         }
     }
 

@@ -260,6 +260,113 @@ final class PlaybackProgressTests: XCTestCase {
         XCTAssertFalse(progress.isVideo)
     }
 
+    // MARK: - hasResumableProgress Tests
+
+    func testHasResumableProgress_videoOver10Seconds() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "test-item",
+            filename: "video.mp4",
+            currentTime: 15,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "Test Video",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertTrue(progress.hasResumableProgress)
+    }
+
+    func testHasResumableProgress_videoUnder10Seconds() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "test-item",
+            filename: "video.mp4",
+            currentTime: 5,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "Test Video",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertFalse(progress.hasResumableProgress)
+    }
+
+    func testHasResumableProgress_audioWithTrackTimeOver10Seconds() {
+        // Audio album: currentTime is album percentage, trackCurrentTime is actual seconds
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-123",
+            filename: "__album__",
+            currentTime: 5.0, // Only 5% through album (would fail old threshold)
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 1",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 0,
+            trackFilename: "track01.mp3",
+            trackCurrentTime: 30.0 // 30 seconds into track (passes new threshold)
+        )
+
+        XCTAssertTrue(progress.hasResumableProgress)
+    }
+
+    func testHasResumableProgress_audioWithTrackTimeUnder10Seconds() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-123",
+            filename: "__album__",
+            currentTime: 1.0, // 1% through album
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 1",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 0,
+            trackFilename: "track01.mp3",
+            trackCurrentTime: 5.0 // Only 5 seconds (should not resume)
+        )
+
+        XCTAssertFalse(progress.hasResumableProgress)
+    }
+
+    func testHasResumableProgress_audioFallsBackToCurrentTime() {
+        // Audio without trackCurrentTime falls back to currentTime
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-123",
+            filename: "__album__",
+            currentTime: 15.0, // 15% through album
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 2",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 1,
+            trackFilename: "track02.mp3",
+            trackCurrentTime: nil // No track time recorded
+        )
+
+        XCTAssertTrue(progress.hasResumableProgress)
+    }
+
+    func testHasResumableProgress_audioWithoutTrackTimeFallsBackUnder10() {
+        // Audio without trackCurrentTime, and currentTime < 10
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-123",
+            filename: "__album__",
+            currentTime: 5.0,
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 1",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 0,
+            trackFilename: "track01.mp3",
+            trackCurrentTime: nil
+        )
+
+        XCTAssertFalse(progress.hasResumableProgress)
+    }
+
     // MARK: - Thumbnail URL Tests
 
     func testThumbnailURLWithValidURL() {
@@ -666,4 +773,136 @@ final class MediaProgressInfoTests: XCTestCase {
         XCTAssertEqual(info.currentTime, 36000)
         XCTAssertEqual(info.duration, 72000)
     }
+
+    // MARK: - Track-Level Progress Tests (Audio Albums)
+
+    func testMediaProgressInfo_withTrackIndex() {
+        let info = MediaProgressInfo(
+            identifier: "album-123",
+            filename: "__album__",
+            currentTime: 25.0, // Album progress percentage
+            duration: 100.0,
+            title: "Artist: Track 3",
+            trackIndex: 2,
+            trackFilename: "track03.mp3"
+        )
+
+        XCTAssertEqual(info.trackIndex, 2)
+        XCTAssertEqual(info.trackFilename, "track03.mp3")
+    }
+
+    func testMediaProgressInfo_withTrackCurrentTime() {
+        let info = MediaProgressInfo(
+            identifier: "album-123",
+            filename: "__album__",
+            currentTime: 30.0, // Album progress (30% through album)
+            duration: 100.0,
+            title: "Artist: Track 3",
+            trackIndex: 2,
+            trackFilename: "track03.mp3",
+            trackCurrentTime: 125.5 // Actual position in track
+        )
+
+        XCTAssertEqual(info.trackCurrentTime, 125.5)
+    }
+
+    func testAudioFactoryMethod_preservesTrackCurrentTime() {
+        let info = MediaProgressInfo(
+            identifier: "album-456",
+            filename: "__album__",
+            currentTime: 50.0,
+            duration: 100.0,
+            title: "Artist: Track 5",
+            trackIndex: 4,
+            trackFilename: "track05.mp3",
+            trackCurrentTime: 200.0
+        )
+
+        let progress = PlaybackProgress.audio(info)
+
+        XCTAssertEqual(progress.trackIndex, 4)
+        XCTAssertEqual(progress.trackFilename, "track05.mp3")
+        XCTAssertEqual(progress.trackCurrentTime, 200.0)
+    }
+
+    func testPlaybackProgress_trackCurrentTimeForAudioResume() {
+        // Simulates album-level progress where currentTime is album percentage
+        // but trackCurrentTime is the actual position for resume
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-789",
+            filename: "__album__",
+            currentTime: 40.0, // 40% through 10-track album (track 4)
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 4",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 3,
+            trackFilename: "track04.mp3",
+            trackCurrentTime: 180.5 // 3:00.5 into track 4
+        )
+
+        // currentTime is album-level progress (for completion check)
+        XCTAssertEqual(progress.currentTime, 40.0)
+        XCTAssertFalse(progress.isComplete) // 40% < 95%
+
+        // trackCurrentTime is actual position for resume
+        XCTAssertEqual(progress.trackCurrentTime, 180.5)
+        XCTAssertEqual(progress.trackIndex, 3)
+    }
+
+    func testPlaybackProgress_albumCompletesOnlyOnLastTrack() {
+        // Album at 95% means last track is 95% done
+        let almostComplete = PlaybackProgress(
+            itemIdentifier: "album-final",
+            filename: "__album__",
+            currentTime: 95.0,
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 10",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 9, // Last track (0-indexed)
+            trackFilename: "track10.mp3",
+            trackCurrentTime: 285.0 // Near end of final track
+        )
+
+        XCTAssertTrue(almostComplete.isComplete)
+    }
+
+    func testFormattedTimeRemaining_audioAlbumShowsPercentage() {
+        // Audio albums use normalized 0-100 scale, should show percentage not fake time
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-123",
+            filename: "__album__",
+            currentTime: 50.0, // 50% through album
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 5",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 4,
+            trackFilename: "track05.mp3",
+            trackCurrentTime: 120.0
+        )
+
+        XCTAssertEqual(progress.formattedTimeRemaining, "50% remaining")
+    }
+
+    func testFormattedTimeRemaining_videoShowsActualTime() {
+        // Video uses actual seconds, should show time remaining
+        let progress = PlaybackProgress(
+            itemIdentifier: "video-123",
+            filename: "movie.mp4",
+            currentTime: 1800, // 30 minutes in
+            duration: 3600, // 1 hour total
+            lastWatchedDate: Date(),
+            title: "Test Movie",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertEqual(progress.formattedTimeRemaining, "30 min remaining")
+    }
+
 }

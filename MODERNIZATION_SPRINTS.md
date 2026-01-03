@@ -1055,7 +1055,7 @@ Internet Archive.xcodeproj/project.pbxproj ✅ (Added new files)
 
 **Estimated Time:** 20-30 hours
 **PR Title:** `feat: UI/UX improvements for better user experience`
-**Status:** In Progress - Accessibility & Descriptions Complete
+**Status:** In Progress - Accessibility, Descriptions, and Music Player Complete
 
 #### Goals
 
@@ -1155,14 +1155,14 @@ Current State: ModernItemCell, ContinueWatchingCell, SubtitleOverlayView, and Su
 *Files Modified:*
 - `Internet Archive/ViewControllers/Item/ItemVC.swift` - Integrated DescriptionTextView
 
-**Music Player UI Improvements:**
+**Music Player UI Improvements:** ✅ COMPLETED
 
-- [ ] Show album art prominently during playback
-- [ ] Add Now Playing screen with track list
-- [ ] Show track progress and duration
-- [ ] Add shuffle/repeat controls
-- [ ] Improve playlist navigation
-- [ ] Show artist/album info during playback
+- [x] Add Now Playing screen with album art, track list, and transport controls
+- [x] Implement AudioQueueManager with shuffle/repeat modes
+- [x] Add Continue Listening section to MusicVC with resume support
+- [x] Fix album progress consistency (normalized 0-100 scale, percentage display)
+- [x] Modernize VideoPlayerViewController KVO to block-based API
+- [x] Add 70+ unit tests for AudioTrack and AudioQueueManager
 
 **Additional Refinements:**
 
@@ -1221,7 +1221,7 @@ CocoaPods has announced it will transition to read-only mode in 2026. Swift Pack
 | MBProgressHUD ~> 1.2.0 | [MBProgressHUD](https://github.com/jdg/MBProgressHUD) | Native SPM support |
 | TvOSMoreButton ~> 1.4.1 | Manual vendoring or fork | No official SPM support - may need to vendor |
 | TvOSTextViewer ~> 1.1.1 | Manual vendoring or fork | No official SPM support - may need to vendor |
-| SwiftSoup ~> 2.7 | [SwiftSoup](https://github.com/scinfu/SwiftSoup) | Native SPM support |
+| SwiftSoup ~> 2.11 | [SwiftSoup](https://github.com/scinfu/SwiftSoup) | Native SPM support |
 | SwiftLint (Debug only) | [SwiftLintPlugins](https://github.com/realm/SwiftLint) | Build tool plugin |
 
 #### Tasks

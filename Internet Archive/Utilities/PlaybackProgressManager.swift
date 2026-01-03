@@ -20,6 +20,7 @@ final class PlaybackProgressManager {
 
     private enum Keys {
         static let progressData = "playback_progress_items"
+        static let audioProgressMigrationComplete = "audio_progress_migration_v1_complete"
     }
 
     private enum Limits {
@@ -27,9 +28,39 @@ final class PlaybackProgressManager {
         static let maxAgeDays = 30
     }
 
+    /// Marker filename for album-level audio progress (instead of per-track)
+    static let albumMarkerFilename = "__album__"
+
     // MARK: - Initialization
 
-    private init() {}
+    private init() {
+        migrateAudioProgressIfNeeded()
+    }
+
+    // MARK: - Migration
+
+    /// One-time migration to clear old per-track audio progress entries
+    /// Now using album-level tracking for audio content
+    private func migrateAudioProgressIfNeeded() {
+        guard !UserDefaults.standard.bool(forKey: Keys.audioProgressMigrationComplete) else {
+            return
+        }
+
+        // Remove all existing audio (etree) progress entries
+        var items = allProgress
+        let beforeCount = items.count
+        items.removeAll { $0.isAudio }
+        let removedCount = beforeCount - items.count
+
+        if removedCount > 0 {
+            allProgress = items
+            #if DEBUG
+            print("🔄 Migrated audio progress: removed \(removedCount) per-track entries")
+            #endif
+        }
+
+        UserDefaults.standard.set(true, forKey: Keys.audioProgressMigrationComplete)
+    }
 
     // MARK: - Public Methods
 
@@ -120,7 +151,7 @@ final class PlaybackProgressManager {
     /// - Returns: True if there's incomplete progress saved
     func hasResumableProgress(for identifier: String) -> Bool {
         guard let progress = getProgress(for: identifier) else { return false }
-        return !progress.isComplete && progress.currentTime > 10 // At least 10 seconds watched
+        return !progress.isComplete && progress.hasResumableProgress
     }
 
     /// Clear all saved progress

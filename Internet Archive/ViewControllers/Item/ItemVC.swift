@@ -469,7 +469,7 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
         // Check for saved progress
         if let progress = PlaybackProgressManager.shared.getProgress(for: identifier),
            !progress.isComplete,
-           progress.currentTime > 10 {
+           progress.hasResumableProgress {
             savedProgress = progress
             showResumeUI(progress: progress)
         } else {
@@ -550,7 +550,9 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
         }
 
         // Resume from saved position
-        startPlayback(identifier: identifier, mediaType: mediaType, resumeTime: progress.currentTime)
+        // For audio, use trackCurrentTime (actual track position) instead of currentTime (album-level progress)
+        let resumeTime = progress.isAudio ? progress.trackCurrentTime : progress.currentTime
+        startPlayback(identifier: identifier, mediaType: mediaType, resumeTime: resumeTime)
     }
 
     /// Start playback from the beginning, clearing any saved progress
@@ -680,13 +682,77 @@ class ItemVC: UIViewController, AVPlayerViewControllerDelegate, AVAudioPlayerDel
                         ]
                     )
                 } else if mediaType == "etree" {
-                    self.startPlaying(resumeTime: resumeTime)
+                    // Build sorted track list from audio files
+                    let audioFiles = filesToPlay.sorted { lhs, rhs in
+                        // Sort by track number, unnumbered tracks at end
+                        switch (lhs.trackNumber, rhs.trackNumber) {
+                        case let (lhsTrack?, rhsTrack?):
+                            return lhsTrack < rhsTrack
+                        case (nil, _):
+                            return false
+                        case (_, nil):
+                            return true
+                        }
+                    }
+
+                    // Convert FileInfo to AudioTrack models
+                    let tracks = audioFiles.map { file in
+                        AudioTrack(
+                            fileInfo: file,
+                            itemIdentifier: identifier,
+                            itemTitle: self.iTitle,
+                            imageURL: self.iImageURL
+                        )
+                    }
+
+                    guard !tracks.isEmpty else {
+                        let context = ErrorContext(
+                            operation: .loadMedia,
+                            userFacingTitle: "Playback Error",
+                            additionalInfo: ["identifier": identifier, "mediaType": mediaType]
+                        )
+                        ErrorPresenter.shared.present(
+                            NetworkError.resourceNotFound,
+                            context: context,
+                            on: self
+                        )
+                        return
+                    }
+
+                    // Find starting track index and resume time (for resume functionality)
+                    var startIndex = 0
+                    var trackResumeTime: Double?
+                    if let savedProgress = self.savedProgress {
+                        // Use saved track index if available, clamped to valid range
+                        if let savedIndex = savedProgress.trackIndex {
+                            startIndex = min(savedIndex, tracks.count - 1)
+                            trackResumeTime = resumeTime
+                        } else if let trackFilename = savedProgress.trackFilename,
+                                  let foundIndex = tracks.firstIndex(where: { $0.filename == trackFilename }) {
+                            // Fallback: match by track filename
+                            startIndex = foundIndex
+                            trackResumeTime = resumeTime
+                        }
+                    }
+
+                    // Present the Now Playing view controller
+                    let nowPlayingVC = NowPlayingViewController(
+                        itemIdentifier: identifier,
+                        itemTitle: self.iTitle,
+                        imageURL: self.iImageURL,
+                        tracks: tracks,
+                        startAt: startIndex,
+                        resumeTime: trackResumeTime
+                    )
+
+                    self.present(nowPlayingVC, animated: true)
 
                     ErrorLogger.shared.logSuccess(
                         operation: .playAudio,
                         info: [
                             "identifier": identifier,
-                            "filename": filename,
+                            "trackCount": "\(tracks.count)",
+                            "startIndex": "\(startIndex)",
                             "resuming": resumeTime != nil ? "true" : "false"
                         ]
                     )

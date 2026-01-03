@@ -323,6 +323,50 @@ final class PlaybackProgressManagerTests: XCTestCase {
         XCTAssertFalse(manager.hasResumableProgress(for: "nonexistent-item"))
     }
 
+    func testHasResumableProgressAudioWithTrackTime() {
+        // Audio album: currentTime is album percentage (low), trackCurrentTime is actual seconds (high)
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-123",
+            filename: "__album__",
+            currentTime: 5.0, // Only 5% through album (would fail old threshold)
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 1",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 0,
+            trackFilename: "track01.mp3",
+            trackCurrentTime: 30.0 // 30 seconds into track (passes new threshold)
+        )
+
+        manager.saveProgress(progress)
+
+        // Should return true because trackCurrentTime > 10
+        XCTAssertTrue(manager.hasResumableProgress(for: "album-123"))
+    }
+
+    func testHasResumableProgressAudioWithLowTrackTime() {
+        // Audio album: both album percentage and track time are low
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-456",
+            filename: "__album__",
+            currentTime: 1.0, // 1% through album
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 1",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 0,
+            trackFilename: "track01.mp3",
+            trackCurrentTime: 5.0 // Only 5 seconds into track
+        )
+
+        manager.saveProgress(progress)
+
+        // Should return false because trackCurrentTime <= 10
+        XCTAssertFalse(manager.hasResumableProgress(for: "album-456"))
+    }
+
     // MARK: - Progress Count Tests
 
     func testProgressCount() {
@@ -373,12 +417,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
 
     func testPruningRemovesOldEntries() {
         // Create an entry that's 31 days old
+        let oldDate = Calendar.current.date(byAdding: .day, value: -31, to: Date()) ?? Date()
         let oldProgress = PlaybackProgress(
             itemIdentifier: "old-item",
             filename: "video.mp4",
             currentTime: 100,
             duration: 3600,
-            lastWatchedDate: Calendar.current.date(byAdding: .day, value: -31, to: Date())!,
+            lastWatchedDate: oldDate,
             title: "Old Video",
             mediaType: "movies",
             imageURL: nil
