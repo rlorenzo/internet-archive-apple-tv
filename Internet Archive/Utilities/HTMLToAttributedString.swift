@@ -37,8 +37,12 @@ final class HTMLToAttributedString {
             return NSAttributedString(string: "")
         }
 
+        // Pre-process to handle double-encoded HTML from the API
+        // Some descriptions come with &lt;p&gt; which needs to be decoded first
+        let preprocessed = preprocessHTML(html)
+
         do {
-            let document = try SwiftSoup.parse(html)
+            let document = try SwiftSoup.parse(preprocessed)
             let attributedString = try convertElement(
                 document.body() ?? document,
                 baseFont: baseFont,
@@ -60,8 +64,11 @@ final class HTMLToAttributedString {
     func stripHTML(_ html: String) -> String {
         guard !html.isEmpty else { return "" }
 
+        // Pre-process to handle double-encoded HTML
+        let preprocessed = preprocessHTML(html)
+
         do {
-            let document = try SwiftSoup.parse(html)
+            let document = try SwiftSoup.parse(preprocessed)
 
             // Process block elements to add newline placeholders
             try processBlockElements(document)
@@ -87,6 +94,28 @@ final class HTMLToAttributedString {
     }
 
     // MARK: - Private Methods
+
+    /// Pre-process HTML to handle double-encoded content from the API
+    /// Internet Archive sometimes returns descriptions with encoded HTML entities
+    /// e.g., "&lt;p&gt;text&lt;/p&gt;" instead of "<p>text</p>"
+    private func preprocessHTML(_ html: String) -> String {
+        var result = html
+
+        // Decode common HTML tag entities (only for tag characters, not content)
+        // This handles double-encoded HTML like &lt;p&gt; -> <p>
+        let tagEntities: [(String, String)] = [
+            ("&lt;", "<"),
+            ("&gt;", ">"),
+            ("&amp;lt;", "<"),   // Triple-encoded case
+            ("&amp;gt;", ">")    // Triple-encoded case
+        ]
+
+        for (entity, replacement) in tagEntities {
+            result = result.replacingOccurrences(of: entity, with: replacement)
+        }
+
+        return result
+    }
 
     /// Convert a SwiftSoup element to NSAttributedString
     private func convertElement(

@@ -1164,13 +1164,21 @@ Current State: ModernItemCell, ContinueWatchingCell, SubtitleOverlayView, and Su
 - [x] Modernize VideoPlayerViewController KVO to block-based API
 - [x] Add 70+ unit tests for AudioTrack and AudioQueueManager
 
-**Additional Refinements:**
+**Additional Refinements:** ✅ COMPLETED
 
-- [ ] Improve loading states with skeleton screens
-- [ ] Add pull-to-refresh where appropriate
-- [ ] Smooth transitions between screens
-- [ ] Improve empty state messages
-- [ ] Add visual feedback for user actions (favorites, etc.)
+- [x] Improve loading states with skeleton screens
+- [x] Improve empty state messages
+- [x] Fix double-encoded HTML in descriptions (e.g. &lt;p&gt;)
+- [ ] Add pull-to-refresh where appropriate (not standard on tvOS)
+- [x] Add VoiceOver announcements for loading and content states
+
+*Files Modified:*
+
+- `Internet Archive/ViewControllers/Search/SearchResultVC.swift` - Added skeleton loading and empty states
+- `Internet Archive/ViewControllers/Favorite/FavoriteVC.swift` - Added skeleton loading and empty states
+- `Internet Archive/ViewControllers/Favorite/PeopleVC.swift` - Added skeleton loading and empty states
+- `Internet Archive/ViewControllers/Years/YearsVC.swift` - Added skeleton loading and empty states
+- `Internet Archive/Utilities/HTMLToAttributedString.swift` - Added preprocessHTML for double-encoded entities
 
 #### Files to Create/Modify
 

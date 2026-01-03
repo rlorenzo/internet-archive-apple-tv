@@ -34,6 +34,7 @@ class FavoriteVC: UIViewController, UICollectionViewDelegate {
     }()
 
     private var cancellables = Set<AnyCancellable>()
+    private var isShowingSkeleton = false
 
     // Computed properties from ViewModel state
     var movieItems: [SearchResult] {
@@ -125,29 +126,33 @@ class FavoriteVC: UIViewController, UICollectionViewDelegate {
 
     private func handleStateChange(_ state: FavoritesViewState) {
         if state.isLoading {
-            AppProgressHUD.sharedManager.show(view: self.view)
-            return
+            return // Skeleton loading already shown
         }
 
+        // Hide loading indicators
+        hideSkeletonLoading()
         AppProgressHUD.sharedManager.hide()
 
         if let errorMessage = state.errorMessage {
-            Global.showAlert(title: "Error", message: errorMessage, target: self)
+            hideAllCollections()
+            showEmptyState(.error(message: errorMessage))
             return
-        }
-
-        // Always apply snapshots to keep UI in sync with state
-        Task {
-            await applyMovieSnapshot()
-            await applyMusicSnapshot()
-            await applyPeopleSnapshot()
         }
 
         // Show or hide collections based on results
         if state.hasResults {
+            hideEmptyState()
             showAllCollections()
+
+            // Apply snapshots to show results
+            Task {
+                await applyMovieSnapshot()
+                await applyMusicSnapshot()
+                await applyPeopleSnapshot()
+            }
         } else {
             hideAllCollections()
+            showEmptyState(.noFavorites())
         }
 
         // Announce for VoiceOver users
@@ -173,12 +178,66 @@ class FavoriteVC: UIViewController, UICollectionViewDelegate {
     }
 
     private func loadFavorites(username: String) {
+        hideEmptyState()
+        showSkeletonLoading()
+        announceLoadingState()
+
         Task {
             await viewModel.loadFavoritesWithDetails(
                 username: username,
                 searchService: DefaultSearchService()
             )
         }
+    }
+
+    // MARK: - Loading State
+
+    /// Announce loading state for VoiceOver users
+    private func announceLoadingState() {
+        UIAccessibility.post(notification: .announcement, argument: "Loading favorites")
+    }
+
+    private func showSkeletonLoading() {
+        isShowingSkeleton = true
+
+        // Hide labels
+        lblMovies.isHidden = true
+        lblMusic.isHidden = true
+        lblPeople.isHidden = true
+
+        // Show collection views with skeleton cells
+        clsMovie.isHidden = false
+        clsMusic.isHidden = true  // Only show movie skeleton to avoid overwhelming the screen
+        clsPeople.isHidden = true
+
+        // Apply skeleton snapshot to movie collection
+        var snapshot = ItemSnapshot()
+        snapshot.appendSections([.videos])
+
+        let skeletons = (0..<10).map { index -> ItemViewModel in
+            let placeholder = SearchResult(
+                identifier: "skeleton-\(index)",
+                title: "",
+                mediatype: "",
+                creator: "",
+                description: "",
+                date: "",
+                year: "",
+                downloads: 0,
+                subject: [],
+                collection: []
+            )
+            return ItemViewModel(item: placeholder, section: .videos)
+        }
+        snapshot.appendItems(skeletons, toSection: .videos)
+
+        Task { @MainActor in
+            await movieDataSource.apply(snapshot, animatingDifferences: false)
+        }
+    }
+
+    private func hideSkeletonLoading() {
+        isShowingSkeleton = false
     }
 
     // MARK: - Configuration
@@ -193,8 +252,26 @@ class FavoriteVC: UIViewController, UICollectionViewDelegate {
             forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
         )
 
+        // Register skeleton cell for loading
+        clsMovie.register(
+            SkeletonItemCell.self,
+            forCellWithReuseIdentifier: SkeletonItemCell.reuseIdentifier
+        )
+
         // Configure diffable data source
-        movieDataSource = ItemDataSource(collectionView: clsMovie) { collectionView, indexPath, itemViewModel in
+        movieDataSource = ItemDataSource(collectionView: clsMovie) { [weak self] collectionView, indexPath, itemViewModel in
+            // Return skeleton cell if loading
+            if self?.isShowingSkeleton == true {
+                guard let cell = collectionView.dequeueReusableCell(
+                    withReuseIdentifier: SkeletonItemCell.reuseIdentifier,
+                    for: indexPath
+                ) as? SkeletonItemCell else {
+                    return UICollectionViewCell()
+                }
+                cell.startAnimating()
+                return cell
+            }
+
             guard let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: "ModernItemCell",
                 for: indexPath

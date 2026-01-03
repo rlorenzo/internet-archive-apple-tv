@@ -29,6 +29,7 @@ class YearsVC: UIViewController, UITableViewDelegate, UICollectionViewDelegate {
 
     private var selectedRow = 0
     private let screenSize = UIScreen.main.bounds.size
+    private var isShowingSkeleton = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
@@ -50,13 +51,21 @@ class YearsVC: UIViewController, UITableViewDelegate, UICollectionViewDelegate {
         configureCollectionView()
         setupAccessibility()
 
-        AppProgressHUD.sharedManager.show(view: self.view)
+        loadData()
+    }
+
+    // MARK: - Data Loading
+
+    private func loadData() {
+        hideEmptyState()
+        showSkeletonLoading()
+        announceLoadingState()
 
         Task {
             do {
                 let (_, results) = try await APIManager.sharedManager.getCollectionsTyped(collection: identifier, resultType: collection, limit: 5000)
 
-                AppProgressHUD.sharedManager.hide()
+                hideSkeletonLoading()
 
                 for item in results {
                     var year = "Undated"
@@ -78,18 +87,78 @@ class YearsVC: UIViewController, UITableViewDelegate, UICollectionViewDelegate {
                     year1 > year2
                 })
 
-                await self.applyTableSnapshot()
-                await self.applyCollectionSnapshot()
+                if sortedKeys.isEmpty {
+                    // Hide collection view so skeleton doesn't show behind empty state
+                    collectionView.isHidden = true
+                    showEmptyState(.noItems())
+                } else {
+                    hideEmptyState()
+                    await self.applyTableSnapshot()
+                    await self.applyCollectionSnapshot()
 
-                self.tableView.isHidden = false
-                self.collectionView.isHidden = false
-                self.lblTitle.isHidden = false
+                    self.tableView.isHidden = false
+                    self.collectionView.isHidden = false
+                    self.lblTitle.isHidden = false
+
+                    announceContentLoaded()
+                }
             } catch {
-                AppProgressHUD.sharedManager.hide()
+                hideSkeletonLoading()
                 NSLog("YearsVC Error: \(error)")
-                Global.showServiceUnavailableAlert(target: self)
+                showEmptyState(.networkError())
             }
         }
+    }
+
+    // MARK: - Loading State
+
+    private func announceLoadingState() {
+        UIAccessibility.post(notification: .announcement, argument: "Loading \(name)")
+    }
+
+    private func announceContentLoaded() {
+        let totalItems = sortedData.values.reduce(0) { $0 + $1.count }
+        let announcement = "Found \(totalItems) item\(totalItems == 1 ? "" : "s") across \(sortedKeys.count) year\(sortedKeys.count == 1 ? "" : "s")"
+        UIAccessibility.post(notification: .announcement, argument: announcement)
+    }
+
+    private func showSkeletonLoading() {
+        isShowingSkeleton = true
+
+        // Hide table view and title, show collection view with skeleton
+        tableView.isHidden = true
+        lblTitle.isHidden = true
+        collectionView.isHidden = false
+
+        // Apply skeleton snapshot to collection view
+        var snapshot = ItemSnapshot()
+        snapshot.appendSections([.main])
+
+        let skeletons = (0..<15).map { index -> ItemViewModel in
+            let placeholder = SearchResult(
+                identifier: "skeleton-\(index)",
+                title: "",
+                mediatype: "",
+                creator: "",
+                description: "",
+                date: "",
+                year: "",
+                downloads: 0,
+                subject: [],
+                collection: []
+            )
+            return ItemViewModel(item: placeholder, section: .main)
+        }
+        snapshot.appendItems(skeletons, toSection: .main)
+
+        Task { @MainActor in
+            await collectionDataSource.apply(snapshot, animatingDifferences: false)
+        }
+    }
+
+    private func hideSkeletonLoading() {
+        isShowingSkeleton = false
+        AppProgressHUD.sharedManager.hide()
     }
 
     // MARK: - Accessibility
@@ -131,8 +200,26 @@ class YearsVC: UIViewController, UITableViewDelegate, UICollectionViewDelegate {
             forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
         )
 
+        // Register skeleton cell for loading
+        collectionView.register(
+            SkeletonItemCell.self,
+            forCellWithReuseIdentifier: SkeletonItemCell.reuseIdentifier
+        )
+
         // Configure diffable data source
-        collectionDataSource = ItemDataSource(collectionView: collectionView) { collectionView, indexPath, itemViewModel in
+        collectionDataSource = ItemDataSource(collectionView: collectionView) { [weak self] collectionView, indexPath, itemViewModel in
+            // Return skeleton cell if loading
+            if self?.isShowingSkeleton == true {
+                guard let cell = collectionView.dequeueReusableCell(
+                    withReuseIdentifier: SkeletonItemCell.reuseIdentifier,
+                    for: indexPath
+                ) as? SkeletonItemCell else {
+                    return UICollectionViewCell()
+                }
+                cell.startAnimating()
+                return cell
+            }
+
             guard let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: "ModernItemCell",
                 for: indexPath
