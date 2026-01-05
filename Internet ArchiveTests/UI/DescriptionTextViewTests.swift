@@ -261,4 +261,54 @@ final class DescriptionTextViewTests: XCTestCase {
         XCTAssertTrue(descriptionView.plainText?.contains("日本語") ?? false)
         XCTAssertTrue(descriptionView.plainText?.contains("🎬") ?? false)
     }
+
+    // MARK: - Double-Encoded HTML Tests
+
+    func testDoubleEncodedParagraphTags() {
+        createTestObjects()
+        // Double-encoded HTML from Internet Archive API
+        descriptionView.setDescription("&lt;p&gt;This is content&lt;/p&gt;")
+
+        XCTAssertTrue(descriptionView.plainText?.contains("This is content") ?? false)
+        XCTAssertFalse(descriptionView.plainText?.contains("&lt;") ?? true)
+        XCTAssertFalse(descriptionView.plainText?.contains("&gt;") ?? true)
+    }
+
+    func testDoubleEncodedBoldTags() {
+        createTestObjects()
+        descriptionView.setDescription("Normal text &lt;b&gt;bold text&lt;/b&gt; more text")
+
+        XCTAssertTrue(descriptionView.plainText?.contains("Normal text") ?? false)
+        XCTAssertTrue(descriptionView.plainText?.contains("bold text") ?? false)
+        XCTAssertTrue(descriptionView.plainText?.contains("more text") ?? false)
+    }
+
+    func testDoubleEncodedWithMixedContent() {
+        createTestObjects()
+        // Mixed normal and double-encoded
+        descriptionView.setDescription("<p>Normal</p>&lt;p&gt;Encoded&lt;/p&gt;")
+
+        XCTAssertTrue(descriptionView.plainText?.contains("Normal") ?? false)
+        XCTAssertTrue(descriptionView.plainText?.contains("Encoded") ?? false)
+    }
+
+    func testDoubleEncodedListItems() {
+        createTestObjects()
+        descriptionView.setDescription("&lt;ul&gt;&lt;li&gt;First item&lt;/li&gt;&lt;li&gt;Second item&lt;/li&gt;&lt;/ul&gt;")
+
+        XCTAssertTrue(descriptionView.plainText?.contains("• First item") ?? false)
+        XCTAssertTrue(descriptionView.plainText?.contains("• Second item") ?? false)
+    }
+
+    func testRealWorldTekzillaDescription() {
+        createTestObjects()
+        // Simulated real-world case from Tekzilla podcast
+        let html = "&lt;p&gt;Welcome to the show!&lt;/p&gt;&lt;p&gt;Topics today:&lt;/p&gt;&lt;ul&gt;&lt;li&gt;Tech news&lt;/li&gt;&lt;/ul&gt;"
+        descriptionView.setDescription(html)
+
+        XCTAssertTrue(descriptionView.plainText?.contains("Welcome to the show") ?? false)
+        XCTAssertTrue(descriptionView.plainText?.contains("Topics today") ?? false)
+        XCTAssertTrue(descriptionView.plainText?.contains("• Tech news") ?? false)
+        XCTAssertFalse(descriptionView.plainText?.contains("&lt;") ?? true)
+    }
 }

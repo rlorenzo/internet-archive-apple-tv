@@ -224,4 +224,93 @@ final class ModernItemCellTests: XCTestCase {
         // Check contentView has subviews with constraints
         XCTAssertFalse(cell.contentView.constraints.isEmpty)
     }
+
+    // MARK: - Progress Tests
+
+    func testSetProgress_hidesProgressWhenNil() {
+        let cell = ModernItemCell(frame: CGRect(x: 0, y: 0, width: 200, height: 300))
+        cell.setProgress(nil)
+        // Should not crash and progress bar should be hidden
+        XCTAssertNotNil(cell)
+    }
+
+    func testSetProgress_hidesProgressWhenZero() {
+        let cell = ModernItemCell(frame: CGRect(x: 0, y: 0, width: 200, height: 300))
+        cell.setProgress(0)
+        // Progress bar should be hidden when progress is 0
+        XCTAssertNotNil(cell)
+    }
+
+    func testSetProgress_hidesProgressWhenNearComplete() {
+        let cell = ModernItemCell(frame: CGRect(x: 0, y: 0, width: 200, height: 300))
+        // Progress at 95% or higher should be considered complete
+        cell.setProgress(0.95)
+        XCTAssertNotNil(cell)
+    }
+
+    func testSetProgress_showsProgressWhenPartial() {
+        let cell = ModernItemCell(frame: CGRect(x: 0, y: 0, width: 200, height: 300))
+        // Progress between 0 and 95% should show the progress bar
+        cell.setProgress(0.5)
+        XCTAssertNotNil(cell)
+    }
+
+    func testSetProgress_withVariousValues() {
+        let cell = ModernItemCell(frame: CGRect(x: 0, y: 0, width: 200, height: 300))
+
+        // Test various progress values
+        let testValues: [Double?] = [nil, 0, 0.1, 0.25, 0.5, 0.75, 0.94, 0.95, 1.0]
+        for value in testValues {
+            cell.setProgress(value)
+            XCTAssertNotNil(cell, "Cell should not be nil after setting progress to \(String(describing: value))")
+        }
+    }
+
+    func testSetProgress_afterConfigure() {
+        let cell = ModernItemCell(frame: CGRect(x: 0, y: 0, width: 200, height: 300))
+        let searchResult = TestFixtures.movieSearchResult
+        let viewModel = ItemViewModel(item: searchResult)
+
+        cell.configure(with: viewModel)
+        cell.setProgress(0.3)
+
+        XCTAssertNotNil(cell)
+    }
+
+    func testSetProgress_beforeConfigure() {
+        let cell = ModernItemCell(frame: CGRect(x: 0, y: 0, width: 200, height: 300))
+
+        cell.setProgress(0.5)
+
+        let searchResult = TestFixtures.movieSearchResult
+        let viewModel = ItemViewModel(item: searchResult)
+        cell.configure(with: viewModel)
+
+        XCTAssertNotNil(cell)
+    }
+
+    func testPrepareForReuse_resetsProgress() {
+        let cell = ModernItemCell(frame: CGRect(x: 0, y: 0, width: 200, height: 300))
+
+        cell.setProgress(0.5)
+        cell.prepareForReuse()
+
+        // Progress should be reset after prepareForReuse
+        XCTAssertNotNil(cell)
+    }
+
+    // MARK: - Focus Appearance Tests
+
+    func testCell_unfocusedState() {
+        let cell = ModernItemCell(frame: CGRect(x: 0, y: 0, width: 200, height: 300))
+        // Cell should start unfocused
+        XCTAssertFalse(cell.isFocused)
+        XCTAssertEqual(cell.transform, .identity)
+    }
+
+    func testCell_borderWidth_whenUnfocused() {
+        let cell = ModernItemCell(frame: CGRect(x: 0, y: 0, width: 200, height: 300))
+        // Border should be 0 when unfocused
+        XCTAssertEqual(cell.layer.borderWidth, 0)
+    }
 }

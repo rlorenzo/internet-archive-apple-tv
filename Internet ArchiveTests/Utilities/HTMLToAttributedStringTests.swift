@@ -405,4 +405,139 @@ final class HTMLToAttributedStringTests: XCTestCase {
         let italicTraits = italicFont?.fontDescriptor.symbolicTraits
         XCTAssertTrue(italicTraits?.contains(.traitItalic) ?? false, "Italic styling should be preserved")
     }
+
+    // MARK: - Double-Encoded HTML Tests (preprocessHTML)
+
+    func testDoubleEncodedParagraphTags() {
+        // Internet Archive API sometimes returns double-encoded HTML
+        // where <p> becomes &lt;p&gt; in the JSON
+        let doubleEncoded = "&lt;p&gt;This is a paragraph&lt;/p&gt;"
+        let result = converter.stripHTML(doubleEncoded)
+        XCTAssertEqual(result, "This is a paragraph")
+        XCTAssertFalse(result.contains("&lt;"))
+        XCTAssertFalse(result.contains("&gt;"))
+    }
+
+    func testDoubleEncodedBoldTags() {
+        let doubleEncoded = "This is &lt;b&gt;bold&lt;/b&gt; text"
+        let result = converter.stripHTML(doubleEncoded)
+        XCTAssertEqual(result, "This is bold text")
+    }
+
+    func testDoubleEncodedBreakTags() {
+        let doubleEncoded = "Line 1&lt;br&gt;Line 2"
+        let result = converter.stripHTML(doubleEncoded)
+        XCTAssertTrue(result.contains("Line 1"))
+        XCTAssertTrue(result.contains("Line 2"))
+        XCTAssertTrue(result.contains("\n"), "Should contain newline from decoded br tag")
+    }
+
+    func testDoubleEncodedDivTags() {
+        let doubleEncoded = "&lt;div&gt;Section content&lt;/div&gt;"
+        let result = converter.stripHTML(doubleEncoded)
+        XCTAssertTrue(result.contains("Section content"))
+        XCTAssertFalse(result.contains("&lt;"))
+    }
+
+    func testTripleEncodedHTML() {
+        // Triple-encoded case: &amp;lt; should become <
+        let tripleEncoded = "&amp;lt;p&amp;gt;Triple encoded&amp;lt;/p&amp;gt;"
+        let result = converter.stripHTML(tripleEncoded)
+        XCTAssertTrue(result.contains("Triple encoded"))
+        XCTAssertFalse(result.contains("&amp;"))
+    }
+
+    func testMixedEncodingHTML() {
+        // Mix of normal HTML and double-encoded
+        let mixed = "<p>Normal paragraph</p>&lt;p&gt;Encoded paragraph&lt;/p&gt;"
+        let result = converter.stripHTML(mixed)
+        XCTAssertTrue(result.contains("Normal paragraph"))
+        XCTAssertTrue(result.contains("Encoded paragraph"))
+    }
+
+    func testDoubleEncodedHTMLWithAttributes() {
+        // Real-world case from Internet Archive
+        let html = "&lt;p style=\"margin:0\"&gt;Styled content&lt;/p&gt;"
+        let result = converter.stripHTML(html)
+        XCTAssertTrue(result.contains("Styled content"))
+        XCTAssertFalse(result.contains("style"))
+    }
+
+    func testDoubleEncodedHTMLInConvert() {
+        // Test that convert() also handles double-encoded HTML
+        let doubleEncoded = "&lt;b&gt;Bold text&lt;/b&gt;"
+        let result = converter.convert(doubleEncoded)
+
+        XCTAssertEqual(result.string, "Bold text")
+
+        // Check that it's actually rendered as bold
+        var range = NSRange()
+        let font = result.attribute(.font, at: 0, effectiveRange: &range) as? UIFont
+        XCTAssertNotNil(font)
+        let traits = font?.fontDescriptor.symbolicTraits
+        XCTAssertTrue(traits?.contains(.traitBold) ?? false, "Should render as bold after decoding")
+    }
+
+    func testDoubleEncodedItalicInConvert() {
+        let doubleEncoded = "&lt;i&gt;Italic text&lt;/i&gt;"
+        let result = converter.convert(doubleEncoded)
+
+        XCTAssertEqual(result.string, "Italic text")
+
+        var range = NSRange()
+        let font = result.attribute(.font, at: 0, effectiveRange: &range) as? UIFont
+        XCTAssertNotNil(font)
+        let traits = font?.fontDescriptor.symbolicTraits
+        XCTAssertTrue(traits?.contains(.traitItalic) ?? false, "Should render as italic after decoding")
+    }
+
+    func testDoubleEncodedListItems() {
+        let doubleEncoded = "&lt;ul&gt;&lt;li&gt;Item 1&lt;/li&gt;&lt;li&gt;Item 2&lt;/li&gt;&lt;/ul&gt;"
+        let result = converter.stripHTML(doubleEncoded)
+        XCTAssertTrue(result.contains("• Item 1"))
+        XCTAssertTrue(result.contains("• Item 2"))
+    }
+
+    func testRealWorldTekzillaDescription() {
+        // Simulated real-world case from Tekzilla podcast descriptions
+        let tekzillaHTML = """
+        &lt;p&gt;Welcome to Tekzilla! In this episode we cover:&lt;/p&gt;
+        &lt;ul&gt;
+        &lt;li&gt;Latest tech news&lt;/li&gt;
+        &lt;li&gt;Product reviews&lt;/li&gt;
+        &lt;/ul&gt;
+        &lt;p&gt;Thanks for watching!&lt;/p&gt;
+        """
+        let result = converter.stripHTML(tekzillaHTML)
+
+        XCTAssertTrue(result.contains("Welcome to Tekzilla"))
+        XCTAssertTrue(result.contains("• Latest tech news"))
+        XCTAssertTrue(result.contains("• Product reviews"))
+        XCTAssertTrue(result.contains("Thanks for watching"))
+        XCTAssertFalse(result.contains("&lt;"))
+        XCTAssertFalse(result.contains("&gt;"))
+    }
+
+    func testDoubleEncodedWithAmpersandInContent() {
+        // Content has both double-encoded tags AND ampersands in the text
+        let html = "&lt;p&gt;Tom &amp; Jerry&lt;/p&gt;"
+        let result = converter.stripHTML(html)
+        XCTAssertEqual(result, "Tom & Jerry")
+    }
+
+    func testPreprocessDoesNotBreakNormalAmpersand() {
+        // Normal text with ampersand should still work
+        let normalText = "Tom &amp; Jerry - Best Friends"
+        let result = converter.stripHTML(normalText)
+        XCTAssertEqual(result, "Tom & Jerry - Best Friends")
+    }
+
+    func testPreprocessDoesNotBreakNormalHTML() {
+        // Normal HTML (not double-encoded) should still work
+        let normalHTML = "<p>Normal <b>bold</b> paragraph</p>"
+        let result = converter.stripHTML(normalHTML)
+        XCTAssertTrue(result.contains("Normal"))
+        XCTAssertTrue(result.contains("bold"))
+        XCTAssertTrue(result.contains("paragraph"))
+    }
 }
