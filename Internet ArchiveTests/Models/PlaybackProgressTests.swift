@@ -260,6 +260,113 @@ final class PlaybackProgressTests: XCTestCase {
         XCTAssertFalse(progress.isVideo)
     }
 
+    // MARK: - hasResumableProgress Tests
+
+    func testHasResumableProgress_videoOver10Seconds() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "test-item",
+            filename: "video.mp4",
+            currentTime: 15,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "Test Video",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertTrue(progress.hasResumableProgress)
+    }
+
+    func testHasResumableProgress_videoUnder10Seconds() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "test-item",
+            filename: "video.mp4",
+            currentTime: 5,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "Test Video",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertFalse(progress.hasResumableProgress)
+    }
+
+    func testHasResumableProgress_audioWithTrackTimeOver10Seconds() {
+        // Audio album: currentTime is album percentage, trackCurrentTime is actual seconds
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-123",
+            filename: "__album__",
+            currentTime: 5.0, // Only 5% through album (would fail old threshold)
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 1",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 0,
+            trackFilename: "track01.mp3",
+            trackCurrentTime: 30.0 // 30 seconds into track (passes new threshold)
+        )
+
+        XCTAssertTrue(progress.hasResumableProgress)
+    }
+
+    func testHasResumableProgress_audioWithTrackTimeUnder10Seconds() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-123",
+            filename: "__album__",
+            currentTime: 1.0, // 1% through album
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 1",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 0,
+            trackFilename: "track01.mp3",
+            trackCurrentTime: 5.0 // Only 5 seconds (should not resume)
+        )
+
+        XCTAssertFalse(progress.hasResumableProgress)
+    }
+
+    func testHasResumableProgress_audioFallsBackToCurrentTime() {
+        // Audio without trackCurrentTime falls back to currentTime
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-123",
+            filename: "__album__",
+            currentTime: 15.0, // 15% through album
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 2",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 1,
+            trackFilename: "track02.mp3",
+            trackCurrentTime: nil // No track time recorded
+        )
+
+        XCTAssertTrue(progress.hasResumableProgress)
+    }
+
+    func testHasResumableProgress_audioWithoutTrackTimeFallsBackUnder10() {
+        // Audio without trackCurrentTime, and currentTime < 10
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-123",
+            filename: "__album__",
+            currentTime: 5.0,
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 1",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 0,
+            trackFilename: "track01.mp3",
+            trackCurrentTime: nil
+        )
+
+        XCTAssertFalse(progress.hasResumableProgress)
+    }
+
     // MARK: - Thumbnail URL Tests
 
     func testThumbnailURLWithValidURL() {
@@ -377,14 +484,14 @@ final class PlaybackProgressTests: XCTestCase {
     // MARK: - Factory Methods Tests
 
     func testVideoFactoryMethod() {
-        let progress = PlaybackProgress.video(
+        let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-video",
             filename: "movie.mp4",
             currentTime: 120,
             duration: 3600,
             title: "My Movie",
             imageURL: "https://example.com/img"
-        )
+        ))
 
         XCTAssertEqual(progress.itemIdentifier, "test-video")
         XCTAssertEqual(progress.filename, "movie.mp4")
@@ -397,14 +504,13 @@ final class PlaybackProgressTests: XCTestCase {
     }
 
     func testAudioFactoryMethod() {
-        let progress = PlaybackProgress.audio(
+        let progress = PlaybackProgress.audio(MediaProgressInfo(
             identifier: "test-audio",
             filename: "track.mp3",
             currentTime: 60,
             duration: 300,
-            title: "My Track",
-            imageURL: nil
-        )
+            title: "My Track"
+        ))
 
         XCTAssertEqual(progress.itemIdentifier, "test-audio")
         XCTAssertEqual(progress.filename, "track.mp3")
@@ -495,22 +601,20 @@ final class PlaybackProgressTests: XCTestCase {
 
     func testCodableArrayEncodeAndDecode() throws {
         let items = [
-            PlaybackProgress.video(
+            PlaybackProgress.video(MediaProgressInfo(
                 identifier: "video-1",
                 filename: "movie.mp4",
                 currentTime: 100,
                 duration: 3600,
-                title: "Movie 1",
-                imageURL: nil
-            ),
-            PlaybackProgress.audio(
+                title: "Movie 1"
+            )),
+            PlaybackProgress.audio(MediaProgressInfo(
                 identifier: "audio-1",
                 filename: "track.mp3",
                 currentTime: 60,
                 duration: 300,
-                title: "Track 1",
-                imageURL: nil
-            )
+                title: "Track 1"
+            ))
         ]
 
         let encoder = JSONEncoder()
@@ -523,4 +627,282 @@ final class PlaybackProgressTests: XCTestCase {
         XCTAssertEqual(decoded[0].itemIdentifier, "video-1")
         XCTAssertEqual(decoded[1].itemIdentifier, "audio-1")
     }
+}
+
+// MARK: - MediaProgressInfo Tests
+
+final class MediaProgressInfoTests: XCTestCase {
+
+    func testInit_withAllParameters() {
+        let info = MediaProgressInfo(
+            identifier: "test-id",
+            filename: "video.mp4",
+            currentTime: 120.5,
+            duration: 3600.0,
+            title: "Test Title",
+            imageURL: "https://example.com/image.jpg"
+        )
+
+        XCTAssertEqual(info.identifier, "test-id")
+        XCTAssertEqual(info.filename, "video.mp4")
+        XCTAssertEqual(info.currentTime, 120.5)
+        XCTAssertEqual(info.duration, 3600.0)
+        XCTAssertEqual(info.title, "Test Title")
+        XCTAssertEqual(info.imageURL, "https://example.com/image.jpg")
+    }
+
+    func testInit_withRequiredParametersOnly() {
+        let info = MediaProgressInfo(
+            identifier: "test-id",
+            filename: "audio.mp3",
+            currentTime: 60.0,
+            duration: 300.0
+        )
+
+        XCTAssertEqual(info.identifier, "test-id")
+        XCTAssertEqual(info.filename, "audio.mp3")
+        XCTAssertEqual(info.currentTime, 60.0)
+        XCTAssertEqual(info.duration, 300.0)
+        XCTAssertNil(info.title)
+        XCTAssertNil(info.imageURL)
+    }
+
+    func testInit_withTitleOnly() {
+        let info = MediaProgressInfo(
+            identifier: "test-id",
+            filename: "video.mp4",
+            currentTime: 0,
+            duration: 100,
+            title: "My Video"
+        )
+
+        XCTAssertEqual(info.title, "My Video")
+        XCTAssertNil(info.imageURL)
+    }
+
+    func testInit_withImageURLOnly() {
+        let info = MediaProgressInfo(
+            identifier: "test-id",
+            filename: "video.mp4",
+            currentTime: 0,
+            duration: 100,
+            imageURL: "https://example.com/thumb.png"
+        )
+
+        XCTAssertNil(info.title)
+        XCTAssertEqual(info.imageURL, "https://example.com/thumb.png")
+    }
+
+    func testVideoFactoryMethod_usesMediaProgressInfo() {
+        let info = MediaProgressInfo(
+            identifier: "video-123",
+            filename: "movie.mp4",
+            currentTime: 500,
+            duration: 7200,
+            title: "Epic Movie",
+            imageURL: "https://archive.org/image.jpg"
+        )
+
+        let progress = PlaybackProgress.video(info)
+
+        XCTAssertEqual(progress.itemIdentifier, "video-123")
+        XCTAssertEqual(progress.filename, "movie.mp4")
+        XCTAssertEqual(progress.currentTime, 500)
+        XCTAssertEqual(progress.duration, 7200)
+        XCTAssertEqual(progress.title, "Epic Movie")
+        XCTAssertEqual(progress.imageURL, "https://archive.org/image.jpg")
+        XCTAssertEqual(progress.mediaType, "movies")
+    }
+
+    func testAudioFactoryMethod_usesMediaProgressInfo() {
+        let info = MediaProgressInfo(
+            identifier: "audio-456",
+            filename: "track.mp3",
+            currentTime: 90,
+            duration: 240,
+            title: "Great Song"
+        )
+
+        let progress = PlaybackProgress.audio(info)
+
+        XCTAssertEqual(progress.itemIdentifier, "audio-456")
+        XCTAssertEqual(progress.filename, "track.mp3")
+        XCTAssertEqual(progress.currentTime, 90)
+        XCTAssertEqual(progress.duration, 240)
+        XCTAssertEqual(progress.title, "Great Song")
+        XCTAssertNil(progress.imageURL)
+        XCTAssertEqual(progress.mediaType, "etree")
+    }
+
+    func testMediaProgressInfo_mutableProperties() {
+        var info = MediaProgressInfo(
+            identifier: "test",
+            filename: "file.mp4",
+            currentTime: 0,
+            duration: 100
+        )
+
+        // Title and imageURL are mutable (var)
+        info.title = "Updated Title"
+        info.imageURL = "https://new-url.com/image.jpg"
+
+        XCTAssertEqual(info.title, "Updated Title")
+        XCTAssertEqual(info.imageURL, "https://new-url.com/image.jpg")
+    }
+
+    func testMediaProgressInfo_withZeroValues() {
+        let info = MediaProgressInfo(
+            identifier: "empty",
+            filename: "empty.mp4",
+            currentTime: 0,
+            duration: 0
+        )
+
+        XCTAssertEqual(info.currentTime, 0)
+        XCTAssertEqual(info.duration, 0)
+    }
+
+    func testMediaProgressInfo_withLargeValues() {
+        let info = MediaProgressInfo(
+            identifier: "long-video",
+            filename: "documentary.mp4",
+            currentTime: 36000, // 10 hours in seconds
+            duration: 72000    // 20 hours in seconds
+        )
+
+        XCTAssertEqual(info.currentTime, 36000)
+        XCTAssertEqual(info.duration, 72000)
+    }
+
+    // MARK: - Track-Level Progress Tests (Audio Albums)
+
+    func testMediaProgressInfo_withTrackIndex() {
+        let info = MediaProgressInfo(
+            identifier: "album-123",
+            filename: "__album__",
+            currentTime: 25.0, // Album progress percentage
+            duration: 100.0,
+            title: "Artist: Track 3",
+            trackIndex: 2,
+            trackFilename: "track03.mp3"
+        )
+
+        XCTAssertEqual(info.trackIndex, 2)
+        XCTAssertEqual(info.trackFilename, "track03.mp3")
+    }
+
+    func testMediaProgressInfo_withTrackCurrentTime() {
+        let info = MediaProgressInfo(
+            identifier: "album-123",
+            filename: "__album__",
+            currentTime: 30.0, // Album progress (30% through album)
+            duration: 100.0,
+            title: "Artist: Track 3",
+            trackIndex: 2,
+            trackFilename: "track03.mp3",
+            trackCurrentTime: 125.5 // Actual position in track
+        )
+
+        XCTAssertEqual(info.trackCurrentTime, 125.5)
+    }
+
+    func testAudioFactoryMethod_preservesTrackCurrentTime() {
+        let info = MediaProgressInfo(
+            identifier: "album-456",
+            filename: "__album__",
+            currentTime: 50.0,
+            duration: 100.0,
+            title: "Artist: Track 5",
+            trackIndex: 4,
+            trackFilename: "track05.mp3",
+            trackCurrentTime: 200.0
+        )
+
+        let progress = PlaybackProgress.audio(info)
+
+        XCTAssertEqual(progress.trackIndex, 4)
+        XCTAssertEqual(progress.trackFilename, "track05.mp3")
+        XCTAssertEqual(progress.trackCurrentTime, 200.0)
+    }
+
+    func testPlaybackProgress_trackCurrentTimeForAudioResume() {
+        // Simulates album-level progress where currentTime is album percentage
+        // but trackCurrentTime is the actual position for resume
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-789",
+            filename: "__album__",
+            currentTime: 40.0, // 40% through 10-track album (track 4)
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 4",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 3,
+            trackFilename: "track04.mp3",
+            trackCurrentTime: 180.5 // 3:00.5 into track 4
+        )
+
+        // currentTime is album-level progress (for completion check)
+        XCTAssertEqual(progress.currentTime, 40.0)
+        XCTAssertFalse(progress.isComplete) // 40% < 95%
+
+        // trackCurrentTime is actual position for resume
+        XCTAssertEqual(progress.trackCurrentTime, 180.5)
+        XCTAssertEqual(progress.trackIndex, 3)
+    }
+
+    func testPlaybackProgress_albumCompletesOnlyOnLastTrack() {
+        // Album at 95% means last track is 95% done
+        let almostComplete = PlaybackProgress(
+            itemIdentifier: "album-final",
+            filename: "__album__",
+            currentTime: 95.0,
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 10",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 9, // Last track (0-indexed)
+            trackFilename: "track10.mp3",
+            trackCurrentTime: 285.0 // Near end of final track
+        )
+
+        XCTAssertTrue(almostComplete.isComplete)
+    }
+
+    func testFormattedTimeRemaining_audioAlbumShowsPercentage() {
+        // Audio albums use normalized 0-100 scale, should show percentage not fake time
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-123",
+            filename: "__album__",
+            currentTime: 50.0, // 50% through album
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 5",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 4,
+            trackFilename: "track05.mp3",
+            trackCurrentTime: 120.0
+        )
+
+        XCTAssertEqual(progress.formattedTimeRemaining, "50% remaining")
+    }
+
+    func testFormattedTimeRemaining_videoShowsActualTime() {
+        // Video uses actual seconds, should show time remaining
+        let progress = PlaybackProgress(
+            itemIdentifier: "video-123",
+            filename: "movie.mp4",
+            currentTime: 1800, // 30 minutes in
+            duration: 3600, // 1 hour total
+            lastWatchedDate: Date(),
+            title: "Test Movie",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertEqual(progress.formattedTimeRemaining, "30 min remaining")
+    }
+
 }

@@ -8,6 +8,28 @@
 
 import UIKit
 
+// MARK: - Custom Layout for Focus Control
+
+/// Custom compositional layout that allows control over focus scrolling behavior.
+/// By overriding `targetContentOffset`, this layout can redirect UIKit's automatic
+/// focus scrolling to a custom position (e.g., scroll focused row to top instead of center).
+class FocusableCompositionalLayout: UICollectionViewCompositionalLayout {
+
+    /// When set, the layout will scroll to this offset on the next focus update.
+    /// This property is checked by `targetContentOffset(forProposedContentOffset:)`.
+    var pendingContentOffset: CGPoint?
+
+    override func targetContentOffset(forProposedContentOffset proposedContentOffset: CGPoint) -> CGPoint {
+        // If we have a pending offset from our custom focus handling, use it
+        if let pending = pendingContentOffset {
+            pendingContentOffset = nil
+            return pending
+        }
+        // Otherwise use the proposed offset (UIKit's default)
+        return proposedContentOffset
+    }
+}
+
 /// Builder for creating modern UICollectionViewCompositionalLayouts
 @MainActor
 struct CompositionalLayoutBuilder {
@@ -33,7 +55,7 @@ struct CompositionalLayoutBuilder {
             )
             let item = NSCollectionLayoutItem(layoutSize: itemSize)
             item.contentInsets = NSDirectionalEdgeInsets(
-                top: spacing / 2,
+                top: 10,
                 leading: spacing / 2,
                 bottom: spacing / 2,
                 trailing: spacing / 2
@@ -50,10 +72,10 @@ struct CompositionalLayoutBuilder {
                 subitems: [item]
             )
 
-            // Section
+            // Section - no top inset to start content right below nav bar
             let section = NSCollectionLayoutSection(group: group)
             section.contentInsets = NSDirectionalEdgeInsets(
-                top: spacing,
+                top: 0,
                 leading: spacing,
                 bottom: spacing,
                 trailing: spacing
@@ -105,6 +127,11 @@ struct CompositionalLayoutBuilder {
             return section
         }
 
+        // Configure layout to respect safe area boundaries
+        let config = UICollectionViewCompositionalLayoutConfiguration()
+        config.contentInsetsReference = .safeArea
+        layout.configuration = config
+
         return layout
     }
 
@@ -151,6 +178,11 @@ struct CompositionalLayoutBuilder {
             return section
         }
 
+        // Configure layout to respect safe area boundaries
+        let config = UICollectionViewCompositionalLayoutConfiguration()
+        config.contentInsetsReference = .safeArea
+        layout.configuration = config
+
         return layout
     }
 
@@ -163,6 +195,11 @@ struct CompositionalLayoutBuilder {
         let layout = UICollectionViewCompositionalLayout { sectionIndex, environment in
             sectionProvider(sectionIndex, environment)
         }
+
+        // Configure layout to respect safe area boundaries
+        let config = UICollectionViewCompositionalLayoutConfiguration()
+        config.contentInsetsReference = .safeArea
+        layout.configuration = config
 
         return layout
     }
@@ -258,7 +295,7 @@ extension CompositionalLayoutBuilder {
         )
         let item = NSCollectionLayoutItem(layoutSize: itemSize)
         item.contentInsets = NSDirectionalEdgeInsets(
-            top: spacing / 2,
+            top: 10,
             leading: spacing / 2,
             bottom: spacing / 2,
             trailing: spacing / 2
@@ -275,10 +312,10 @@ extension CompositionalLayoutBuilder {
             subitems: [item]
         )
 
-        // Section
+        // Section - no top inset to start content right below nav bar
         let section = NSCollectionLayoutSection(group: group)
         section.contentInsets = NSDirectionalEdgeInsets(
-            top: spacing,
+            top: 0,
             leading: spacing,
             bottom: spacing,
             trailing: spacing
@@ -289,9 +326,9 @@ extension CompositionalLayoutBuilder {
 
     /// Creates a layout for VideoVC with optional Continue Watching section at top
     /// - Parameter hasContinueWatching: Whether to include Continue Watching section
-    /// - Returns: Configured compositional layout
+    /// - Returns: Configured compositional layout with focus scroll control
     static func createVideoHomeLayout(hasContinueWatching: Bool) -> UICollectionViewLayout {
-        let layout = UICollectionViewCompositionalLayout { sectionIndex, environment in
+        let layout = FocusableCompositionalLayout { sectionIndex, environment in
             if hasContinueWatching {
                 if sectionIndex == 0 {
                     return createContinueWatchingSection(environment: environment)
@@ -308,9 +345,9 @@ extension CompositionalLayoutBuilder {
 
     /// Creates a layout for MusicVC with optional Continue Listening section at top
     /// - Parameter hasContinueListening: Whether to include Continue Listening section
-    /// - Returns: Configured compositional layout
+    /// - Returns: Configured compositional layout with focus scroll control
     static func createMusicHomeLayout(hasContinueListening: Bool) -> UICollectionViewLayout {
-        let layout = UICollectionViewCompositionalLayout { sectionIndex, environment in
+        let layout = FocusableCompositionalLayout { sectionIndex, environment in
             if hasContinueListening {
                 if sectionIndex == 0 {
                     return createContinueWatchingSection(environment: environment)

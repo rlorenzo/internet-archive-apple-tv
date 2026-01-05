@@ -144,7 +144,7 @@ actor SRTtoVTTConverter {
 
         // Fallback to UTF-8 with lossy conversion (replaces invalid bytes with �)
         // This ensures subtitles remain usable even with uncommon encodings
-        // swiftlint:disable:next optional_data_string_conversion
+        // swiftlint:disable:next optional_data_string_conversion - Intentional lossy decoding after UTF-8/Latin-1/CP1252 failed
         return String(decoding: data, as: UTF8.self)
     }
 

@@ -22,6 +22,7 @@ class TabbarController: UITabBarController {
         super.viewDidLoad()
         setupAppearance()
         setupLogoWatermark()
+        setupAccessibility()
 
         // Hide Account and Favorites tabs if API credentials are not configured (read-only mode)
         if !AppConfiguration.shared.isConfigured {
@@ -43,6 +44,38 @@ class TabbarController: UITabBarController {
         // Only run login/sync if credentials are configured
         loginCheck()
         syncFavorites()
+    }
+
+    // MARK: - Accessibility
+
+    private func setupAccessibility() {
+        // Configure tab bar accessibility
+        tabBar.accessibilityLabel = "Main navigation"
+
+        // Configure individual tab items with better accessibility labels
+        if let items = tabBar.items {
+            for item in items {
+                switch item.title {
+                case "Videos":
+                    item.accessibilityLabel = "Videos tab"
+                    item.accessibilityHint = "Browse video collections from the Internet Archive"
+                case "Music":
+                    item.accessibilityLabel = "Music tab"
+                    item.accessibilityHint = "Browse music collections from the Internet Archive"
+                case "Search":
+                    item.accessibilityLabel = "Search tab"
+                    item.accessibilityHint = "Search for videos and music"
+                case "Favorites":
+                    item.accessibilityLabel = "Favorites tab"
+                    item.accessibilityHint = "View your saved favorites"
+                case "Account":
+                    item.accessibilityLabel = "Account tab"
+                    item.accessibilityHint = "Manage your account settings"
+                default:
+                    break
+                }
+            }
+        }
     }
 
     private func syncFavorites() {
@@ -120,6 +153,10 @@ class TabbarController: UITabBarController {
         imageView.contentMode = .scaleAspectFit
         imageView.alpha = 0.7
         imageView.translatesAutoresizingMaskIntoConstraints = false
+
+        // Hide from accessibility (decorative element)
+        imageView.isAccessibilityElement = false
+        imageView.accessibilityElementsHidden = true
 
         view.addSubview(imageView)
 

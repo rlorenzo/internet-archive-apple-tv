@@ -18,6 +18,35 @@ class RegisterVC: UIViewController {
     @IBOutlet weak var txtPassword: UITextField!
     @IBOutlet weak var txtConfirm: UITextField!
 
+    // MARK: - Lifecycle
+
+    override func viewDidLoad() {
+        super.viewDidLoad()
+        setupAccessibility()
+    }
+
+    // MARK: - Accessibility
+
+    private func setupAccessibility() {
+        // Username text field
+        txtUsername.accessibilityLabel = "Username"
+        txtUsername.accessibilityHint = "Enter your desired display name"
+
+        // Email text field
+        txtEmail.accessibilityLabel = "Email address"
+        txtEmail.accessibilityHint = "Enter your email address for account verification"
+
+        // Password text field
+        txtPassword.accessibilityLabel = "Password"
+        txtPassword.accessibilityHint = "Enter a secure password"
+
+        // Confirm password text field
+        txtConfirm.accessibilityLabel = "Confirm password"
+        txtConfirm.accessibilityHint = "Re-enter your password to confirm"
+    }
+
+    // MARK: - Actions
+
     @IBAction func onRegister(_ sender: Any) {
         guard validate() else {
             return
@@ -45,6 +74,8 @@ class RegisterVC: UIViewController {
                 guard authResponse.isSuccess else {
                     let errorMessage = authResponse.error ?? "Username is already in use"
                     Global.showAlert(title: "Error", message: errorMessage, target: self)
+                    // Announce error to VoiceOver users
+                    UIAccessibility.post(notification: .announcement, argument: "Registration error: \(errorMessage)")
                     return
                 }
 
@@ -69,6 +100,8 @@ class RegisterVC: UIViewController {
                 AppProgressHUD.sharedManager.hide()
                 let errorMessage = (error as? NetworkError)?.localizedDescription ?? error.localizedDescription
                 Global.showAlert(title: "Error", message: errorMessage, target: self)
+                // Announce error to VoiceOver users
+                UIAccessibility.post(notification: .announcement, argument: "Registration error: \(errorMessage)")
             }
         }
     }

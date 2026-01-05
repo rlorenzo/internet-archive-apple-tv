@@ -1023,10 +1023,10 @@ Internet Archive.xcodeproj/project.pbxproj ✅ (Added new files)
 
 ---
 
-### Sprint 16: Xcode Project Modernization
+### Sprint 16: Xcode Project Modernization ✅ COMPLETED
 **Estimated Time:** 4-8 hours
-**PR Title:** `chore: Modernize Xcode project with file system synchronization`
-**Status:** Planned
+**PR Title:** `chore(project): Modernize Xcode project with file system synchronization`
+**Status:** Merged to master
 
 #### Goals
 - Convert main target to use `PBXFileSystemSynchronizedRootGroup` (Xcode 16+ feature)
@@ -1034,22 +1034,20 @@ Internet Archive.xcodeproj/project.pbxproj ✅ (Added new files)
 - Align with test targets that already use this feature
 
 #### Tasks
-- [ ] Backup current project.pbxproj
-- [ ] Convert "Internet Archive" folder to synchronized root group
-- [ ] Verify all source files are discovered correctly
-- [ ] Test CocoaPods integration still works
-- [ ] Update build phases if needed
-- [ ] Verify all targets compile and tests pass
+- [x] Backup current project.pbxproj
+- [x] Convert "Internet Archive" folder to synchronized root group
+- [x] Verify all source files are discovered correctly
+- [x] Test CocoaPods integration still works
+- [x] Update build phases if needed
+- [x] Verify all targets compile and tests pass
 
 #### Benefits
 - Files added to disk automatically appear in Xcode
 - Reduces merge conflicts in project.pbxproj
 - Modern Xcode project structure
 
-#### Risks
-- Requires Xcode 16+ (objectVersion 77)
-- May require adjustments for CocoaPods
-- Potential build setting issues
+#### Deliverable
+✅ Xcode project modernized with file system synchronization. All source files in "Internet Archive" folder are now automatically discovered. CocoaPods integration verified working. All targets compile successfully.
 
 ---
 
@@ -1057,7 +1055,7 @@ Internet Archive.xcodeproj/project.pbxproj ✅ (Added new files)
 
 **Estimated Time:** 20-30 hours
 **PR Title:** `feat: UI/UX improvements for better user experience`
-**Status:** Planned
+**Status:** In Progress - Accessibility, Descriptions, and Music Player Complete
 
 #### Goals
 
@@ -1070,36 +1068,117 @@ Internet Archive.xcodeproj/project.pbxproj ✅ (Added new files)
 
 **Accessibility Audit:**
 
-- [ ] Audit all screens for VoiceOver compatibility
-- [ ] Ensure proper accessibility labels on all interactive elements
-- [ ] Test focus navigation with Siri Remote
-- [ ] Add accessibility hints for complex actions
-- [ ] Ensure proper heading hierarchy
-- [ ] Test with accessibility settings (larger text, reduce motion, etc.)
+Current State: ModernItemCell, ContinueWatchingCell, SubtitleOverlayView, and SubtitleSelectionViewController have good accessibility. Most view controllers and legacy components lack accessibility support.
 
-**Item Description Formatting:**
+*Phase 1: Critical Components (High Impact)* ✅ COMPLETED
+- [x] **ItemVC.swift** - Add accessibility to all interactive elements:
+  - [x] Play/Stop button: `accessibilityLabel`, `accessibilityHint`
+  - [x] Resume/Start Over buttons: Labels describing action
+  - [x] Favorite button: Toggle state via `accessibilityValue` ("Favorited"/"Not favorited")
+  - [x] Time remaining label: Contextual accessibility
+  - [x] Slider control: `accessibilityTraits = .adjustable`, custom increment/decrement actions
+  - [x] Description text viewer: Proper accessibility label
+- [x] **LoginVC.swift** - Add accessibility to authentication form:
+  - [x] Email text field: `accessibilityLabel = "Email address"`
+  - [x] Password text field: `accessibilityLabel = "Password"`
+  - [x] Error messages: Announce via `UIAccessibility.post(notification:)`
+- [x] **RegisterVC.swift** - Add accessibility to registration form:
+  - [x] All 4 text fields with descriptive labels
+  - [x] Password confirmation hint text
+  - [x] Error messages: Announce via `UIAccessibility.post(notification:)`
+- [x] **SearchResultVC.swift** - Add accessibility to search screen:
+  - [x] Filter UISegmentedControl: Labels for each segment
+  - [x] SectionHeaderView: `accessibilityTraits = .header`
+  - [x] Results count announcement
+- [x] **YearsVC.swift** - Add accessibility to years navigation:
+  - [x] YearCell (table cell): `accessibilityLabel` with year
+  - [x] Title label: `accessibilityTraits = .header`
+  - [x] Table/collection view accessibility labels
+- [x] **Slider.swift** - Custom media scrubber accessibility:
+  - [x] `accessibilityTraits = .adjustable`
+  - [x] Override `accessibilityIncrement()` / `accessibilityDecrement()`
 
-- [ ] Parse and render HTML/newlines in item descriptions
-- [ ] Preserve paragraph breaks and lists in description text
-- [ ] Add "Read More" expansion for long descriptions
-- [ ] Support basic text formatting (bold, italic) if present
+*Phase 2: Navigation & Structure* ✅ COMPLETED
+- [x] **VideoVC.swift** / **MusicVC.swift** - Section headers and empty states:
+  - [x] ContinueSectionHeaderView: `accessibilityTraits = .header`
+  - [x] Empty state view: Proper accessibility context
+  - [x] Loading state announcements for VoiceOver users
+  - [x] Collection view accessibility labels
+- [x] **FavoriteVC.swift** / **PeopleVC.swift** - Collection accessibility:
+  - [x] Section headers: `accessibilityTraits = .header`
+  - [x] Collection view accessibility labels
+  - [x] Results count announcements for VoiceOver users
+- [x] **AccountVC.swift** - Account screen accessibility:
+  - [x] Description label: `accessibilityTraits = .staticText`
+  - [x] Logout announcement for VoiceOver users
+- [x] **TabbarController.swift** - Tab bar accessibility:
+  - [x] Better accessibility labels for tab items with descriptive hints
+  - [x] Hide logo watermark from accessibility tree
 
-**Music Player UI Improvements:**
+*Phase 3: Supporting Components* ✅ COMPLETED
+- [x] **ContinueSectionHeaderView.swift** - Add `accessibilityTraits = .header` with section label
+- [x] **EmptyStateView.swift** - Add accessibility to title, message; group as single accessible element
+- [x] **Slider.swift** - Custom media scrubber accessibility:
+  - [x] `accessibilityTraits = .adjustable`
+  - [x] `accessibilityValue` showing current time
+  - [x] Override `accessibilityIncrement()` / `accessibilityDecrement()` with 10-second steps
+- [x] **SkeletonView.swift** - Mark as non-accessible (loading indicator hidden from accessibility)
+- [x] **ItemCell.swift** (Legacy) - Added basic accessibility with configurable label/hint
 
-- [ ] Show album art prominently during playback
-- [ ] Add Now Playing screen with track list
-- [ ] Show track progress and duration
-- [ ] Add shuffle/repeat controls
-- [ ] Improve playlist navigation
-- [ ] Show artist/album info during playback
+*Phase 4: Testing & Validation* ✅ COMPLETED
+- [x] Build verification - compiles successfully
+- [x] SwiftLint - zero violations
+- [x] Unit tests - `AccessibilityTests.swift` with 29 passing tests:
+  - Slider accessibility (adjustable trait, increment/decrement bounds)
+  - EmptyStateView accessibility (staticText trait, label formatting)
+  - ContinueSectionHeaderView (header trait)
+  - SkeletonView (hidden from accessibility)
+  - ModernItemCell (button trait, label, hint)
+  - ContinueWatchingCell accessibility
+  - Accessibility audit helper for automated view hierarchy checks
+- [ ] Manual VoiceOver testing recommended (user task)
+- [ ] Focus navigation verification with Siri Remote (user task)
 
-**Additional Refinements:**
+**Item Description Formatting:** ✅ COMPLETED
 
-- [ ] Improve loading states with skeleton screens
-- [ ] Add pull-to-refresh where appropriate
-- [ ] Smooth transitions between screens
-- [ ] Improve empty state messages
-- [ ] Add visual feedback for user actions (favorites, etc.)
+- [x] Parse and render HTML/newlines in item descriptions
+- [x] Preserve paragraph breaks and lists in description text
+- [x] Add "Read More" expansion for long descriptions
+- [x] Support basic text formatting (bold, italic) if present
+
+*Files Created:*
+- `Internet Archive/Utilities/HTMLToAttributedString.swift` - HTML-to-NSAttributedString converter
+- `Internet Archive/UI/DescriptionTextView.swift` - Custom focusable description view
+- `Internet ArchiveTests/Utilities/HTMLToAttributedStringTests.swift` - 50+ unit tests
+- `Internet ArchiveTests/UI/DescriptionTextViewTests.swift` - 32 unit tests
+
+*Files Modified:*
+- `Internet Archive/ViewControllers/Item/ItemVC.swift` - Integrated DescriptionTextView
+
+**Music Player UI Improvements:** ✅ COMPLETED
+
+- [x] Add Now Playing screen with album art, track list, and transport controls
+- [x] Implement AudioQueueManager with shuffle/repeat modes
+- [x] Add Continue Listening section to MusicVC with resume support
+- [x] Fix album progress consistency (normalized 0-100 scale, percentage display)
+- [x] Modernize VideoPlayerViewController KVO to block-based API
+- [x] Add 70+ unit tests for AudioTrack and AudioQueueManager
+
+**Additional Refinements:** ✅ COMPLETED
+
+- [x] Improve loading states with skeleton screens
+- [x] Improve empty state messages
+- [x] Fix double-encoded HTML in descriptions (e.g. &lt;p&gt;)
+- [ ] Add pull-to-refresh where appropriate (not standard on tvOS)
+- [x] Add VoiceOver announcements for loading and content states
+
+*Files Modified:*
+
+- `Internet Archive/ViewControllers/Search/SearchResultVC.swift` - Added skeleton loading and empty states
+- `Internet Archive/ViewControllers/Favorite/FavoriteVC.swift` - Added skeleton loading and empty states
+- `Internet Archive/ViewControllers/Favorite/PeopleVC.swift` - Added skeleton loading and empty states
+- `Internet Archive/ViewControllers/Years/YearsVC.swift` - Added skeleton loading and empty states
+- `Internet Archive/Utilities/HTMLToAttributedString.swift` - Added preprocessHTML for double-encoded entities
 
 #### Files to Create/Modify
 
@@ -1125,7 +1204,92 @@ Full UI rewrite using SwiftUI, recommended for long-term maintainability.
 
 ---
 
-### Sprint 19: Additional Features
+### Sprint 19: CocoaPods to Swift Package Manager Migration
+
+**Estimated Time:** 15-25 hours
+**PR Title:** `chore: Migrate from CocoaPods to Swift Package Manager`
+**Priority:** Medium (CocoaPods entering read-only mode in 2026)
+
+#### Background
+CocoaPods has announced it will transition to read-only mode in 2026. Swift Package Manager (SPM) is now Apple's recommended dependency management solution and offers better Xcode integration, faster dependency resolution, and first-party support.
+
+#### Goals
+- Migrate all dependencies from CocoaPods to Swift Package Manager
+- Remove Podfile, Podfile.lock, and Pods directory
+- Simplify project structure
+- Improve build times with SPM caching
+
+#### Current Dependencies to Migrate
+
+| CocoaPod | SPM Equivalent | Notes |
+|----------|----------------|-------|
+| Alamofire ~> 5.9 | [Alamofire](https://github.com/Alamofire/Alamofire) | Native SPM support |
+| AlamofireImage ~> 4.3 | [AlamofireImage](https://github.com/Alamofire/AlamofireImage) | Native SPM support |
+| SVProgressHUD ~> 2.3.1 | [SVProgressHUD](https://github.com/SVProgressHUD/SVProgressHUD) | Native SPM support |
+| MBProgressHUD ~> 1.2.0 | [MBProgressHUD](https://github.com/jdg/MBProgressHUD) | Native SPM support |
+| TvOSMoreButton ~> 1.4.1 | Manual vendoring or fork | No official SPM support - may need to vendor |
+| TvOSTextViewer ~> 1.1.1 | Manual vendoring or fork | No official SPM support - may need to vendor |
+| SwiftSoup ~> 2.11 | [SwiftSoup](https://github.com/scinfu/SwiftSoup) | Native SPM support |
+| SwiftLint (Debug only) | [SwiftLintPlugins](https://github.com/realm/SwiftLint) | Build tool plugin |
+
+#### Tasks
+
+**Phase 1: Preparation**
+- [ ] Audit all dependencies for SPM compatibility
+- [ ] Fork/vendor TvOSMoreButton with SPM support (if no official package)
+- [ ] Fork/vendor TvOSTextViewer with SPM support (if no official package)
+- [ ] Create feature branch for migration
+
+**Phase 2: Project Migration**
+- [ ] Add Package.swift manifest (or use Xcode's native SPM integration)
+- [ ] Add each dependency via Xcode → File → Add Package Dependencies
+- [ ] Configure package products for each target
+- [ ] Update import statements if package names differ
+
+**Phase 3: SwiftLint Migration**
+- [ ] Convert SwiftLint to SPM build tool plugin
+- [ ] Update build phases to remove CocoaPods SwiftLint
+- [ ] Verify lint still runs on build
+
+**Phase 4: Cleanup**
+- [ ] Remove Podfile, Podfile.lock
+- [ ] Remove Pods/ directory
+- [ ] Remove CocoaPods-related build phases from Xcode project
+- [ ] Update .gitignore (remove Pods/, add .swiftpm/)
+- [ ] Delete `Internet Archive.xcworkspace` (use .xcodeproj directly)
+
+**Phase 5: Documentation & CI**
+- [ ] Update DEVELOPMENT_SETUP.md with SPM instructions
+- [ ] Update CI workflows to use SPM (remove `pod install`)
+- [ ] Update README.md setup section
+- [ ] Update CLAUDE.md build commands
+
+#### Technical Considerations
+
+**TvOSMoreButton/TvOSTextViewer Options:**
+1. **Fork & Add SPM Support:** Create forks with Package.swift manifests
+2. **Vendor Directly:** Copy source files into project (simplest)
+3. **Replace with Native:** Reimplement functionality with modern tvOS APIs
+
+**SwiftLint as Build Tool Plugin:**
+```swift
+// Package.swift
+.package(url: "https://github.com/realm/SwiftLint.git", from: "0.54.0")
+```
+
+**Benefits:**
+- No `pod install` step in setup
+- Faster CI builds (SPM caches dependencies)
+- Better Xcode integration
+- Single project file instead of workspace
+- First-party Apple support
+
+#### Deliverable
+Project fully migrated to Swift Package Manager with no CocoaPods dependencies. Simplified project structure with faster dependency resolution.
+
+---
+
+### Sprint 20: Additional Features
 
 - Implement new Internet Archive APIs
 - Add search filters

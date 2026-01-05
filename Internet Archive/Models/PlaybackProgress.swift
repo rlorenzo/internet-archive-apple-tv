@@ -36,6 +36,43 @@ struct PlaybackProgress: Codable, Sendable, Hashable {
     /// Thumbnail URL for Continue Watching/Listening cells
     let imageURL: String?
 
+    /// Track index within album queue (audio only)
+    let trackIndex: Int?
+
+    /// Actual filename of the track being played (audio only, for display)
+    let trackFilename: String?
+
+    /// Current playback position within the track in seconds (audio only, for resume)
+    let trackCurrentTime: Double?
+
+    // MARK: - Initialization
+
+    init(
+        itemIdentifier: String,
+        filename: String,
+        currentTime: Double,
+        duration: Double,
+        lastWatchedDate: Date,
+        title: String?,
+        mediaType: String,
+        imageURL: String?,
+        trackIndex: Int? = nil,
+        trackFilename: String? = nil,
+        trackCurrentTime: Double? = nil
+    ) {
+        self.itemIdentifier = itemIdentifier
+        self.filename = filename
+        self.currentTime = currentTime
+        self.duration = duration
+        self.lastWatchedDate = lastWatchedDate
+        self.title = title
+        self.mediaType = mediaType
+        self.imageURL = imageURL
+        self.trackIndex = trackIndex
+        self.trackFilename = trackFilename
+        self.trackCurrentTime = trackCurrentTime
+    }
+
     // MARK: - Computed Properties
 
     /// Progress as a percentage (0.0 to 1.0)
@@ -49,13 +86,21 @@ struct PlaybackProgress: Codable, Sendable, Hashable {
         progressPercentage >= 0.95
     }
 
-    /// Time remaining in seconds
+    /// Time remaining in seconds (for video) or percentage points remaining (for audio albums)
     var timeRemaining: Double {
         max(duration - currentTime, 0)
     }
 
     /// Formatted time remaining (e.g., "12 min remaining" or "45 sec remaining")
+    /// For audio albums using normalized progress, shows percentage remaining instead
     var formattedTimeRemaining: String {
+        // Audio albums use normalized 0-100 scale, not actual seconds
+        // Show percentage remaining for audio to avoid confusing "50 sec remaining" display
+        if isAudio && duration == 100.0 {
+            let percentRemaining = Int(100.0 - progressPercentage * 100.0)
+            return "\(percentRemaining)% remaining"
+        }
+
         let remaining = timeRemaining
         if remaining >= 3600 {
             let hours = Int(remaining / 3600)
@@ -91,6 +136,18 @@ struct PlaybackProgress: Codable, Sendable, Hashable {
     /// Whether this is audio content
     var isAudio: Bool {
         mediaType == "etree"
+    }
+
+    /// Whether there is enough progress to offer resume
+    /// For video: requires >10 seconds of playback
+    /// For audio: requires >10 seconds in the current track (falls back to album progress)
+    var hasResumableProgress: Bool {
+        if isAudio, let trackTime = trackCurrentTime {
+            // For audio, use track-level progress (seconds within current track)
+            return trackTime > 10
+        }
+        // For video, currentTime is in seconds
+        return currentTime > 10
     }
 
     /// URL for the thumbnail image
@@ -142,49 +199,83 @@ extension PlaybackProgress {
             lastWatchedDate: Date(),
             title: title,
             mediaType: mediaType,
-            imageURL: imageURL
+            imageURL: imageURL,
+            trackIndex: trackIndex,
+            trackFilename: trackFilename,
+            trackCurrentTime: trackCurrentTime
         )
     }
 
     /// Create a progress entry for video content
-    static func video( // swiftlint:disable:this function_parameter_count
-        identifier: String,
-        filename: String,
-        currentTime: Double,
-        duration: Double,
-        title: String?,
-        imageURL: String?
-    ) -> PlaybackProgress {
+    static func video(_ info: MediaProgressInfo) -> PlaybackProgress {
         PlaybackProgress(
-            itemIdentifier: identifier,
-            filename: filename,
-            currentTime: currentTime,
-            duration: duration,
+            itemIdentifier: info.identifier,
+            filename: info.filename,
+            currentTime: info.currentTime,
+            duration: info.duration,
             lastWatchedDate: Date(),
-            title: title,
+            title: info.title,
             mediaType: "movies",
-            imageURL: imageURL
+            imageURL: info.imageURL,
+            trackIndex: nil,
+            trackFilename: nil
         )
     }
 
-    /// Create a progress entry for audio content
-    static func audio( // swiftlint:disable:this function_parameter_count
+    /// Create a progress entry for audio content (album-level)
+    static func audio(_ info: MediaProgressInfo) -> PlaybackProgress {
+        PlaybackProgress(
+            itemIdentifier: info.identifier,
+            filename: info.filename,
+            currentTime: info.currentTime,
+            duration: info.duration,
+            lastWatchedDate: Date(),
+            title: info.title,
+            mediaType: "etree",
+            imageURL: info.imageURL,
+            trackIndex: info.trackIndex,
+            trackFilename: info.trackFilename,
+            trackCurrentTime: info.trackCurrentTime
+        )
+    }
+}
+
+// MARK: - Supporting Types
+
+/// Parameters for creating a PlaybackProgress entry
+struct MediaProgressInfo {
+    let identifier: String
+    let filename: String
+    let currentTime: Double
+    let duration: Double
+    var title: String?
+    var imageURL: String?
+    /// Track index within album queue (audio only)
+    var trackIndex: Int?
+    /// Actual filename of the track being played (audio only)
+    var trackFilename: String?
+    /// Current playback position within the track in seconds (audio only, for resume)
+    var trackCurrentTime: Double?
+
+    init(
         identifier: String,
         filename: String,
         currentTime: Double,
         duration: Double,
-        title: String?,
-        imageURL: String?
-    ) -> PlaybackProgress {
-        PlaybackProgress(
-            itemIdentifier: identifier,
-            filename: filename,
-            currentTime: currentTime,
-            duration: duration,
-            lastWatchedDate: Date(),
-            title: title,
-            mediaType: "etree",
-            imageURL: imageURL
-        )
+        title: String? = nil,
+        imageURL: String? = nil,
+        trackIndex: Int? = nil,
+        trackFilename: String? = nil,
+        trackCurrentTime: Double? = nil
+    ) {
+        self.identifier = identifier
+        self.filename = filename
+        self.currentTime = currentTime
+        self.duration = duration
+        self.title = title
+        self.imageURL = imageURL
+        self.trackIndex = trackIndex
+        self.trackFilename = trackFilename
+        self.trackCurrentTime = trackCurrentTime
     }
 }

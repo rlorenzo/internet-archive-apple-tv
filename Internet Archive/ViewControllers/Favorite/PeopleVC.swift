@@ -26,11 +26,48 @@ class PeopleVC: UIViewController, UICollectionViewDelegate {
     var name: String?
     var movieItems: [SearchResult] = []
     var musicItems: [SearchResult] = []
+    private var isShowingSkeleton = false
 
     override func viewDidLoad() {
         super.viewDidLoad()
         configureMovieCollectionView()
         configureMusicCollectionView()
+        setupAccessibility()
+    }
+
+    // MARK: - Accessibility
+
+    private func setupAccessibility() {
+        // Section labels as headers
+        lblMovies.accessibilityTraits = .header
+        lblMusic.accessibilityTraits = .header
+
+        // Collection view labels
+        clsMovies.accessibilityLabel = "Movies by this person"
+        clsMusic.accessibilityLabel = "Music by this person"
+    }
+
+    /// Announce content loaded for VoiceOver users
+    private func announceContentLoaded() {
+        let movieCount = movieItems.count
+        let musicCount = musicItems.count
+        let totalCount = movieCount + musicCount
+
+        if totalCount == 0 {
+            UIAccessibility.post(notification: .announcement, argument: "No content found for this person")
+            return
+        }
+
+        var parts: [String] = []
+        if movieCount > 0 {
+            parts.append("\(movieCount) movie\(movieCount == 1 ? "" : "s")")
+        }
+        if musicCount > 0 {
+            parts.append("\(musicCount) music item\(musicCount == 1 ? "" : "s")")
+        }
+
+        let announcement = "Found \(parts.joined(separator: " and "))"
+        UIAccessibility.post(notification: .announcement, argument: announcement)
     }
 
     override func viewWillAppear(_ animated: Bool) {
@@ -55,8 +92,26 @@ class PeopleVC: UIViewController, UICollectionViewDelegate {
             forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
         )
 
+        // Register skeleton cell for loading
+        clsMovies.register(
+            SkeletonItemCell.self,
+            forCellWithReuseIdentifier: SkeletonItemCell.reuseIdentifier
+        )
+
         // Configure diffable data source
-        movieDataSource = ItemDataSource(collectionView: clsMovies) { collectionView, indexPath, itemViewModel in
+        movieDataSource = ItemDataSource(collectionView: clsMovies) { [weak self] collectionView, indexPath, itemViewModel in
+            // Return skeleton cell if loading
+            if self?.isShowingSkeleton == true {
+                guard let cell = collectionView.dequeueReusableCell(
+                    withReuseIdentifier: SkeletonItemCell.reuseIdentifier,
+                    for: indexPath
+                ) as? SkeletonItemCell else {
+                    return UICollectionViewCell()
+                }
+                cell.startAnimating()
+                return cell
+            }
+
             guard let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: "ModernItemCell",
                 for: indexPath
@@ -124,14 +179,17 @@ class PeopleVC: UIViewController, UICollectionViewDelegate {
 
         let username = identifier.suffix(identifier.count - 1)
 
-        AppProgressHUD.sharedManager.show(view: self.view)
+        hideEmptyState()
+        showSkeletonLoading()
+        announceLoadingState()
 
         Task {
             do {
                 let favoritesResponse = try await APIManager.sharedManager.getFavoriteItemsTyped(username: String(username))
 
                 guard let favorites = favoritesResponse.members, !favorites.isEmpty else {
-                    AppProgressHUD.sharedManager.hide()
+                    hideSkeletonLoading()
+                    showNoContentEmptyState()
                     return
                 }
 
@@ -144,7 +202,8 @@ class PeopleVC: UIViewController, UICollectionViewDelegate {
                 }
 
                 guard !identifiers.isEmpty else {
-                    AppProgressHUD.sharedManager.hide()
+                    hideSkeletonLoading()
+                    showNoContentEmptyState()
                     return
                 }
 
@@ -173,6 +232,16 @@ class PeopleVC: UIViewController, UICollectionViewDelegate {
                     }
                 }
 
+                hideSkeletonLoading()
+
+                // Check if we have any content
+                if movieItems.isEmpty && musicItems.isEmpty {
+                    showNoContentEmptyState()
+                    return
+                }
+
+                hideEmptyState()
+
                 // Apply snapshots with modern diffable data sources
                 await self.applyMovieSnapshot()
                 await self.applyMusicSnapshot()
@@ -182,14 +251,76 @@ class PeopleVC: UIViewController, UICollectionViewDelegate {
                 self.lblMovies.isHidden = false
                 self.lblMusic.isHidden = false
 
-                AppProgressHUD.sharedManager.hide()
+                // Announce for VoiceOver users
+                self.announceContentLoaded()
 
             } catch {
-                AppProgressHUD.sharedManager.hide()
-                let errorMessage = (error as? NetworkError)?.localizedDescription ?? error.localizedDescription
-                Global.showAlert(title: "Error", message: "Error occurred while downloading favorites\n\(errorMessage)", target: self)
+                hideSkeletonLoading()
+                showEmptyState(.error(message: "Error occurred while loading content"))
             }
         }
+    }
+
+    // MARK: - Loading State
+
+    private func announceLoadingState() {
+        UIAccessibility.post(notification: .announcement, argument: "Loading content for \(name ?? "this person")")
+    }
+
+    private func showSkeletonLoading() {
+        isShowingSkeleton = true
+
+        // Hide labels
+        lblMovies.isHidden = true
+        lblMusic.isHidden = true
+
+        // Show movie collection view with skeleton cells
+        clsMovies.isHidden = false
+        clsMusic.isHidden = true
+
+        // Apply skeleton snapshot to movie collection
+        var snapshot = ItemSnapshot()
+        snapshot.appendSections([.videos])
+
+        let skeletons = (0..<10).map { index -> ItemViewModel in
+            let placeholder = SearchResult(
+                identifier: "skeleton-\(index)",
+                title: "",
+                mediatype: "",
+                creator: "",
+                description: "",
+                date: "",
+                year: "",
+                downloads: 0,
+                subject: [],
+                collection: []
+            )
+            return ItemViewModel(item: placeholder, section: .videos)
+        }
+        snapshot.appendItems(skeletons, toSection: .videos)
+
+        Task { @MainActor in
+            await movieDataSource.apply(snapshot, animatingDifferences: false)
+        }
+    }
+
+    private func hideSkeletonLoading() {
+        isShowingSkeleton = false
+        AppProgressHUD.sharedManager.hide()
+    }
+
+    private func showNoContentEmptyState() {
+        clsMovies.isHidden = true
+        clsMusic.isHidden = true
+        lblMovies.isHidden = true
+        lblMusic.isHidden = true
+
+        let emptyState = EmptyStateView(
+            image: UIImage(systemName: "person.fill.questionmark"),
+            title: "No Content Found",
+            message: "This person hasn't favorited any movies or music"
+        )
+        showEmptyState(emptyState)
     }
 
     // MARK: - UICollectionViewDelegate

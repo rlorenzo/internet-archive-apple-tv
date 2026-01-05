@@ -10,6 +10,17 @@ import XCTest
 
 final class SRTtoVTTConverterTests: XCTestCase {
 
+    // MARK: - Test Helpers
+
+    /// Performs lossy UTF-8 decoding, replacing invalid bytes with the replacement character (U+FFFD).
+    /// This mirrors the behavior of SRTtoVTTConverter's fallback decoding for subtitle files.
+    /// - Note: Uses String(decoding:as:) intentionally for lossy behavior - the lint rule exists to
+    ///   warn against accidental use, but here it's the explicit purpose of this helper.
+    private func decodeLossyUTF8(_ data: Data) -> String {
+        // Intentionally using lossy decoding - this is the behavior we're testing
+        String(decoding: data, as: UTF8.self)
+    }
+
     // MARK: - SRT String Conversion Tests
 
     func testConvertBasicSRT() async throws {
@@ -222,8 +233,7 @@ final class SRTtoVTTConverterTests: XCTestCase {
         let validUTF8 = "Hello World - Héllo Wörld - 你好世界"
         let data = Data(validUTF8.utf8)
 
-        // swiftlint:disable:next optional_data_string_conversion
-        let decoded = String(decoding: data, as: UTF8.self)
+        let decoded = decodeLossyUTF8(data)
         XCTAssertEqual(decoded, validUTF8)
     }
 
@@ -233,10 +243,9 @@ final class SRTtoVTTConverterTests: XCTestCase {
         data.append(contentsOf: [0xFF, 0xFE]) // Invalid UTF-8 bytes
         data.append(contentsOf: Data("World".utf8))
 
-        // String(decoding:as:) replaces invalid bytes with replacement character (U+FFFD)
+        // decodeLossyUTF8 replaces invalid bytes with replacement character (U+FFFD)
         // This is the behavior we want in SRTtoVTTConverter for subtitle files with mixed encodings
-        // swiftlint:disable:next optional_data_string_conversion
-        let decoded = String(decoding: data, as: UTF8.self)
+        let decoded = decodeLossyUTF8(data)
 
         XCTAssertTrue(decoded.contains("Hello"))
         XCTAssertTrue(decoded.contains("World"))
@@ -248,8 +257,7 @@ final class SRTtoVTTConverterTests: XCTestCase {
         // This ensures subtitle files with encoding issues still display something
         let invalidData = Data([0xFF, 0xFE, 0x80, 0x81])
 
-        // swiftlint:disable:next optional_data_string_conversion
-        let decoded = String(decoding: invalidData, as: UTF8.self)
+        let decoded = decodeLossyUTF8(invalidData)
 
         XCTAssertFalse(decoded.isEmpty)
     }

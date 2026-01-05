@@ -7,6 +7,7 @@ PODS:
     - SVProgressHUD/Core (= 2.3.1)
   - SVProgressHUD/Core (2.3.1)
   - SwiftLint (0.62.2)
+  - SwiftSoup (2.11.3)
   - TvOSMoreButton (1.4.1)
   - TvOSTextViewer (1.1.1)
 
@@ -16,6 +17,7 @@ DEPENDENCIES:
   - MBProgressHUD (~> 1.2.0)
   - SVProgressHUD (~> 2.3.1)
   - SwiftLint
+  - SwiftSoup (~> 2.11)
   - TvOSMoreButton (~> 1.4.1)
   - TvOSTextViewer (~> 1.1.1)
 
@@ -26,6 +28,7 @@ SPEC REPOS:
     - MBProgressHUD
     - SVProgressHUD
     - SwiftLint
+    - SwiftSoup
     - TvOSMoreButton
     - TvOSTextViewer
 
@@ -35,9 +38,10 @@ SPEC CHECKSUMS:
   MBProgressHUD: 3ee5efcc380f6a79a7cc9b363dd669c5e1ae7406
   SVProgressHUD: 4837c74bdfe2e51e8821c397825996a8d7de6e22
   SwiftLint: f84fc7d844e9cde0dc4f5013af608a269e317aba
+  SwiftSoup: 959c9ac70d7053fbf476341bfac90ab228523f2a
   TvOSMoreButton: 7aae43a537176f722a9656b9079568c927cf60d3
   TvOSTextViewer: e369c08f6ba3c021aa6b25aa7a948a9561984006
 
-PODFILE CHECKSUM: d8c19fb734d443281b5c37a7e920ce7237a67207
+PODFILE CHECKSUM: 2d1393b8c3f84600398e49274a6373110aea6888
 
 COCOAPODS: 1.16.2

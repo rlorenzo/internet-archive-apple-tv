@@ -61,6 +61,10 @@ final class SectionHeaderView: UICollectionReusableView {
             titleLabel.trailingAnchor.constraint(equalTo: trailingAnchor),
             titleLabel.bottomAnchor.constraint(equalTo: bottomAnchor, constant: -8)
         ])
+
+        // Accessibility: Mark as header
+        isAccessibilityElement = true
+        accessibilityTraits = .header
     }
 
     @available(*, unavailable)
@@ -70,6 +74,7 @@ final class SectionHeaderView: UICollectionReusableView {
 
     func configure(with title: String) {
         titleLabel.text = title
+        accessibilityLabel = "\(title) section"
     }
 }
 
@@ -101,6 +106,10 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
             forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
         )
         collectionView.register(
+            SkeletonItemCell.self,
+            forCellWithReuseIdentifier: SkeletonItemCell.reuseIdentifier
+        )
+        collectionView.register(
             SectionHeaderView.self,
             forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
             withReuseIdentifier: SectionHeaderView.reuseIdentifier
@@ -126,6 +135,7 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
 
     private var cancellables = Set<AnyCancellable>()
     private var lastQuery = ""
+    private var isShowingSkeleton = false
 
     // Debounce search input
     private let searchSubject = PassthroughSubject<String, Never>()
@@ -156,15 +166,82 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
     }
 
     private func performSearch(query: String) {
-        AppProgressHUD.sharedManager.show(view: self.view)
-        clsVideo.isHidden = true
-        clsMusic.isHidden = true
-        lblMovies.isHidden = true
-        lblMusic.isHidden = true
+        hideEmptyState()
+        showSkeletonLoading()
+        announceLoadingState()
 
         Task {
             await viewModel.searchMoviesAndMusic(query: query)
         }
+    }
+
+    // MARK: - Loading State
+
+    /// Announce loading state for VoiceOver users
+    private func announceLoadingState() {
+        UIAccessibility.post(notification: .announcement, argument: "Searching")
+    }
+
+    private func showSkeletonLoading() {
+        isShowingSkeleton = true
+
+        // Hide labels
+        lblMovies.isHidden = true
+        lblMusic.isHidden = true
+        filterSegmentedControl.isHidden = true
+        clsVideo.isHidden = true
+        clsMusic.isHidden = true
+
+        // Show combined collection view with skeleton cells
+        combinedCollectionView.isHidden = false
+
+        // Apply skeleton snapshot
+        var snapshot = NSDiffableDataSourceSnapshot<SearchSection, ItemViewModel>()
+
+        // Add skeleton items to both sections
+        snapshot.appendSections([.videos, .music])
+
+        let videoSkeletons = (0..<6).map { index -> ItemViewModel in
+            let placeholder = SearchResult(
+                identifier: "skeleton-video-\(index)",
+                title: "",
+                mediatype: "",
+                creator: "",
+                description: "",
+                date: "",
+                year: "",
+                downloads: 0,
+                subject: [],
+                collection: []
+            )
+            return ItemViewModel(item: placeholder, section: .videos)
+        }
+        snapshot.appendItems(videoSkeletons, toSection: .videos)
+
+        let musicSkeletons = (0..<6).map { index -> ItemViewModel in
+            let placeholder = SearchResult(
+                identifier: "skeleton-music-\(index)",
+                title: "",
+                mediatype: "",
+                creator: "",
+                description: "",
+                date: "",
+                year: "",
+                downloads: 0,
+                subject: [],
+                collection: []
+            )
+            return ItemViewModel(item: placeholder, section: .music)
+        }
+        snapshot.appendItems(musicSkeletons, toSection: .music)
+
+        Task { @MainActor in
+            await combinedDataSource.apply(snapshot, animatingDifferences: false)
+        }
+    }
+
+    private func hideSkeletonLoading() {
+        isShowingSkeleton = false
     }
 
     override func viewDidLoad() {
@@ -176,6 +253,42 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
         configureCombinedDataSource()
         bindViewModel()
         setupSearchDebounce()
+        setupAccessibility()
+    }
+
+    // MARK: - Accessibility
+
+    private func setupAccessibility() {
+        // Filter segmented control accessibility
+        filterSegmentedControl.accessibilityLabel = "Search results filter"
+        filterSegmentedControl.accessibilityHint = "Select which type of results to display"
+
+        // Labels accessibility
+        lblMovies.accessibilityTraits = .header
+        lblMusic.accessibilityTraits = .header
+    }
+
+    /// Announce search results count for VoiceOver users
+    private func announceSearchResults() {
+        let videoCount = videoItems.count
+        let musicCount = musicItems.count
+        let totalCount = videoCount + musicCount
+
+        var announcement: String
+        if totalCount == 0 {
+            announcement = "No results found"
+        } else {
+            var parts: [String] = []
+            if videoCount > 0 {
+                parts.append("\(videoCount) video\(videoCount == 1 ? "" : "s")")
+            }
+            if musicCount > 0 {
+                parts.append("\(musicCount) music item\(musicCount == 1 ? "" : "s")")
+            }
+            announcement = "Found \(parts.joined(separator: " and "))"
+        }
+
+        UIAccessibility.post(notification: .announcement, argument: announcement)
     }
 
     private func setupFilterControl() {
@@ -257,7 +370,19 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
     private func configureCombinedDataSource() {
         combinedDataSource = UICollectionViewDiffableDataSource<SearchSection, ItemViewModel>(
             collectionView: combinedCollectionView
-        ) { collectionView, indexPath, itemViewModel in
+        ) { [weak self] collectionView, indexPath, itemViewModel in
+            // Return skeleton cell if loading
+            if self?.isShowingSkeleton == true {
+                guard let cell = collectionView.dequeueReusableCell(
+                    withReuseIdentifier: SkeletonItemCell.reuseIdentifier,
+                    for: indexPath
+                ) as? SkeletonItemCell else {
+                    return UICollectionViewCell()
+                }
+                cell.startAnimating()
+                return cell
+            }
+
             guard let cell = collectionView.dequeueReusableCell(
                 withReuseIdentifier: ModernItemCell.reuseIdentifier,
                 for: indexPath
@@ -358,34 +483,42 @@ class SearchResultVC: UIViewController, UISearchResultsUpdating, UICollectionVie
             return // Wait for results
         }
 
+        // Hide loading indicators
+        hideSkeletonLoading()
         AppProgressHUD.sharedManager.hide()
 
         if let errorMessage = state.errorMessage {
-            let context = ErrorContext(
-                operation: .search,
-                userFacingTitle: "Search Failed",
-                additionalInfo: ["query": lastQuery]
-            )
-            Global.showAlert(title: context.userFacingTitle, message: errorMessage, target: self)
+            hideAllResults()
+            showEmptyState(.error(message: errorMessage))
             return
         }
 
-        // Show filter and results if we have any
+        // Check if we have results
         let hasResults = !state.results.isEmpty
-        filterSegmentedControl.isHidden = !hasResults
 
         if hasResults {
+            hideEmptyState()
+            filterSegmentedControl.isHidden = false
             updateVisibleCollections()
-        } else {
+
+            // Apply snapshots for all modes
+            Task {
+                await applyVideoSnapshot()
+                await applyMusicSnapshot()
+                await applyCombinedSnapshot()
+            }
+        } else if !lastQuery.isEmpty {
+            // Only show "no results" if the user actually searched for something
             hideAllResults()
+            showEmptyState(.noSearchResults())
+        } else {
+            // Initial state with no query
+            hideAllResults()
+            hideEmptyState()
         }
 
-        // Apply snapshots for all modes
-        Task {
-            await applyVideoSnapshot()
-            await applyMusicSnapshot()
-            await applyCombinedSnapshot()
-        }
+        // Announce results count for VoiceOver users
+        announceSearchResults()
     }
 
     private func updateVisibleCollections() {
