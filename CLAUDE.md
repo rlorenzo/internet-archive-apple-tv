@@ -56,7 +56,7 @@ Internet Archive/
 │   ├── Item/                   # ItemVC (media playback)
 │   ├── Search/                 # SearchResultVC
 │   └── ...
-└── Asses.xcassets/             # Asset catalog (images, app icons)
+└── Assets.xcassets/            # Asset catalog (images, app icons)
 
 Internet ArchiveTests/          # Unit tests
 Internet ArchiveUITests/        # UI tests
@@ -68,7 +68,7 @@ Config/                         # Build configurations
 - **Platform:** tvOS 17.0+ (deployment target)
 - **Language:** Swift 6.0 with strict concurrency
 - **UI:** UIKit with Storyboards (Main.storyboard)
-- **Networking:** Alamofire 5.9, AlamofireImage 4.3
+- **Networking:** Alamofire 5.11, AlamofireImage 4.3
 - **Dependencies:** Swift Package Manager (SPM)
 - **Testing:** XCTest
 

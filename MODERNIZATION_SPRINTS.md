@@ -1214,24 +1214,26 @@ CocoaPods has announced it will transition to read-only mode in 2026. Swift Pack
 
 #### Dependency Migration Summary
 
-| CocoaPod              | Migration Approach                    | Status      |
-| --------------------- | ------------------------------------- | ----------- |
-| Alamofire ~> 5.9      | SPM package reference                 | ✅ Migrated |
-| AlamofireImage ~> 4.3 | SPM package reference                 | ✅ Migrated |
-| SVProgressHUD ~> 2.3.1| SPM package reference                 | ✅ Migrated |
-| MBProgressHUD ~> 1.2.0| SPM package reference                 | ✅ Migrated |
-| SwiftSoup ~> 2.11     | SPM package reference                 | ✅ Migrated |
-| TvOSMoreButton ~> 1.4.2| SPM package reference (branch: main) | ✅ Migrated |
-| TvOSTextViewer ~> 1.3.1| SPM package reference (branch: master) | ✅ Migrated |
-| SwiftLint (Debug only)| System-installed (`brew install`)    | ✅ Kept as shell script |
+| CocoaPod                          | Migration Approach                               | Status                   |
+| --------------------------------- | ------------------------------------------------ | ------------------------ |
+| Alamofire ~> 5.9                  | SPM package reference                            | ✅ Migrated              |
+| AlamofireImage ~> 4.3             | SPM package reference                            | ✅ Migrated              |
+| SVProgressHUD ~> 2.3.1            | SPM package reference                            | ✅ Migrated              |
+| MBProgressHUD ~> 1.2.0            | SPM package reference                            | ✅ Migrated              |
+| SwiftSoup ~> 2.11                 | SPM package reference                            | ✅ Migrated              |
+| TvOSMoreButton ~> 1.4.1           | SPM package reference (pinned to commit SHA)     | ✅ Migrated              |
+| TvOSTextViewer ~> 1.1.1           | SPM package reference (pinned to commit SHA)     | ✅ Migrated              |
+| SwiftLint (Debug only)            | System-installed (`brew install`)                | ✅ Kept as shell script  |
+
+*Note: TvOSMoreButton and TvOSTextViewer are pinned to specific commit SHAs (`kind = revision` in project.pbxproj) for supply chain security. The versions shown are the original CocoaPods versions. While Package.resolved shows branch names for context, the project will not auto-update these packages - they remain locked to the specified commits.*
 
 #### Tasks Completed
 
 **Phase 1: Preparation**
 
 - [x] Audit all dependencies for SPM compatibility
-- [x] Integrate TvOSMoreButton via SPM (`https://github.com/cgoldsby/TvOSMoreButton.git`, branch: `main`)
-- [x] Integrate TvOSTextViewer via SPM (`https://github.com/dcordero/TvOSTextViewer.git`, branch: `master`)
+- [x] Integrate TvOSMoreButton via SPM (`https://github.com/cgoldsby/TvOSMoreButton.git`, pinned to commit SHA for supply chain security)
+- [x] Integrate TvOSTextViewer via SPM (`https://github.com/dcordero/TvOSTextViewer.git`, pinned to commit SHA for supply chain security)
 
 **Phase 2: Project Migration**
 
