@@ -711,10 +711,10 @@
 		};
 		PKG00006 /* XCRemoteSwiftPackageReference "TvOSMoreButton" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/rlorenzo/TvOSMoreButton.git";
+			repositoryURL = "https://github.com/cgoldsby/TvOSMoreButton.git";
 			requirement = {
 				kind = branch;
-				branch = "spm-support";
+				branch = main;
 			};
 		};
 		PKG00007 /* XCRemoteSwiftPackageReference "TvOSTextViewer" */ = {

@@ -1221,8 +1221,8 @@ CocoaPods has announced it will transition to read-only mode in 2026. Swift Pack
 | SVProgressHUD ~> 2.3.1| SPM package reference                 | ✅ Migrated |
 | MBProgressHUD ~> 1.2.0| SPM package reference                 | ✅ Migrated |
 | SwiftSoup ~> 2.11     | SPM package reference                 | ✅ Migrated |
-| TvOSMoreButton ~> 1.4.1| SPM fork (rlorenzo/TvOSMoreButton, branch: spm-support) | ✅ Migrated |
-| TvOSTextViewer ~> 1.1.1| SPM package reference (branch: master) | ✅ Migrated |
+| TvOSMoreButton ~> 1.4.2| SPM package reference (branch: main) | ✅ Migrated |
+| TvOSTextViewer ~> 1.3.1| SPM package reference (branch: master) | ✅ Migrated |
 | SwiftLint (Debug only)| System-installed (`brew install`)    | ✅ Kept as shell script |
 
 #### Tasks Completed
@@ -1230,7 +1230,7 @@ CocoaPods has announced it will transition to read-only mode in 2026. Swift Pack
 **Phase 1: Preparation**
 
 - [x] Audit all dependencies for SPM compatibility
-- [x] Integrate TvOSMoreButton via SPM fork (`https://github.com/rlorenzo/TvOSMoreButton.git`, branch: `spm-support`)
+- [x] Integrate TvOSMoreButton via SPM (`https://github.com/cgoldsby/TvOSMoreButton.git`, branch: `main`)
 - [x] Integrate TvOSTextViewer via SPM (`https://github.com/dcordero/TvOSTextViewer.git`, branch: `master`)
 
 **Phase 2: Project Migration**

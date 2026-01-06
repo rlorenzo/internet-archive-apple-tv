@@ -1,5 +1,5 @@
 {
-  "originHash" : "c4f42497258d626ac8418e4bd295c0dfefd1a00a055c2199ab45d8811b864640",
+  "originHash" : "1f4ebc0b3c6e488fb6cb5c40cb819a0fd3178298876eb6e1fede84d35f88a9ba",
   "pins" : [
     {
       "identity" : "alamofire",
@@ -67,10 +67,10 @@
     {
       "identity" : "tvosmorebutton",
       "kind" : "remoteSourceControl",
-      "location" : "https://github.com/rlorenzo/TvOSMoreButton.git",
+      "location" : "https://github.com/cgoldsby/TvOSMoreButton.git",
       "state" : {
-        "branch" : "spm-support",
-        "revision" : "43b455dec0cce8ec152a6613c7e09aa4f6443b62"
+        "branch" : "main",
+        "revision" : "afd4fa478d8a214a17152caa6209b49a08066ea3"
       }
     },
     {
