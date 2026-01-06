@@ -8,7 +8,7 @@ on:
 
 env:
   SCHEME: "Internet Archive"
-  WORKSPACE: "Internet Archive.xcworkspace"
+  PROJECT: "Internet Archive.xcodeproj"
 
 jobs:
   swiftlint:
@@ -49,24 +49,18 @@ jobs:
           xcodebuild -version
           swift --version
 
-      - name: Cache CocoaPods
+      - name: Cache SPM packages
         uses: actions/cache@v4
         with:
-          path: Pods
-          key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+            .swiftpm
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
           restore-keys: |
-            ${{ runner.os }}-pods-
-
-      - name: Install CocoaPods
-        run: |
-          gem install cocoapods
-          pod --version
+            ${{ runner.os }}-spm-
 
       - name: Install xcpretty
         run: gem install xcpretty
-
-      - name: Install dependencies
-        run: pod install --repo-update
 
       - name: Show available simulators
         run: xcrun simctl list devices available | grep -i "tv"
@@ -76,7 +70,7 @@ jobs:
         run: |
           set -o pipefail
           xcodebuild clean build \
-            -workspace "${{ env.WORKSPACE }}" \
+            -project "${{ env.PROJECT }}" \
             -scheme "${{ env.SCHEME }}" \
             -destination "${{ matrix.destination }}" \
             -configuration Debug \

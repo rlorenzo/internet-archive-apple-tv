@@ -44,21 +44,15 @@ jobs:
         echo "Available devices:"
         xcrun simctl list devices available | grep -i "tv" || true
 
-    - name: Cache CocoaPods
+    - name: Cache SPM packages
       uses: actions/cache@v4
       with:
-        path: Pods
-        key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+        path: |
+          ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+          .swiftpm
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
         restore-keys: |
-          ${{ runner.os }}-pods-
-
-    - name: Set up CocoaPods
-      run: |
-        gem install cocoapods
-        pod --version
-
-    - name: Install dependencies
-      run: pod install --repo-update
+          ${{ runner.os }}-spm-
 
     - name: Find simulator for tvOS version
       id: find-simulator
@@ -102,7 +96,7 @@ jobs:
         DEVICE_ID="${{ steps.find-simulator.outputs.DEVICE_ID }}"
         echo "Building app for tvOS ${{ matrix.tvos-version }}..."
         xcodebuild build \
-          -workspace "Internet Archive.xcworkspace" \
+          -project "Internet Archive.xcodeproj" \
           -scheme "Internet Archive" \
           -destination "platform=tvOS Simulator,id=$DEVICE_ID" \
           -derivedDataPath DerivedData \
@@ -183,23 +177,15 @@ jobs:
           echo "tvOS Simulator runtime already installed"
         fi
 
-    - name: Cache CocoaPods
+    - name: Cache SPM packages
       uses: actions/cache@v4
       with:
-        path: Pods
-        key: ${{ runner.os }}-pods-${{ hashFiles('**/Podfile.lock') }}
+        path: |
+          ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+          .swiftpm
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
         restore-keys: |
-          ${{ runner.os }}-pods-
-
-    - name: Set up CocoaPods
-      run: |
-        gem install cocoapods
-        pod --version
-
-    - name: Install dependencies
-      run: |
-        cd "${GITHUB_WORKSPACE}"
-        pod install --repo-update
+          ${{ runner.os }}-spm-
 
     - name: Boot simulator
       run: |
@@ -219,7 +205,7 @@ jobs:
           echo "Test attempt $attempt..."
           rm -rf TestResults.xcresult
           if xcodebuild test \
-            -workspace "Internet Archive.xcworkspace" \
+            -project "Internet Archive.xcodeproj" \
             -scheme "Internet Archive" \
             -destination "platform=tvOS Simulator,name=Apple TV" \
             -only-testing:"Internet ArchiveTests" \

@@ -1195,97 +1195,208 @@ Enhanced user experience with better accessibility, improved content display, an
 
 ---
 
-### Sprint 18: SwiftUI Migration (Optional)
-
-**Estimated Time:** 80-120 hours
-**PR Title:** `feat: Migrate to SwiftUI for tvOS`
-
-Full UI rewrite using SwiftUI, recommended for long-term maintainability.
-
----
-
-### Sprint 19: CocoaPods to Swift Package Manager Migration
+### Sprint 18: CocoaPods to Swift Package Manager Migration ✅ COMPLETED
 
 **Estimated Time:** 15-25 hours
 **PR Title:** `chore: Migrate from CocoaPods to Swift Package Manager`
-**Priority:** Medium (CocoaPods entering read-only mode in 2026)
+**Status:** Completed
 
 #### Background
+
 CocoaPods has announced it will transition to read-only mode in 2026. Swift Package Manager (SPM) is now Apple's recommended dependency management solution and offers better Xcode integration, faster dependency resolution, and first-party support.
 
 #### Goals
-- Migrate all dependencies from CocoaPods to Swift Package Manager
-- Remove Podfile, Podfile.lock, and Pods directory
-- Simplify project structure
-- Improve build times with SPM caching
 
-#### Current Dependencies to Migrate
+- ✅ Migrate all dependencies from CocoaPods to Swift Package Manager
+- ✅ Remove Podfile, Podfile.lock, and Pods directory
+- ✅ Simplify project structure
+- ✅ Improve build times with SPM caching
 
-| CocoaPod | SPM Equivalent | Notes |
-|----------|----------------|-------|
-| Alamofire ~> 5.9 | [Alamofire](https://github.com/Alamofire/Alamofire) | Native SPM support |
-| AlamofireImage ~> 4.3 | [AlamofireImage](https://github.com/Alamofire/AlamofireImage) | Native SPM support |
-| SVProgressHUD ~> 2.3.1 | [SVProgressHUD](https://github.com/SVProgressHUD/SVProgressHUD) | Native SPM support |
-| MBProgressHUD ~> 1.2.0 | [MBProgressHUD](https://github.com/jdg/MBProgressHUD) | Native SPM support |
-| TvOSMoreButton ~> 1.4.1 | Manual vendoring or fork | No official SPM support - may need to vendor |
-| TvOSTextViewer ~> 1.1.1 | Manual vendoring or fork | No official SPM support - may need to vendor |
-| SwiftSoup ~> 2.11 | [SwiftSoup](https://github.com/scinfu/SwiftSoup) | Native SPM support |
-| SwiftLint (Debug only) | [SwiftLintPlugins](https://github.com/realm/SwiftLint) | Build tool plugin |
+#### Dependency Migration Summary
+
+| CocoaPod              | Migration Approach                    | Status      |
+| --------------------- | ------------------------------------- | ----------- |
+| Alamofire ~> 5.9      | SPM package reference                 | ✅ Migrated |
+| AlamofireImage ~> 4.3 | SPM package reference                 | ✅ Migrated |
+| SVProgressHUD ~> 2.3.1| SPM package reference                 | ✅ Migrated |
+| MBProgressHUD ~> 1.2.0| SPM package reference                 | ✅ Migrated |
+| SwiftSoup ~> 2.11     | SPM package reference                 | ✅ Migrated |
+| TvOSMoreButton ~> 1.4.1| SPM fork (rlorenzo/TvOSMoreButton, branch: spm-support) | ✅ Migrated |
+| TvOSTextViewer ~> 1.1.1| SPM package reference (branch: master) | ✅ Migrated |
+| SwiftLint (Debug only)| System-installed (`brew install`)    | ✅ Kept as shell script |
+
+#### Tasks Completed
+
+**Phase 1: Preparation**
+
+- [x] Audit all dependencies for SPM compatibility
+- [x] Integrate TvOSMoreButton via SPM fork (`https://github.com/rlorenzo/TvOSMoreButton.git`, branch: `spm-support`)
+- [x] Integrate TvOSTextViewer via SPM (`https://github.com/dcordero/TvOSTextViewer.git`, branch: `master`)
+
+**Phase 2: Project Migration**
+
+- [x] Add SPM package references via Xcode's native integration
+- [x] Configure package products for main target
+- [x] Remove CocoaPods framework references from project
+
+**Phase 3: SwiftLint**
+
+- [x] Keep SwiftLint as shell script build phase (simpler than SPM plugin)
+- [x] Update script to use system-installed swiftlint
+
+**Phase 4: Cleanup**
+
+- [x] Remove Podfile, Podfile.lock
+- [x] Remove Pods/ directory
+- [x] Remove CocoaPods-related build phases from Xcode project
+- [x] Update .gitignore (Pods/ already ignored, added *.xcworkspace)
+- [x] Delete `Internet Archive.xcworkspace` (now use .xcodeproj directly)
+
+**Phase 5: Documentation**
+
+- [x] Update DEVELOPMENT_SETUP.md with SPM instructions
+- [x] Update CLAUDE.md build commands
+- [x] Verified build succeeds with SPM
+- [x] Verified all tests pass
+
+#### Files Modified
+
+- `Internet Archive.xcodeproj/project.pbxproj` - SPM package references, removed CocoaPods
+- `.gitignore` - Added *.xcworkspace
+- `DEVELOPMENT_SETUP.md` - SPM setup instructions
+- `CLAUDE.md` - Updated build commands
+
+#### Files Removed
+
+- `Podfile`
+- `Podfile.lock`
+- `Pods/` directory
+- `Internet Archive.xcworkspace/`
+
+#### Benefits Achieved
+
+- ✅ No `pod install` step in setup
+- ✅ Faster dependency resolution with SPM caching
+- ✅ Better Xcode integration
+- ✅ Single project file instead of workspace
+- ✅ First-party Apple support
+
+#### Deliverable
+
+✅ Project fully migrated to Swift Package Manager with no CocoaPods dependencies. Simplified project structure with faster dependency resolution.
+
+---
+
+### Sprint 19: SwiftUI Migration
+
+**Estimated Time:** 175-220 hours
+**PR Title:** `feat: Migrate to SwiftUI for tvOS`
+
+Full UI rewrite using SwiftUI with TabView navigation. Leverages existing MVVM ViewModels.
+
+#### Goals
+
+- Migrate all UIKit views to SwiftUI
+- Use SwiftUI TabView for navigation (not UIHostingController hybrid)
+- Maintain existing ViewModels with @StateObject
+- Wrap AVPlayer via UIViewControllerRepresentable
+
+#### File Structure
+
+```text
+Internet Archive/
+├── App/
+│   ├── InternetArchiveApp.swift       # @main entry point
+│   ├── ContentView.swift              # TabView root
+│   └── AppState.swift                 # Auth state
+├── Features/
+│   ├── Videos/, Music/, Search/, ItemDetail/, Favorites/, Account/, Player/
+├── Components/
+│   ├── MediaItemCard.swift, SectionHeader.swift, EmptyStateView.swift, etc.
+│   └── Styles/                        # TVCardButtonStyle, etc.
+└── (existing ViewModels/, Models/, Services/, Utilities/)
+```
 
 #### Tasks
 
-**Phase 1: Preparation**
-- [ ] Audit all dependencies for SPM compatibility
-- [ ] Fork/vendor TvOSMoreButton with SPM support (if no official package)
-- [ ] Fork/vendor TvOSTextViewer with SPM support (if no official package)
-- [ ] Create feature branch for migration
+**Phase 1: Foundation (15-20 hours)**
 
-**Phase 2: Project Migration**
-- [ ] Add Package.swift manifest (or use Xcode's native SPM integration)
-- [ ] Add each dependency via Xcode → File → Add Package Dependencies
-- [ ] Configure package products for each target
-- [ ] Update import statements if package names differ
+- [ ] Create `InternetArchiveApp.swift` with @main
+- [ ] Create `ContentView.swift` with 5-tab TabView
+- [ ] Create `AppState.swift` for auth state
+- [ ] Create placeholder views for each tab
+- [ ] Update Info.plist for SwiftUI App lifecycle
 
-**Phase 3: SwiftLint Migration**
-- [ ] Convert SwiftLint to SPM build tool plugin
-- [ ] Update build phases to remove CocoaPods SwiftLint
-- [ ] Verify lint still runs on build
+**Phase 2: Core Components (20-25 hours)**
 
-**Phase 4: Cleanup**
-- [ ] Remove Podfile, Podfile.lock
-- [ ] Remove Pods/ directory
-- [ ] Remove CocoaPods-related build phases from Xcode project
-- [ ] Update .gitignore (remove Pods/, add .swiftpm/)
-- [ ] Delete `Internet Archive.xcworkspace` (use .xcodeproj directly)
+- [ ] `MediaItemCard` - grid item with thumbnail, title, progress
+- [ ] `TVCardButtonStyle` - tvOS focus effects (scale, shadow)
+- [ ] `ContinueWatchingCard` and `ContinueWatchingSection`
+- [ ] `SectionHeader` with optional "See All" button
+- [ ] `EmptyStateView` and `ErrorStateView`
+- [ ] `SkeletonLoadingView` with shimmer animation
 
-**Phase 5: Documentation & CI**
-- [ ] Update DEVELOPMENT_SETUP.md with SPM instructions
-- [ ] Update CI workflows to use SPM (remove `pod install`)
-- [ ] Update README.md setup section
-- [ ] Update CLAUDE.md build commands
+**Phase 3: Content Browsing (25-30 hours)**
 
-#### Technical Considerations
+- [ ] `VideoHomeView` with LazyVGrid layout
+- [ ] `MusicHomeView` with LazyVGrid layout
+- [ ] Continue Watching/Listening sections
+- [ ] Year navigation (sidebar + grid)
+- [ ] Integrate existing VideoViewModel and MusicViewModel
 
-**TvOSMoreButton/TvOSTextViewer Options:**
-1. **Fork & Add SPM Support:** Create forks with Package.swift manifests
-2. **Vendor Directly:** Copy source files into project (simplest)
-3. **Replace with Native:** Reimplement functionality with modern tvOS APIs
+**Phase 4: Item Details (20-25 hours)**
 
-**SwiftLint as Build Tool Plugin:**
-```swift
-// Package.swift
-.package(url: "https://github.com/realm/SwiftLint.git", from: "0.54.0")
-```
+- [ ] `ItemDetailView` modal with metadata display
+- [ ] `PlaybackButtons` - Play, Resume, Start Over
+- [ ] `DescriptionView` - HTML rendering
+- [ ] `FavoriteButton` with animation
+- [ ] Navigation to player via .fullScreenCover
 
-**Benefits:**
-- No `pod install` step in setup
-- Faster CI builds (SPM caches dependencies)
-- Better Xcode integration
-- Single project file instead of workspace
-- First-party Apple support
+**Phase 5: Media Playback (30-35 hours)**
+
+- [ ] `VideoPlayerView` - UIViewControllerRepresentable wrapper
+- [ ] `VideoPlayerController` - ObservableObject for state
+- [ ] `SubtitleOverlay` in SwiftUI
+- [ ] `NowPlayingView` - full-screen music player
+- [ ] Progress tracking with PlaybackProgressManager
+
+**Phase 6: Search (15-20 hours)**
+
+- [ ] `SearchView` with .searchable modifier
+- [ ] Filter picker (All/Video/Music)
+- [ ] Dual-section results display
+- [ ] Pagination with .onAppear triggers
+
+**Phase 7: Year-Based Browsing (15-20 hours)**
+
+- [ ] `YearBrowseView` with sidebar + grid
+- [ ] Year list selection
+- [ ] Items grid for selected year
+
+**Phase 8: Favorites & Account (20-25 hours)**
+
+- [ ] `FavoritesView` with 3 sections
+- [ ] `PeopleDetailView` for creator browsing
+- [ ] `LoginView` and `RegisterView` forms
+- [ ] `AccountView` with user info
+
+**Phase 9: Accessibility & Polish (15-20 hours)**
+
+- [ ] VoiceOver labels on all elements
+- [ ] Focus restoration via @SceneStorage
+- [ ] Animation polish
+- [ ] Memory/performance profiling
+
+**Phase 10: Cleanup**
+
+- [ ] Remove Main.storyboard
+- [ ] Delete old UIKit ViewControllers
+- [ ] Remove TabbarController and navigation controllers
+- [ ] Update CLAUDE.md documentation
 
 #### Deliverable
-Project fully migrated to Swift Package Manager with no CocoaPods dependencies. Simplified project structure with faster dependency resolution.
+
+Complete SwiftUI-based tvOS app with modern navigation, reusing existing ViewModels and service layer.
 
 ---
 

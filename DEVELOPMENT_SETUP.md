@@ -6,7 +6,6 @@ This guide explains how to set up your development environment for the Internet 
 
 - **Xcode 16.0+** (for Swift 6.0 support)
 - **tvOS 26.0 SDK**
-- **CocoaPods 1.16+** (`gem install cocoapods`)
 - **SwiftLint** (`brew install swiftlint`)
 
 ## Initial Setup
@@ -18,20 +17,23 @@ git clone https://github.com/your-org/internet-archive-apple-tv.git
 cd internet-archive-apple-tv
 ```
 
-### 2. Install Dependencies
+### 2. Open the Project
+
+Open the project file (not workspace):
 
 ```bash
-pod install
+open "Internet Archive.xcodeproj"
 ```
 
-This will install:
+Xcode will automatically resolve Swift Package Manager dependencies:
+
 - Alamofire (HTTP networking)
 - AlamofireImage (Image caching)
 - SVProgressHUD (Progress indicators)
+- MBProgressHUD (Alternative progress HUD)
+- SwiftSoup (HTML parsing)
 - TvOSMoreButton (tvOS UI component)
 - TvOSTextViewer (Text display)
-- MBProgressHUD (Alternative progress HUD)
-- SwiftLint (Code linting - Debug only)
 
 ### 3. Set Up Git Hooks
 
@@ -46,15 +48,7 @@ This will:
 - Verify SwiftLint is available
 - Check for configuration files
 
-### 4. Open the Project
-
-**Important:** Always open the `.xcworkspace` file, not the `.xcodeproj`:
-
-```bash
-open "Internet Archive.xcworkspace"
-```
-
-### 5. Configure API Credentials
+### 4. Configure API Credentials
 
 ⚠️ **Security Note:** Never commit API credentials to the repository.
 
@@ -128,13 +122,13 @@ internet-archive-apple-tv/
 │   ├── Classes/               # Reusable components
 │   ├── Utilities/             # API manager, helpers
 │   └── ViewControllers/       # Feature modules
-├── Pods/                      # CocoaPods dependencies (gitignored)
+├── Internet ArchiveTests/      # Unit tests
 ├── scripts/                   # Development scripts
 │   ├── pre-commit            # Git pre-commit hook
 │   └── setup-hooks.sh        # Hook installation script
 ├── .swiftlint.yml            # SwiftLint configuration
 ├── .swift-version            # Swift version file
-├── Podfile                   # CocoaPods dependencies
+├── Internet Archive.xcodeproj # Xcode project (with SPM package refs)
 └── MODERNIZATION_SPRINTS.md  # Migration plan
 ```
 
@@ -147,20 +141,16 @@ If the pre-commit hook reports SwiftLint is not found:
 ```bash
 # Install via Homebrew (recommended)
 brew install swiftlint
-
-# Or use the CocoaPods version
-Pods/SwiftLint/swiftlint
 ```
 
-### Pod Install Fails
+### SPM Package Resolution Fails
 
-Ensure you have the latest CocoaPods:
+If Swift Package Manager fails to resolve dependencies:
 
-```bash
-gem update cocoapods
-pod repo update
-pod install
-```
+1. Clean build folder (Cmd+Shift+K)
+2. Close Xcode
+3. Delete derived data: `rm -rf ~/Library/Developer/Xcode/DerivedData/Internet_Archive-*`
+4. Reopen the project and let Xcode resolve packages
 
 ### Build Errors
 

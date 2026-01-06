@@ -50,17 +50,15 @@ playground.xcworkspace
 .swiftpm/
 .build/
 
-# CocoaPods
-#
-# We recommend against adding the Pods directory to your .gitignore. However
-# you should judge for yourself, the pros and cons are mentioned at:
-# https://guides.cocoapods.org/using/using-cocoapods.html#should-i-check-the-pods-directory-into-source-control
-#
-# Note: if you want to commit Pods directory, remove the following line
+# CocoaPods (no longer used - migrated to SPM)
+# Keeping these ignored in case of accidental pod install
+Podfile.lock
 Pods/
 
-# Add this line if you want to avoid checking in source code from the Xcode workspace
-# *.xcworkspace
+# Xcode workspace files (not needed with SPM - use .xcodeproj directly)
+# Note: We ignore standalone .xcworkspace directories (like the old CocoaPods workspace)
+# but NOT the project.xcworkspace inside .xcodeproj which contains Package.resolved
+Internet Archive.xcworkspace/
 
 # Carthage
 #
