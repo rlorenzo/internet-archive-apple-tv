@@ -1249,7 +1249,7 @@ CocoaPods has announced it will transition to read-only mode in 2026. Swift Pack
 - [x] Remove Podfile, Podfile.lock
 - [x] Remove Pods/ directory
 - [x] Remove CocoaPods-related build phases from Xcode project
-- [x] Update .gitignore (Pods/ already ignored, added *.xcworkspace)
+- [x] Update .gitignore (Pods/ already ignored, added Internet Archive.xcworkspace/)
 - [x] Delete `Internet Archive.xcworkspace` (now use .xcodeproj directly)
 
 **Phase 5: Documentation**
@@ -1262,7 +1262,7 @@ CocoaPods has announced it will transition to read-only mode in 2026. Swift Pack
 #### Files Modified
 
 - `Internet Archive.xcodeproj/project.pbxproj` - SPM package references, removed CocoaPods
-- `.gitignore` - Added *.xcworkspace
+- `.gitignore` - Added Internet Archive.xcworkspace/
 - `DEVELOPMENT_SETUP.md` - SPM setup instructions
 - `CLAUDE.md` - Updated build commands
 
