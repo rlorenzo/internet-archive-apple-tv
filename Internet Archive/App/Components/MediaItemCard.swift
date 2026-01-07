@@ -107,6 +107,7 @@ struct MediaItemCard: View {
 
     private var thumbnailView: some View {
         ZStack(alignment: .bottom) {
+            // Thumbnail
             AsyncImage(url: thumbnailURL) { phase in
                 switch phase {
                 case .empty:
@@ -127,7 +128,7 @@ struct MediaItemCard: View {
 
             // Progress bar overlay
             if let progress = progress, progress > 0 {
-                progressBar(progress: progress)
+                progressOverlay
             }
         }
     }
@@ -144,20 +145,20 @@ struct MediaItemCard: View {
         .aspectRatio(mediaType.aspectRatio, contentMode: .fit)
     }
 
-    private func progressBar(progress: Double) -> some View {
+    private var progressOverlay: some View {
         GeometryReader { geometry in
             VStack {
                 Spacer()
                 ZStack(alignment: .leading) {
-                    // Background track
                     Rectangle()
-                        .fill(Color.black.opacity(0.5))
-                        .frame(height: 6)
-
-                    // Progress fill
+                        .fill(Color.black.opacity(0.6))
+                        .frame(height: 8)
                     Rectangle()
                         .fill(Color.white)
-                        .frame(width: geometry.size.width * min(progress, 1.0), height: 6)
+                        .frame(
+                            width: geometry.size.width * min(progress ?? 0, 1.0),
+                            height: 8
+                        )
                 }
             }
         }

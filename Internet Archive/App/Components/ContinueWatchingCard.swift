@@ -199,6 +199,7 @@ struct ContinueWatchingSection: View {
                     }
                 }
                 .padding(.horizontal, 80)
+                .padding(.vertical, 30)
             }
         }
     }

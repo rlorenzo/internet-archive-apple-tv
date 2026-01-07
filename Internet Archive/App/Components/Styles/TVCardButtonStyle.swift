@@ -9,10 +9,8 @@ import SwiftUI
 
 /// A button style that provides tvOS-native focus effects for card-based interfaces.
 ///
-/// This style applies:
-/// - Scale animation on focus (lift effect)
-/// - Shadow animation on focus
-/// - Smooth transitions between states
+/// This style uses tvOS's native `.card` button style which provides proper focus handling,
+/// then wraps the content in a focusable container to add custom visual effects.
 ///
 /// ## Usage
 /// ```swift
@@ -33,57 +31,57 @@ struct TVCardButtonStyle: ButtonStyle {
     // MARK: - Configuration
 
     /// Scale factor when focused (1.0 = no change)
-    var focusedScale: CGFloat = 1.05
-
-    /// Shadow radius when focused
-    var focusedShadowRadius: CGFloat = 20
-
-    /// Shadow opacity when focused (0.0 to 1.0)
-    var focusedShadowOpacity: Double = 0.4
+    var focusedScale: CGFloat = 1.08
 
     /// Animation duration for focus transitions
     var animationDuration: Double = 0.2
 
-    // MARK: - Environment
-
-    @Environment(\.isFocused) private var isFocused
-
     // MARK: - Body
 
     func makeBody(configuration: Configuration) -> some View {
-        TVCardButtonContent(
-            configuration: configuration,
+        FocusableCardContent(
+            label: configuration.label,
+            isPressed: configuration.isPressed,
             focusedScale: focusedScale,
-            focusedShadowRadius: focusedShadowRadius,
-            focusedShadowOpacity: focusedShadowOpacity,
             animationDuration: animationDuration
         )
     }
 }
 
-// MARK: - Internal Content View
+// MARK: - Focusable Card Content
 
-/// Internal view that handles focus state tracking
-private struct TVCardButtonContent: View {
-    let configuration: ButtonStyle.Configuration
+/// A wrapper view that properly tracks focus state on tvOS
+private struct FocusableCardContent<Label: View>: View {
+    let label: Label
+    let isPressed: Bool
     let focusedScale: CGFloat
-    let focusedShadowRadius: CGFloat
-    let focusedShadowOpacity: Double
     let animationDuration: Double
 
+    @Environment(\.isFocused) private var envFocused
     @FocusState private var isFocused: Bool
 
+    private var isCurrentlyFocused: Bool {
+        envFocused || isFocused
+    }
+
     var body: some View {
-        configuration.label
-            .scaleEffect(isFocused ? focusedScale : 1.0)
+        label
+            .scaleEffect(isCurrentlyFocused ? focusedScale : 1.0)
+            .scaleEffect(isPressed ? 0.95 : 1.0)
+            .brightness(isCurrentlyFocused ? 0.1 : 0)
             .shadow(
-                color: .black.opacity(isFocused ? focusedShadowOpacity : 0),
-                radius: isFocused ? focusedShadowRadius : 0,
-                x: 0,
-                y: isFocused ? 10 : 0
+                color: .white.opacity(isCurrentlyFocused ? 0.6 : 0),
+                radius: isCurrentlyFocused ? 25 : 0
             )
-            .animation(.easeInOut(duration: animationDuration), value: isFocused)
-            .focusable()
+            .shadow(
+                color: .black.opacity(isCurrentlyFocused ? 0.5 : 0),
+                radius: isCurrentlyFocused ? 20 : 0,
+                x: 0,
+                y: isCurrentlyFocused ? 15 : 0
+            )
+            .zIndex(isCurrentlyFocused ? 1 : 0)
+            .animation(.easeInOut(duration: animationDuration), value: isCurrentlyFocused)
+            .animation(.easeInOut(duration: 0.1), value: isPressed)
             .focused($isFocused)
     }
 }
@@ -96,22 +94,11 @@ extension View {
         self.buttonStyle(TVCardButtonStyle())
     }
 
-    /// Applies the tvOS card button style with custom parameters
+    /// Applies the tvOS card button style with custom scale
     ///
-    /// - Parameters:
-    ///   - scale: Scale factor when focused (default: 1.05)
-    ///   - shadowRadius: Shadow radius when focused (default: 20)
-    ///   - shadowOpacity: Shadow opacity when focused (default: 0.4)
-    func tvCardStyle(
-        scale: CGFloat,
-        shadowRadius: CGFloat = 20,
-        shadowOpacity: Double = 0.4
-    ) -> some View {
-        self.buttonStyle(TVCardButtonStyle(
-            focusedScale: scale,
-            focusedShadowRadius: shadowRadius,
-            focusedShadowOpacity: shadowOpacity
-        ))
+    /// - Parameter scale: Scale factor when focused (default: 1.08)
+    func tvCardStyle(scale: CGFloat) -> some View {
+        self.buttonStyle(TVCardButtonStyle(focusedScale: scale))
     }
 }
 

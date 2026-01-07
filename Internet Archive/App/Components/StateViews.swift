@@ -337,7 +337,7 @@ extension ErrorContentView {
         switch networkError {
         case .noConnection, .timeout:
             self = .networkError(onRetry: onRetry)
-        case .serverError(_):
+        case .serverError:
             self = .serverError(onRetry: onRetry)
         case .resourceNotFound:
             self = .notFound()

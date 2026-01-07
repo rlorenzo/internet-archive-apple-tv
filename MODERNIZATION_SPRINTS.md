@@ -1293,7 +1293,7 @@ CocoaPods has announced it will transition to read-only mode in 2026. Swift Pack
 
 **Estimated Time:** 175-220 hours
 **PR Title:** `feat: Migrate to SwiftUI for tvOS`
-**Status:** Phase 2 Complete
+**Status:** Phase 3 Complete
 
 Full UI rewrite using SwiftUI with TabView navigation. Leverages existing MVVM ViewModels.
 
@@ -1339,13 +1339,13 @@ Internet Archive/
 - [x] `EmptyContentView` and `ErrorContentView` (SwiftUI versions)
 - [x] `SkeletonLoadingView` with shimmer animation
 
-**Phase 3: Content Browsing (25-30 hours)**
+**Phase 3: Content Browsing (25-30 hours)** ✅ COMPLETED
 
-- [ ] `VideoHomeView` with LazyVGrid layout
-- [ ] `MusicHomeView` with LazyVGrid layout
-- [ ] Continue Watching/Listening sections
-- [ ] Year navigation (sidebar + grid)
-- [ ] Integrate existing VideoViewModel and MusicViewModel
+- [x] `VideoHomeView` with LazyVGrid layout
+- [x] `MusicHomeView` with LazyVGrid layout
+- [x] Continue Watching/Listening sections
+- [x] Year navigation (sidebar + grid)
+- [x] Integrate existing VideoViewModel and MusicViewModel
 
 **Phase 4: Item Details (20-25 hours)**
 
@@ -1437,6 +1437,37 @@ Internet Archive/App/Components/
     └── TVCardButtonStyle.swift ✅ Focus effects (scale, shadow, animation)
 
 Internet Archive/App/Components/SectionHeader.swift ✅ Enhanced with optional "See All" button
+```
+
+#### Files Modified (Phase 3)
+
+```
+Internet Archive/Features/Videos/VideoHomeView.swift  ✅ Full implementation with:
+  - LazyVGrid layout for featured videos
+  - ContinueWatchingSection integration
+  - Year browser sheet with sidebar navigation
+  - VideoViewModel integration for API data
+  - Loading/error state handling
+
+Internet Archive/Features/Music/MusicHomeView.swift   ✅ Full implementation with:
+  - LazyVGrid layout for featured music
+  - ContinueListeningSection integration
+  - Year browser sheet with sidebar navigation
+  - MusicViewModel integration for API data
+  - Loading/error state handling
+
+Internet Archive/Models/SearchModels.swift            ✅ Added Hashable conformance for navigation
+```
+
+#### New Views Created (Phase 3)
+
+```
+VideoHomeView components:
+├── ItemDetailPlaceholderView    - Placeholder for Phase 4 item detail
+└── YearBrowserView              - Year-based browsing with sidebar + grid
+
+MusicHomeView components:
+└── MusicItemDetailPlaceholderView - Placeholder for Phase 4 item detail
 ```
 
 #### Deliverable
