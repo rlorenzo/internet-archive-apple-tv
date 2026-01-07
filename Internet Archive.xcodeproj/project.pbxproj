@@ -7,6 +7,14 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
+		48B242C72F0DE75A00A59F96 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00001 /* Alamofire */; };
+		48B242C82F0DE75A00A59F96 /* AlamofireImage in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00002 /* AlamofireImage */; };
+		48B242C92F0DE75A00A59F96 /* SVProgressHUD in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00003 /* SVProgressHUD */; };
+		48B242CA2F0DE75A00A59F96 /* MBProgressHUD in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00004 /* MBProgressHUD */; };
+		48B242CB2F0DE75A00A59F96 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00005 /* SwiftSoup */; };
+		48B242CC2F0DE75A00A59F96 /* TvOSMoreButton in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00006 /* TvOSMoreButton */; };
+		48B242CD2F0DE75A00A59F96 /* TvOSTextViewer in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00007 /* TvOSTextViewer */; };
+		48B242CE2F0DE75A00A59F96 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00008 /* Alamofire */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -78,6 +86,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				48B242CE2F0DE75A00A59F96 /* Alamofire in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -92,6 +101,13 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				48B242CD2F0DE75A00A59F96 /* TvOSTextViewer in Frameworks */,
+				48B242CC2F0DE75A00A59F96 /* TvOSMoreButton in Frameworks */,
+				48B242CB2F0DE75A00A59F96 /* SwiftSoup in Frameworks */,
+				48B242CA2F0DE75A00A59F96 /* MBProgressHUD in Frameworks */,
+				48B242C92F0DE75A00A59F96 /* SVProgressHUD in Frameworks */,
+				48B242C82F0DE75A00A59F96 /* AlamofireImage in Frameworks */,
+				48B242C72F0DE75A00A59F96 /* Alamofire in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

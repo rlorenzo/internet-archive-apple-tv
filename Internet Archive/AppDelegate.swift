@@ -8,7 +8,8 @@
 
 import UIKit
 
-@main
+// Note: @main removed - SwiftUI App lifecycle is now in InternetArchiveApp.swift
+// This class is kept for reference during migration and can be removed after Sprint 19 completion.
 @MainActor
 class AppDelegate: UIResponder, UIApplicationDelegate {
 
