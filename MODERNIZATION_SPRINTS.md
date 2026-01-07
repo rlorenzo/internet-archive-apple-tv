@@ -1293,7 +1293,7 @@ CocoaPods has announced it will transition to read-only mode in 2026. Swift Pack
 
 **Estimated Time:** 175-220 hours
 **PR Title:** `feat: Migrate to SwiftUI for tvOS`
-**Status:** Phase 1 Complete
+**Status:** Phase 2 Complete
 
 Full UI rewrite using SwiftUI with TabView navigation. Leverages existing MVVM ViewModels.
 
@@ -1330,14 +1330,14 @@ Internet Archive/
 - [x] Create placeholder views for each tab
 - [x] Update Info.plist for SwiftUI App lifecycle
 
-**Phase 2: Core Components (20-25 hours)**
+**Phase 2: Core Components (20-25 hours)** ✅ COMPLETED
 
-- [ ] `MediaItemCard` - grid item with thumbnail, title, progress
-- [ ] `TVCardButtonStyle` - tvOS focus effects (scale, shadow)
-- [ ] `ContinueWatchingCard` and `ContinueWatchingSection`
-- [ ] `SectionHeader` with optional "See All" button
-- [ ] `EmptyStateView` and `ErrorStateView`
-- [ ] `SkeletonLoadingView` with shimmer animation
+- [x] `MediaItemCard` - grid item with thumbnail, title, progress
+- [x] `TVCardButtonStyle` - tvOS focus effects (scale, shadow)
+- [x] `ContinueWatchingCard` and `ContinueWatchingSection`
+- [x] `SectionHeader` with optional "See All" button
+- [x] `EmptyContentView` and `ErrorContentView` (SwiftUI versions)
+- [x] `SkeletonLoadingView` with shimmer animation
 
 **Phase 3: Content Browsing (25-30 hours)**
 
@@ -1423,6 +1423,20 @@ Internet Archive/Features/
 ```
 Internet Archive/Info.plist     ✅ Removed UIMainStoryboardFile key
 Internet Archive/AppDelegate.swift ✅ Removed @main attribute (kept for reference)
+```
+
+#### Files Created (Phase 2)
+
+```
+Internet Archive/App/Components/
+├── MediaItemCard.swift         ✅ Grid card with async thumbnail, progress bar
+├── ContinueWatchingCard.swift  ✅ Card + Section for continue watching/listening
+├── StateViews.swift            ✅ EmptyContentView + ErrorContentView (SwiftUI)
+├── SkeletonLoadingView.swift   ✅ Shimmer animation + skeleton cards/grids
+└── Styles/
+    └── TVCardButtonStyle.swift ✅ Focus effects (scale, shadow, animation)
+
+Internet Archive/App/Components/SectionHeader.swift ✅ Enhanced with optional "See All" button
 ```
 
 #### Deliverable

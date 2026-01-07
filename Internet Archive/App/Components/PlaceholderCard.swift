@@ -15,7 +15,7 @@ import SwiftUI
 /// ## Usage
 /// ```swift
 /// // Video card (16:9)
-/// PlaceholderCard(aspectRatio: 16 / 9)
+/// PlaceholderCard(aspectRatio: 16.0 / 9.0)
 ///
 /// // Album art (square)
 /// PlaceholderCard(aspectRatio: 1)
@@ -61,7 +61,7 @@ struct PlaceholderCard: View {
 extension PlaceholderCard {
     /// Creates a video placeholder card with 16:9 aspect ratio
     static var video: PlaceholderCard {
-        PlaceholderCard(aspectRatio: 16 / 9)
+        PlaceholderCard(aspectRatio: 16.0 / 9.0)
     }
 
     /// Creates a music/album placeholder card with square aspect ratio
