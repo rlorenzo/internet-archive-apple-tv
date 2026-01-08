@@ -21,15 +21,21 @@ struct ContentView: View {
     /// The currently selected tab
     @State private var selectedTab: Tab = .videos
 
+    /// Track if Video tab has navigation history
+    @State private var videoHasNavigation = false
+
+    /// Track if Music tab has navigation history
+    @State private var musicHasNavigation = false
+
     var body: some View {
         TabView(selection: $selectedTab) {
-            VideoHomeView()
+            VideoHomeView(hasNavigationHistory: $videoHasNavigation)
                 .tabItem {
                     Label("Videos", systemImage: "film")
                 }
                 .tag(Tab.videos)
 
-            MusicHomeView()
+            MusicHomeView(hasNavigationHistory: $musicHasNavigation)
                 .tabItem {
                     Label("Music", systemImage: "music.note")
                 }
@@ -52,6 +58,23 @@ struct ContentView: View {
                     Label("Account", systemImage: "person.crop.circle")
                 }
                 .tag(Tab.account)
+        }
+        .onExitCommand {
+            // Handle Menu button at TabView level
+            // If the current tab has navigation history, pop it back
+            switch selectedTab {
+            case .videos:
+                if videoHasNavigation {
+                    NotificationCenter.default.post(name: .popVideoNavigation, object: nil)
+                }
+            case .music:
+                if musicHasNavigation {
+                    NotificationCenter.default.post(name: .popMusicNavigation, object: nil)
+                }
+            default:
+                // Other tabs don't have navigation stacks yet
+                break
+            }
         }
     }
 }

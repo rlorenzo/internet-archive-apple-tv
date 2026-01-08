@@ -1293,7 +1293,7 @@ CocoaPods has announced it will transition to read-only mode in 2026. Swift Pack
 
 **Estimated Time:** 175-220 hours
 **PR Title:** `feat: Migrate to SwiftUI for tvOS`
-**Status:** Phase 3 Complete
+**Status:** Phase 4 Complete
 
 Full UI rewrite using SwiftUI with TabView navigation. Leverages existing MVVM ViewModels.
 
@@ -1347,13 +1347,13 @@ Internet Archive/
 - [x] Year navigation (sidebar + grid)
 - [x] Integrate existing VideoViewModel and MusicViewModel
 
-**Phase 4: Item Details (20-25 hours)**
+**Phase 4: Item Details (20-25 hours)** ✅ COMPLETED
 
-- [ ] `ItemDetailView` modal with metadata display
-- [ ] `PlaybackButtons` - Play, Resume, Start Over
-- [ ] `DescriptionView` - HTML rendering
-- [ ] `FavoriteButton` with animation
-- [ ] Navigation to player via .fullScreenCover
+- [x] `ItemDetailView` modal with metadata display
+- [x] `PlaybackButtons` - Play, Resume, Start Over
+- [x] `DescriptionView` - HTML rendering with AttributedString
+- [x] `FavoriteButton` with animation
+- [x] Navigation to player via .fullScreenCover (placeholder for Phase 5)
 
 **Phase 5: Media Playback (30-35 hours)**
 
@@ -1469,6 +1469,25 @@ VideoHomeView components:
 MusicHomeView components:
 └── MusicItemDetailPlaceholderView - Placeholder for Phase 4 item detail
 ```
+
+#### New Views Created (Phase 4)
+
+```
+Internet Archive/Features/ItemDetail/
+├── ItemDetailView.swift      - Main item detail modal with metadata, thumbnail, controls
+├── PlaybackButtons.swift     - Play/Resume/Start Over buttons with tvOS focus styles
+├── DescriptionView.swift     - HTML rendering via HTMLToAttributedString → AttributedString
+└── FavoriteButton.swift      - Animated heart button with haptic-like visual feedback
+```
+
+Key implementation details:
+
+- `ItemDetailView` uses HStack layout with thumbnail on left, metadata/controls on right
+- `PlaybackButtons` adapts based on saved `PlaybackProgress` (shows Resume + Start Over if progress exists)
+- `DescriptionView` converts HTML via `HTMLToAttributedString.shared` and SwiftUI `AttributedString`
+- `FavoriteButton` uses spring animation for bounce effect on toggle
+- Navigation integrated via `.navigationDestination(item:)` in VideoHomeView and MusicHomeView
+- Player presentation uses `.fullScreenCover` with placeholder view (Phase 5 will implement actual player)
 
 #### Deliverable
 

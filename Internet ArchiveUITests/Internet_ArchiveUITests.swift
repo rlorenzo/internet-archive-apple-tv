@@ -1022,6 +1022,127 @@ final class Internet_ArchiveUITests: XCTestCase {
         XCTAssertTrue(app.state == .runningForeground)
     }
 
+    /// Tests that pressing Menu button while in a collection with focus on tab bar
+    /// navigates back to the home screen instead of exiting the app.
+    ///
+    /// This test verifies the fix for the navigation issue where pressing Menu
+    /// while focus was on the tab bar would exit to Apple TV home screen.
+    func testMenuButtonNavigatesBackFromCollectionWithTabBarFocus() throws {
+        let app = launchApp()
+
+        let remote = XCUIRemote.shared
+
+        // Wait for Videos tab content to load
+        sleep(4)
+
+        // Navigate down to featured videos section
+        remote.press(.down)
+        sleep(1)
+
+        // Select a collection (e.g., first video collection item)
+        remote.press(.select)
+        sleep(3)
+
+        // Now we're inside a collection view
+        // Navigate UP to move focus to the tab bar
+        remote.press(.up)
+        sleep(1)
+        remote.press(.up)
+        sleep(1)
+        remote.press(.up)
+        sleep(1)
+
+        // Press Menu - should navigate back to home, NOT exit app
+        remote.press(.menu)
+        sleep(2)
+
+        // Verify app is still running (didn't exit to Apple TV home)
+        XCTAssertTrue(app.state == .runningForeground,
+                      "App should remain in foreground after pressing Menu from tab bar")
+
+        // Verify we can still interact with the app
+        remote.press(.down)
+        sleep(1)
+
+        XCTAssertTrue(app.state == .runningForeground)
+    }
+
+    /// Tests Menu button navigation from collection view on Music tab
+    func testMenuButtonNavigatesBackFromMusicCollection() throws {
+        let app = launchApp()
+
+        let remote = XCUIRemote.shared
+
+        // Navigate to Music tab
+        remote.press(.right)
+        sleep(1)
+        remote.press(.select)
+        sleep(4)
+
+        // Navigate down to music content
+        remote.press(.down)
+        sleep(1)
+
+        // Select a music collection
+        remote.press(.select)
+        sleep(3)
+
+        // Navigate up to tab bar
+        for _ in 0..<3 {
+            remote.press(.up)
+            sleep(1)
+        }
+
+        // Press Menu - should navigate back, not exit
+        remote.press(.menu)
+        sleep(2)
+
+        XCTAssertTrue(app.state == .runningForeground,
+                      "App should remain in foreground after Menu press from Music tab bar")
+    }
+
+    /// Tests that multiple Menu presses properly navigate back through the stack
+    func testMultipleMenuPressesNavigateBack() throws {
+        let app = launchApp()
+
+        let remote = XCUIRemote.shared
+
+        // Wait for content
+        sleep(4)
+
+        // Navigate into a collection
+        remote.press(.down)
+        sleep(1)
+        remote.press(.select)
+        sleep(3)
+
+        // Navigate into an item within the collection
+        remote.press(.down)
+        sleep(1)
+        remote.press(.select)
+        sleep(3)
+
+        // Now we're 2 levels deep
+        // Press Menu to go back one level
+        remote.press(.menu)
+        sleep(2)
+
+        // App should still be running
+        XCTAssertTrue(app.state == .runningForeground)
+
+        // Navigate to tab bar and press Menu again
+        for _ in 0..<3 {
+            remote.press(.up)
+            sleep(1)
+        }
+        remote.press(.menu)
+        sleep(2)
+
+        // Should be back at home, app still running
+        XCTAssertTrue(app.state == .runningForeground,
+                      "App should remain running after navigating back to home")
+    }
+
     // MARK: - Slider Tests
 
     func testSliderNavigation() throws {

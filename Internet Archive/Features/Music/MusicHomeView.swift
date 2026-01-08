@@ -21,13 +21,16 @@ struct MusicHomeView: View {
     /// Continue listening items from PlaybackProgressManager
     @State private var continueListeningItems: [PlaybackProgress] = []
 
-    /// Selected item for navigation
-    @State private var selectedItem: SearchResult?
+    /// Navigation path for programmatic navigation control
+    @State private var navigationPath = NavigationPath()
+
+    /// Binding to expose navigation depth to parent for exit command handling
+    @Binding var hasNavigationHistory: Bool
 
     // MARK: - Body
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             Group {
                 if viewModel.state.isLoading && !viewModel.state.hasLoaded {
                     loadingView
@@ -37,8 +40,29 @@ struct MusicHomeView: View {
                     contentView
                 }
             }
-            .navigationDestination(item: $selectedItem) { item in
-                ItemDetailPlaceholderView(item: item, mediaType: .music)
+            .navigationDestination(for: SearchResult.self) { item in
+                // Collections navigate to browser, individual items to detail
+                if item.mediatype == "collection" {
+                    CollectionBrowserView(collection: item, mediaType: .music)
+                } else {
+                    ItemDetailView(item: item, mediaType: .music)
+                }
+            }
+        }
+        .onExitCommand {
+            // Handle Menu button - pop navigation if we have history
+            if !navigationPath.isEmpty {
+                navigationPath.removeLast()
+            }
+        }
+        .onChange(of: navigationPath.count) { _, newCount in
+            // Sync navigation state with parent
+            hasNavigationHistory = newCount > 0
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .popMusicNavigation)) { _ in
+            // Handle pop request from parent (when Menu pressed on tab bar)
+            if !navigationPath.isEmpty {
+                navigationPath.removeLast()
             }
         }
         .task {
@@ -87,7 +111,9 @@ struct MusicHomeView: View {
 
     private var featuredMusicSection: some View {
         VStack(alignment: .leading, spacing: 20) {
-            SectionHeader("Live Music Archive")
+            // Only show title after load attempt to avoid flash
+            SectionHeader(viewModel.state.displayTitle)
+                .opacity(viewModel.state.hasTitleLoadAttempted ? 1 : 0)
 
             if viewModel.state.hasItems {
                 // Use horizontal scroll rows for proper aspect ratio support
@@ -106,39 +132,15 @@ struct MusicHomeView: View {
             LazyHStack(spacing: 40) {
                 ForEach(items) { item in
                     Button {
-                        selectedItem = item
+                        navigationPath.append(item)
                     } label: {
                         VStack(alignment: .leading, spacing: 12) {
                             // Square album art thumbnail
-                            AsyncImage(url: URL(string: "https://archive.org/services/img/\(item.identifier)")) { phase in
-                                switch phase {
-                                case .empty:
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.gray.opacity(0.3))
-                                        .overlay(
-                                            Image(systemName: "music.note")
-                                                .font(.system(size: 40))
-                                                .foregroundStyle(.secondary)
-                                        )
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                case .failure:
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.gray.opacity(0.3))
-                                        .overlay(
-                                            Image(systemName: "music.note")
-                                                .font(.system(size: 40))
-                                                .foregroundStyle(.secondary)
-                                        )
-                                @unknown default:
-                                    EmptyView()
-                                }
-                            }
-                            .frame(width: musicCardSize, height: musicCardSize)
-                            .clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            MediaThumbnailView(
+                                identifier: item.identifier,
+                                mediaType: .music,
+                                size: CGSize(width: musicCardSize, height: musicCardSize)
+                            )
 
                             // Text content
                             VStack(alignment: .leading, spacing: 4) {
@@ -148,7 +150,8 @@ struct MusicHomeView: View {
                                     .lineLimit(2)
                                     .foregroundStyle(.primary)
 
-                                if let subtitle = item.creator ?? item.year {
+                                // Show subtitle only if different from title
+                                if let subtitle = subtitleFor(item) {
                                     Text(subtitle)
                                         .font(.caption2)
                                         .foregroundStyle(.secondary)
@@ -177,7 +180,9 @@ struct MusicHomeView: View {
                 }
 
                 VStack(alignment: .leading, spacing: 20) {
-                    SectionHeader("Live Music Archive")
+                    // Keep title hidden until load attempt to avoid flash
+                    SectionHeader(viewModel.state.displayTitle)
+                        .opacity(viewModel.state.hasTitleLoadAttempted ? 1 : 0)
                     SkeletonGrid(cardType: .music, columns: 6, rows: 2)
                 }
                 .padding(.horizontal, 80)
@@ -204,11 +209,31 @@ struct MusicHomeView: View {
         print("Continue listening tapped: \(progress.itemIdentifier)")
         #endif
     }
+
+    /// Returns subtitle for item, or nil if it would duplicate the title
+    private func subtitleFor(_ item: SearchResult) -> String? {
+        // Try creator first, then year
+        if let creator = item.creator {
+            // Don't show if creator matches title (common for collections)
+            if creator.lowercased() != item.safeTitle.lowercased() {
+                return creator
+            }
+        }
+        // Fall back to year if no unique creator
+        return item.year
+    }
 }
 
 // MARK: - Preview
 
 #Preview {
-    MusicHomeView()
+    MusicHomeView(hasNavigationHistory: .constant(false))
         .environmentObject(AppState())
+}
+
+// MARK: - Notification Names
+
+extension Notification.Name {
+    /// Posted when parent requests music navigation to pop back
+    static let popMusicNavigation = Notification.Name("popMusicNavigation")
 }

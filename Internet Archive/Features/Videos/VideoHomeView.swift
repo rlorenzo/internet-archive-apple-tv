@@ -21,13 +21,16 @@ struct VideoHomeView: View {
     /// Continue watching items from PlaybackProgressManager
     @State private var continueWatchingItems: [PlaybackProgress] = []
 
-    /// Selected item for navigation
-    @State private var selectedItem: SearchResult?
+    /// Navigation path for programmatic navigation control
+    @State private var navigationPath = NavigationPath()
+
+    /// Binding to expose navigation depth to parent for exit command handling
+    @Binding var hasNavigationHistory: Bool
 
     // MARK: - Body
 
     var body: some View {
-        NavigationStack {
+        NavigationStack(path: $navigationPath) {
             Group {
                 if viewModel.state.isLoading && !viewModel.state.hasLoaded {
                     loadingView
@@ -37,8 +40,29 @@ struct VideoHomeView: View {
                     contentView
                 }
             }
-            .navigationDestination(item: $selectedItem) { item in
-                ItemDetailPlaceholderView(item: item, mediaType: .video)
+            .navigationDestination(for: SearchResult.self) { item in
+                // Collections navigate to browser, individual items to detail
+                if item.mediatype == "collection" {
+                    CollectionBrowserView(collection: item, mediaType: .video)
+                } else {
+                    ItemDetailView(item: item, mediaType: .video)
+                }
+            }
+        }
+        .onExitCommand {
+            // Handle Menu button - pop navigation if we have history
+            if !navigationPath.isEmpty {
+                navigationPath.removeLast()
+            }
+        }
+        .onChange(of: navigationPath.count) { _, newCount in
+            // Sync navigation state with parent
+            hasNavigationHistory = newCount > 0
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .popVideoNavigation)) { _ in
+            // Handle pop request from parent (when Menu pressed on tab bar)
+            if !navigationPath.isEmpty {
+                navigationPath.removeLast()
             }
         }
         .task {
@@ -107,39 +131,15 @@ struct VideoHomeView: View {
             LazyHStack(spacing: 48) {
                 ForEach(items) { item in
                     Button {
-                        selectedItem = item
+                        navigationPath.append(item)
                     } label: {
                         VStack(alignment: .leading, spacing: 12) {
                             // Thumbnail with fixed aspect ratio
-                            AsyncImage(url: URL(string: "https://archive.org/services/img/\(item.identifier)")) { phase in
-                                switch phase {
-                                case .empty:
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.gray.opacity(0.3))
-                                        .overlay(
-                                            Image(systemName: "film")
-                                                .font(.system(size: 40))
-                                                .foregroundStyle(.secondary)
-                                        )
-                                case .success(let image):
-                                    image
-                                        .resizable()
-                                        .aspectRatio(contentMode: .fill)
-                                case .failure:
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .fill(Color.gray.opacity(0.3))
-                                        .overlay(
-                                            Image(systemName: "film")
-                                                .font(.system(size: 40))
-                                                .foregroundStyle(.secondary)
-                                        )
-                                @unknown default:
-                                    EmptyView()
-                                }
-                            }
-                            .frame(width: videoCardWidth, height: videoCardWidth * 9 / 16)
-                            .clipped()
-                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                            MediaThumbnailView(
+                                identifier: item.identifier,
+                                mediaType: .video,
+                                size: CGSize(width: videoCardWidth, height: videoCardWidth * 9 / 16)
+                            )
 
                             // Text content
                             VStack(alignment: .leading, spacing: 4) {
@@ -210,6 +210,13 @@ struct VideoHomeView: View {
 // MARK: - Preview
 
 #Preview {
-    VideoHomeView()
+    VideoHomeView(hasNavigationHistory: .constant(false))
         .environmentObject(AppState())
+}
+
+// MARK: - Notification Names
+
+extension Notification.Name {
+    /// Posted when parent requests video navigation to pop back
+    static let popVideoNavigation = Notification.Name("popVideoNavigation")
 }
