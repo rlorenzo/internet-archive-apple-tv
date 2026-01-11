@@ -1293,7 +1293,7 @@ CocoaPods has announced it will transition to read-only mode in 2026. Swift Pack
 
 **Estimated Time:** 175-220 hours
 **PR Title:** `feat: Migrate to SwiftUI for tvOS`
-**Status:** Phase 4 Complete
+**Status:** Phase 5 Complete
 
 Full UI rewrite using SwiftUI with TabView navigation. Leverages existing MVVM ViewModels.
 
@@ -1355,13 +1355,14 @@ Internet Archive/
 - [x] `FavoriteButton` with animation
 - [x] Navigation to player via .fullScreenCover (placeholder for Phase 5)
 
-**Phase 5: Media Playback (30-35 hours)**
+**Phase 5: Media Playback (30-35 hours)** ✅ COMPLETED
 
-- [ ] `VideoPlayerView` - UIViewControllerRepresentable wrapper
-- [ ] `VideoPlayerController` - ObservableObject for state
-- [ ] `SubtitleOverlay` in SwiftUI
-- [ ] `NowPlayingView` - full-screen music player
-- [ ] Progress tracking with PlaybackProgressManager
+- [x] `VideoPlayerView` - UIViewControllerRepresentable wrapper for video playback
+- [x] `NowPlayingView` - UIViewControllerRepresentable wrapper for audio playback
+- [x] Subtitle support via existing `VideoPlayerViewController` and `SubtitleOverlayView`
+- [x] Progress tracking with PlaybackProgressManager (video and audio)
+- [x] Resume playback support (video: currentTime, audio: trackIndex + trackCurrentTime)
+- [x] Updated `ItemDetailView` to use real players instead of placeholder
 
 **Phase 6: Search (15-20 hours)**
 
@@ -1487,7 +1488,24 @@ Key implementation details:
 - `DescriptionView` converts HTML via `HTMLToAttributedString.shared` and SwiftUI `AttributedString`
 - `FavoriteButton` uses spring animation for bounce effect on toggle
 - Navigation integrated via `.navigationDestination(item:)` in VideoHomeView and MusicHomeView
-- Player presentation uses `.fullScreenCover` with placeholder view (Phase 5 will implement actual player)
+- Player presentation uses `.fullScreenCover` with actual player views
+
+#### Files Created (Phase 5)
+
+```
+Internet Archive/Features/Player/
+├── VideoPlayerView.swift     ✅ UIViewControllerRepresentable wrapping VideoPlayerViewController
+└── NowPlayingView.swift      ✅ UIViewControllerRepresentable wrapping NowPlayingViewController
+```
+
+Key implementation details:
+
+- `VideoPlayerView` wraps existing `VideoPlayerViewController` with full subtitle support
+- `NowPlayingView` wraps existing `NowPlayingViewController` with album art, track list, controls
+- Both views support resume playback via `fromMetadata()` convenience initializers
+- `ItemDetailView` updated to present real players based on media type (video vs audio)
+- Progress tracking integrated via `PlaybackProgressManager` (video: per-file, audio: album-level)
+- Error handling via `PlayerLoadingView` and `PlayerErrorView` fallback views
 
 #### Deliverable
 

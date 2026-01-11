@@ -138,28 +138,62 @@ struct PlaybackButtons: View {
 // MARK: - Playback Button Style
 
 /// Custom button style for playback buttons with tvOS focus effects.
+/// Uses a separate view to properly track focus state on tvOS.
 struct PlaybackButtonStyle: ButtonStyle {
     /// Whether this is a primary (filled) or secondary (outlined) button
     let isPrimary: Bool
 
+    func makeBody(configuration: Configuration) -> some View {
+        PlaybackButtonContent(
+            configuration: configuration,
+            isPrimary: isPrimary
+        )
+    }
+}
+
+/// Inner view that properly tracks focus state using @Environment(\.isFocused)
+private struct PlaybackButtonContent: View {
+    let configuration: ButtonStyleConfiguration
+    let isPrimary: Bool
+
     @Environment(\.isFocused) private var isFocused
 
-    func makeBody(configuration: Configuration) -> some View {
+    var body: some View {
         configuration.label
-            .foregroundStyle(foregroundColor(isPressed: configuration.isPressed))
+            .foregroundStyle(foregroundColor)
             .background(
                 RoundedRectangle(cornerRadius: 16)
-                    .fill(backgroundColor(isPressed: configuration.isPressed))
+                    .fill(backgroundColor)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 16)
-                    .strokeBorder(borderColor(isPressed: configuration.isPressed), lineWidth: 2)
+                    .strokeBorder(borderColor, lineWidth: isFocused ? 4 : 2)
             )
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .scaleEffect(scaleValue)
+            .shadow(color: shadowColor, radius: isFocused ? 20 : 0)
             .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
+            .animation(.easeInOut(duration: 0.2), value: isFocused)
     }
 
-    private func foregroundColor(isPressed: Bool) -> Color {
+    private var isPressed: Bool {
+        configuration.isPressed
+    }
+
+    private var scaleValue: CGFloat {
+        if isPressed {
+            return 0.95
+        } else if isFocused {
+            return 1.08
+        } else {
+            return 1.0
+        }
+    }
+
+    private var shadowColor: Color {
+        isFocused ? Color.white.opacity(0.5) : Color.clear
+    }
+
+    private var foregroundColor: Color {
         if isPrimary {
             // High contrast: black text on white button
             return isPressed ? .black.opacity(0.8) : .black
@@ -168,8 +202,11 @@ struct PlaybackButtonStyle: ButtonStyle {
         }
     }
 
-    private func backgroundColor(isPressed: Bool) -> Color {
-        if isPrimary {
+    private var backgroundColor: Color {
+        if isFocused {
+            // Bright white when focused for high visibility
+            return isPrimary ? Color.white : Color.white.opacity(0.4)
+        } else if isPrimary {
             // High contrast: white background for primary button
             return isPressed ? Color.white.opacity(0.8) : Color.white
         } else {
@@ -178,8 +215,10 @@ struct PlaybackButtonStyle: ButtonStyle {
         }
     }
 
-    private func borderColor(isPressed: Bool) -> Color {
-        if isPrimary {
+    private var borderColor: Color {
+        if isFocused {
+            return Color.white
+        } else if isPrimary {
             return .clear
         } else {
             return isPressed ? Color.white.opacity(0.6) : Color.white.opacity(0.4)

@@ -524,4 +524,182 @@ final class PlaybackProgressManagerTests: XCTestCase {
         XCTAssertNotNil(manager.getProgress(for: "same-item", filename: "video1.mp4"))
         XCTAssertNotNil(manager.getProgress(for: "same-item", filename: "video2.mp4"))
     }
+
+    // MARK: - isValid Filtering Tests
+
+    func testGetContinueWatchingItemsFiltersOutInvalidIdentifiers() {
+        // Valid progress entry
+        let validProgress = PlaybackProgress.video(MediaProgressInfo(
+            identifier: "valid-video-123",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            title: "Valid Video"
+        ))
+
+        // Invalid progress with empty identifier (corrupted entry)
+        let invalidProgress = PlaybackProgress(
+            itemIdentifier: "",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "Invalid Video",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        manager.saveProgress(validProgress)
+        manager.saveProgress(invalidProgress)
+
+        let continueWatching = manager.getContinueWatchingItems()
+        // Should only contain the valid item (invalid filtered by isValid check)
+        XCTAssertEqual(continueWatching.count, 1)
+        XCTAssertEqual(continueWatching.first?.itemIdentifier, "valid-video-123")
+
+        // Verify the invalid item fails isValid check
+        XCTAssertFalse(invalidProgress.isValid)
+    }
+
+    func testGetContinueWatchingItemsFiltersOutNilTitles() {
+        // Valid progress entry
+        let validProgress = PlaybackProgress.video(MediaProgressInfo(
+            identifier: "valid-video",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            title: "Valid Video Title"
+        ))
+
+        // Invalid progress with nil title
+        let invalidProgress = PlaybackProgress(
+            itemIdentifier: "valid-id-but-nil-title",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: nil,
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        manager.saveProgress(validProgress)
+        manager.saveProgress(invalidProgress)
+
+        let continueWatching = manager.getContinueWatchingItems()
+        // Should only contain the valid item (invalid filtered by isValid check)
+        XCTAssertEqual(continueWatching.count, 1)
+        XCTAssertEqual(continueWatching.first?.itemIdentifier, "valid-video")
+
+        // Verify the invalid item fails isValid check
+        XCTAssertFalse(invalidProgress.isValid)
+    }
+
+    func testGetContinueListeningItemsFiltersOutInvalidEntries() {
+        // Valid audio progress entry
+        let validAudio = PlaybackProgress.audio(MediaProgressInfo(
+            identifier: "valid-album-123",
+            filename: "__album__",
+            currentTime: 50.0,
+            duration: 100.0,
+            title: "Valid Artist: Track 5",
+            trackIndex: 4,
+            trackFilename: "track05.mp3",
+            trackCurrentTime: 120.0
+        ))
+
+        // Invalid audio progress with empty title
+        let invalidAudio = PlaybackProgress(
+            itemIdentifier: "album-with-empty-title",
+            filename: "__album__",
+            currentTime: 50.0,
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 4,
+            trackFilename: "track05.mp3",
+            trackCurrentTime: 120.0
+        )
+
+        manager.saveProgress(validAudio)
+        manager.saveProgress(invalidAudio)
+
+        let continueListening = manager.getContinueListeningItems()
+        // Should only contain the valid item (invalid filtered by isValid check)
+        XCTAssertEqual(continueListening.count, 1)
+        XCTAssertEqual(continueListening.first?.itemIdentifier, "valid-album-123")
+
+        // Verify the invalid item fails isValid check
+        XCTAssertFalse(invalidAudio.isValid)
+    }
+
+    func testGetContinueWatchingItemsFiltersOutWhitespaceOnlyTitles() {
+        // Valid progress entry
+        let validProgress = PlaybackProgress.video(MediaProgressInfo(
+            identifier: "valid-video",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            title: "Valid Video Title"
+        ))
+
+        // Invalid progress with whitespace-only title
+        let invalidProgress = PlaybackProgress(
+            itemIdentifier: "whitespace-title",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "   \t\n  ",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        manager.saveProgress(validProgress)
+        manager.saveProgress(invalidProgress)
+
+        let continueWatching = manager.getContinueWatchingItems()
+        // Should only contain the valid item (invalid filtered by isValid check)
+        XCTAssertEqual(continueWatching.count, 1)
+        XCTAssertEqual(continueWatching.first?.itemIdentifier, "valid-video")
+
+        // Verify the invalid item fails isValid check
+        XCTAssertFalse(invalidProgress.isValid)
+    }
+
+    func testGetContinueWatchingItemsFiltersOutInvalidIdentifierPatterns() {
+        // Valid progress entry
+        let validProgress = PlaybackProgress.video(MediaProgressInfo(
+            identifier: "valid-item-123",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            title: "Valid Video"
+        ))
+
+        // Invalid progress with spaces in identifier
+        let invalidProgress = PlaybackProgress(
+            itemIdentifier: "invalid item with spaces",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "Invalid Video",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        manager.saveProgress(validProgress)
+        manager.saveProgress(invalidProgress)
+
+        let continueWatching = manager.getContinueWatchingItems()
+        // Should only contain the valid item (invalid filtered by isValid check)
+        XCTAssertEqual(continueWatching.count, 1)
+        XCTAssertEqual(continueWatching.first?.itemIdentifier, "valid-item-123")
+
+        // Verify the invalid item fails isValid check
+        XCTAssertFalse(invalidProgress.isValid)
+    }
 }

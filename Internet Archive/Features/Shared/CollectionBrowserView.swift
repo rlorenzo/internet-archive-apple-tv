@@ -41,8 +41,8 @@ struct CollectionBrowserView: View {
     /// Error message
     @State private var errorMessage: String?
 
-    /// Selected item for navigation to detail view
-    @State private var selectedItem: SearchResult?
+    /// Navigation path passed from parent for proper back navigation
+    @Binding var navigationPath: NavigationPath
 
     /// Collection metadata (description, etc.)
     @State private var collectionMetadata: ItemMetadata?
@@ -75,9 +75,6 @@ struct CollectionBrowserView: View {
             .padding(.vertical, 40)
         }
         .background(Color.black.opacity(0.95))
-        .navigationDestination(item: $selectedItem) { item in
-            ItemDetailView(item: item, mediaType: mediaType)
-        }
         .task {
             await loadCollectionItems()
         }
@@ -165,7 +162,7 @@ struct CollectionBrowserView: View {
             ) {
                 ForEach(items) { item in
                     Button {
-                        selectedItem = item
+                        navigationPath.append(item)
                     } label: {
                         itemCard(for: item)
                     }
@@ -296,7 +293,8 @@ struct CollectionBrowserView: View {
 // MARK: - Preview
 
 #Preview("Video Collection") {
-    NavigationStack {
+    @Previewable @State var path = NavigationPath()
+    NavigationStack(path: $path) {
         CollectionBrowserView(
             collection: SearchResult(
                 identifier: "feature_films",
@@ -304,20 +302,29 @@ struct CollectionBrowserView: View {
                 creator: "Internet Archive",
                 description: "Feature films, shorts, silent films and trailers are available for viewing and downloading."
             ),
-            mediaType: .video
+            mediaType: .video,
+            navigationPath: $path
         )
+        .navigationDestination(for: SearchResult.self) { item in
+            ItemDetailView(item: item, mediaType: .video)
+        }
     }
 }
 
 #Preview("Music Collection") {
-    NavigationStack {
+    @Previewable @State var path = NavigationPath()
+    NavigationStack(path: $path) {
         CollectionBrowserView(
             collection: SearchResult(
                 identifier: "GratefulDead",
                 title: "Grateful Dead",
                 creator: "Live Music Archive"
             ),
-            mediaType: .music
+            mediaType: .music,
+            navigationPath: $path
         )
+        .navigationDestination(for: SearchResult.self) { item in
+            ItemDetailView(item: item, mediaType: .music)
+        }
     }
 }

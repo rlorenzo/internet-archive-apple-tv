@@ -43,16 +43,14 @@ struct VideoHomeView: View {
             .navigationDestination(for: SearchResult.self) { item in
                 // Collections navigate to browser, individual items to detail
                 if item.mediatype == "collection" {
-                    CollectionBrowserView(collection: item, mediaType: .video)
+                    CollectionBrowserView(
+                        collection: item,
+                        mediaType: .video,
+                        navigationPath: $navigationPath
+                    )
                 } else {
                     ItemDetailView(item: item, mediaType: .video)
                 }
-            }
-        }
-        .onExitCommand {
-            // Handle Menu button - pop navigation if we have history
-            if !navigationPath.isEmpty {
-                navigationPath.removeLast()
             }
         }
         .onChange(of: navigationPath.count) { _, newCount in
@@ -141,20 +139,19 @@ struct VideoHomeView: View {
                                 size: CGSize(width: videoCardWidth, height: videoCardWidth * 9 / 16)
                             )
 
-                            // Text content
+                            // Text content - fixed height for consistent alignment
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(item.safeTitle)
                                     .font(.callout)
                                     .fontWeight(.medium)
                                     .lineLimit(2)
                                     .foregroundStyle(.primary)
+                                    .frame(height: 56, alignment: .bottomLeading)
 
-                                if let subtitle = item.creator ?? item.year {
-                                    Text(subtitle)
-                                        .font(.caption)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-                                }
+                                Text(item.creator ?? item.year ?? " ")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
                             }
                         }
                         .frame(width: videoCardWidth)
@@ -163,8 +160,9 @@ struct VideoHomeView: View {
                 }
             }
             .padding(.horizontal, 40)
-            .padding(.vertical, 30)
+            .padding(.vertical, 50)
         }
+        .scrollClipDisabled()
     }
 
     // MARK: - Loading View
@@ -200,10 +198,13 @@ struct VideoHomeView: View {
     // MARK: - Helpers
 
     private func handleContinueWatchingTap(_ progress: PlaybackProgress) {
-        // In Phase 5, this will navigate to the player with resume position
-        #if DEBUG
-        print("Continue watching tapped: \(progress.itemIdentifier)")
-        #endif
+        // Create a SearchResult from the progress data to navigate to ItemDetailView
+        let item = SearchResult(
+            identifier: progress.itemIdentifier,
+            title: progress.title,
+            mediatype: progress.mediaType
+        )
+        navigationPath.append(item)
     }
 }
 

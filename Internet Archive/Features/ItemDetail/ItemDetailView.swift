@@ -44,6 +44,9 @@ struct ItemDetailView: View {
     /// Detailed metadata fetched from API
     @State private var metadata: ItemMetadata?
 
+    /// Full metadata response (includes files and server info)
+    @State private var metadataResponse: ItemMetadataResponse?
+
     /// Files available for playback
     @State private var files: [FileInfo]?
 
@@ -64,6 +67,9 @@ struct ItemDetailView: View {
 
     /// Resume time to pass to player
     @State private var resumeTime: Double?
+
+    /// Whether playback is pending (waiting for metadata to load)
+    @State private var playbackPending = false
 
     // MARK: - Body
 
@@ -91,16 +97,8 @@ struct ItemDetailView: View {
             checkFavoriteStatus()
             checkSavedProgress()
         }
-        .onExitCommand {
-            dismiss()
-        }
         .fullScreenCover(isPresented: $showPlayer) {
-            // Phase 5: VideoPlayerView or NowPlayingView will be presented here
-            PlayerPlaceholderView(
-                item: item,
-                mediaType: mediaType,
-                resumeTime: resumeTime
-            )
+            playerView
         }
     }
 
@@ -285,20 +283,37 @@ struct ItemDetailView: View {
         isLoading = true
         errorMessage = nil
 
-        Task {
+        Task { @MainActor in
             do {
                 let response = try await APIManager.sharedManager.getMetaDataTyped(
                     identifier: item.identifier
                 )
+                metadataResponse = response
                 metadata = response.metadata
                 files = response.files
                 isLoading = false
+
+                // If playback was pending, present player now that metadata is loaded
+                if playbackPending {
+                    showPlayer = false // Dismiss loading view first
+                    presentPlayer()
+                }
             } catch let networkError as NetworkError {
                 errorMessage = ErrorPresenter.shared.userFriendlyMessage(for: networkError)
                 isLoading = false
+                // Dismiss loading view if playback was pending so user sees the error
+                if playbackPending {
+                    showPlayer = false
+                    playbackPending = false
+                }
             } catch {
                 errorMessage = "Failed to load item details. Please try again."
                 isLoading = false
+                // Dismiss loading view if playback was pending so user sees the error
+                if playbackPending {
+                    showPlayer = false
+                    playbackPending = false
+                }
             }
         }
     }
@@ -317,7 +332,7 @@ struct ItemDetailView: View {
 
     private func playFromBeginning() {
         resumeTime = nil
-        showPlayer = true
+        presentPlayer()
     }
 
     private func playWithResume() {
@@ -325,7 +340,7 @@ struct ItemDetailView: View {
             // For audio, use trackCurrentTime; for video, use currentTime
             resumeTime = progress.isAudio ? progress.trackCurrentTime : progress.currentTime
         }
-        showPlayer = true
+        presentPlayer()
     }
 
     private func startOver() {
@@ -335,7 +350,39 @@ struct ItemDetailView: View {
             savedProgress = nil
         }
         resumeTime = nil
-        showPlayer = true
+        presentPlayer()
+    }
+
+    /// Present the appropriate player based on media type
+    private func presentPlayer() {
+        guard let response = metadataResponse else {
+            // Metadata not loaded yet - mark playback as pending and show loading view
+            playbackPending = true
+            showPlayer = true
+            return
+        }
+
+        playbackPending = false
+
+        if mediaType == .video {
+            // Use UIKit presentation for proper transport bar controls
+            let success = VideoPlayerPresenter.presentFromMetadata(
+                item: item,
+                metadata: response,
+                resumeTime: resumeTime,
+                onDismiss: {
+                    // Refresh progress after playback
+                    self.checkSavedProgress()
+                }
+            )
+            if !success {
+                // Show error if no playable video found
+                showPlayer = true // Will show error view
+            }
+        } else {
+            // Use SwiftUI fullScreenCover for audio (NowPlayingView)
+            showPlayer = true
+        }
     }
 
     private func toggleFavorite() {
@@ -346,17 +393,63 @@ struct ItemDetailView: View {
         }
         isFavorited.toggle()
     }
+
+    // MARK: - Player View (for fullScreenCover - audio only)
+
+    /// Returns the appropriate player view for fullScreenCover.
+    /// Note: Video playback now uses UIKit presentation via VideoPlayerPresenter
+    /// for proper transport bar controls. This is only used for audio and errors.
+    @ViewBuilder
+    private var playerView: some View {
+        if let response = metadataResponse {
+            if mediaType == .video {
+                // Video should be presented via VideoPlayerPresenter, not here
+                // This is only shown if presentFromMetadata failed
+                PlayerErrorView(
+                    message: "No playable video found for this item.",
+                    onDismiss: { showPlayer = false }
+                )
+            } else {
+                audioPlayerView(response: response)
+            }
+        } else {
+            // Fallback if metadata isn't loaded yet
+            PlayerLoadingView(mediaType: mediaType) {
+                playbackPending = false
+                showPlayer = false
+            }
+        }
+    }
+
+    /// Audio player view using NowPlayingView wrapper
+    @ViewBuilder
+    private func audioPlayerView(response: ItemMetadataResponse) -> some View {
+        if let playerView = NowPlayingView.fromMetadata(
+            item: item,
+            metadata: response,
+            savedProgress: savedProgress,
+            onDismiss: {
+                // Refresh progress after playback (same as video path)
+                self.checkSavedProgress()
+                showPlayer = false
+            }
+        ) {
+            playerView
+        } else {
+            PlayerErrorView(
+                message: "No playable audio found for this item.",
+                onDismiss: { showPlayer = false }
+            )
+        }
+    }
 }
 
-// MARK: - Player Placeholder (Phase 5)
+// MARK: - Player Loading View
 
-/// Temporary placeholder for the player view (to be replaced in Phase 5)
-private struct PlayerPlaceholderView: View {
-    let item: SearchResult
+/// View shown while metadata is loading before presenting the player
+private struct PlayerLoadingView: View {
     let mediaType: MediaItemCard.MediaType
-    let resumeTime: Double?
-
-    @Environment(\.dismiss) private var dismiss
+    let onDismiss: () -> Void
 
     var body: some View {
         VStack(spacing: 30) {
@@ -364,38 +457,49 @@ private struct PlayerPlaceholderView: View {
                 .font(.system(size: 80))
                 .foregroundStyle(.secondary)
 
-            Text("Player View")
-                .font(.title)
-                .fontWeight(.bold)
-
-            Text("Playing: \(item.safeTitle)")
+            ProgressView("Loading...")
                 .font(.title3)
-                .foregroundStyle(.secondary)
 
-            if let time = resumeTime {
-                Text("Resume from: \(formatTime(time))")
-                    .font(.callout)
-                    .foregroundStyle(.tertiary)
-            }
-
-            Text("Media playback will be implemented in Phase 5")
-                .font(.callout)
-                .foregroundStyle(.tertiary)
-                .padding(.top, 20)
-
-            Button("Close") {
-                dismiss()
+            Button("Cancel") {
+                onDismiss()
             }
             .padding(.top, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
         .background(Color.black)
     }
+}
 
-    private func formatTime(_ seconds: Double) -> String {
-        let mins = Int(seconds) / 60
-        let secs = Int(seconds) % 60
-        return String(format: "%d:%02d", mins, secs)
+// MARK: - Player Error View
+
+/// View shown when no playable media is found
+private struct PlayerErrorView: View {
+    let message: String
+    let onDismiss: () -> Void
+
+    var body: some View {
+        VStack(spacing: 30) {
+            Image(systemName: "exclamationmark.triangle.fill")
+                .font(.system(size: 80))
+                .foregroundStyle(.yellow)
+
+            Text("Unable to Play")
+                .font(.title)
+                .fontWeight(.bold)
+
+            Text(message)
+                .font(.title3)
+                .foregroundStyle(.secondary)
+                .multilineTextAlignment(.center)
+                .padding(.horizontal, 40)
+
+            Button("Close") {
+                onDismiss()
+            }
+            .padding(.top, 40)
+        }
+        .frame(maxWidth: .infinity, maxHeight: .infinity)
+        .background(Color.black)
     }
 }
 

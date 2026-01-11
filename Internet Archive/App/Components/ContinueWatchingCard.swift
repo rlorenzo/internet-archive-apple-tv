@@ -52,31 +52,58 @@ struct ContinueWatchingCard: View {
 
     private var thumbnailWithProgress: some View {
         ZStack(alignment: .bottom) {
-            // Thumbnail
-            AsyncImage(url: progress.thumbnailURL) { phase in
-                switch phase {
-                case .empty:
-                    placeholderView
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure:
-                    placeholderView
-                @unknown default:
-                    placeholderView
+            // Container with fixed aspect ratio
+            Color.clear
+                .aspectRatio(aspectRatio, contentMode: .fit)
+                .overlay {
+                    // Thumbnail - always use archive.org thumbnail service for consistency
+                    // This avoids issues with corrupted/invalid stored imageURLs
+                    AsyncImage(url: archiveThumbnailURL) { phase in
+                        switch phase {
+                        case .empty:
+                            placeholderContent
+                        case .success(let image):
+                            // Internet Archive audio items often return waveform visualizations
+                            // as thumbnails instead of album art. These waveforms are typically
+                            // very wide and short (e.g., 180x45 pixels) - appearing as a horizontal
+                            // audio waveform strip rather than a proper thumbnail.
+                            //
+                            // Heuristic to detect waveform thumbnails:
+                            // - Height < 100px: Too short to be proper album art
+                            // - Width > 3x height: Panoramic aspect ratio typical of waveforms
+                            //
+                            // When detected, we show a placeholder with a music icon instead.
+                            if progress.isAudio, let cgImage = ImageRenderer(content: image).cgImage,
+                               cgImage.height < 100 && cgImage.width > cgImage.height * 3 {
+                                placeholderContent
+                            } else {
+                                image
+                                    .resizable()
+                                    .aspectRatio(contentMode: .fill)
+                            }
+                        case .failure:
+                            placeholderContent
+                        @unknown default:
+                            placeholderContent
+                        }
+                    }
                 }
-            }
-            .aspectRatio(aspectRatio, contentMode: .fit)
-            .clipped()
-            .clipShape(RoundedRectangle(cornerRadius: 12))
+                .clipped()
+                .clipShape(RoundedRectangle(cornerRadius: 12))
 
             // Progress bar
             progressOverlay
         }
     }
 
-    private var placeholderView: some View {
+    /// Thumbnail URL using Internet Archive's thumbnail service
+    /// Always uses the item identifier to ensure consistent, valid thumbnails
+    private var archiveThumbnailURL: URL? {
+        URL(string: "https://archive.org/services/img/\(progress.itemIdentifier)")
+    }
+
+    /// Placeholder content without aspect ratio (used inside fixed container)
+    private var placeholderContent: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
                 .fill(Color.gray.opacity(0.3))
@@ -85,7 +112,12 @@ struct ContinueWatchingCard: View {
                 .font(.system(size: 40))
                 .foregroundStyle(.secondary)
         }
-        .aspectRatio(aspectRatio, contentMode: .fit)
+    }
+
+    /// Placeholder view with aspect ratio (for standalone use)
+    private var placeholderView: some View {
+        placeholderContent
+            .aspectRatio(aspectRatio, contentMode: .fit)
     }
 
     private var progressOverlay: some View {
@@ -199,8 +231,9 @@ struct ContinueWatchingSection: View {
                     }
                 }
                 .padding(.horizontal, 80)
-                .padding(.vertical, 30)
+                .padding(.vertical, 50)
             }
+            .scrollClipDisabled()
         }
     }
 

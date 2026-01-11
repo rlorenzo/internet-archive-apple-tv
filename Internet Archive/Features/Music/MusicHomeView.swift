@@ -43,16 +43,14 @@ struct MusicHomeView: View {
             .navigationDestination(for: SearchResult.self) { item in
                 // Collections navigate to browser, individual items to detail
                 if item.mediatype == "collection" {
-                    CollectionBrowserView(collection: item, mediaType: .music)
+                    CollectionBrowserView(
+                        collection: item,
+                        mediaType: .music,
+                        navigationPath: $navigationPath
+                    )
                 } else {
                     ItemDetailView(item: item, mediaType: .music)
                 }
-            }
-        }
-        .onExitCommand {
-            // Handle Menu button - pop navigation if we have history
-            if !navigationPath.isEmpty {
-                navigationPath.removeLast()
             }
         }
         .onChange(of: navigationPath.count) { _, newCount in
@@ -142,21 +140,19 @@ struct MusicHomeView: View {
                                 size: CGSize(width: musicCardSize, height: musicCardSize)
                             )
 
-                            // Text content
+                            // Text content - fixed height for consistent alignment
                             VStack(alignment: .leading, spacing: 4) {
                                 Text(item.safeTitle)
                                     .font(.caption)
                                     .fontWeight(.medium)
                                     .lineLimit(2)
                                     .foregroundStyle(.primary)
+                                    .frame(height: 44, alignment: .bottomLeading)
 
-                                // Show subtitle only if different from title
-                                if let subtitle = subtitleFor(item) {
-                                    Text(subtitle)
-                                        .font(.caption2)
-                                        .foregroundStyle(.secondary)
-                                        .lineLimit(1)
-                                }
+                                Text(subtitleFor(item) ?? " ")
+                                    .font(.caption2)
+                                    .foregroundStyle(.secondary)
+                                    .lineLimit(1)
                             }
                         }
                         .frame(width: musicCardSize)
@@ -165,8 +161,9 @@ struct MusicHomeView: View {
                 }
             }
             .padding(.horizontal, 40)
-            .padding(.vertical, 30)
+            .padding(.vertical, 50)
         }
+        .scrollClipDisabled()
     }
 
     // MARK: - Loading View
@@ -204,10 +201,13 @@ struct MusicHomeView: View {
     // MARK: - Helpers
 
     private func handleContinueListeningTap(_ progress: PlaybackProgress) {
-        // In Phase 5, this will navigate to the player with resume position
-        #if DEBUG
-        print("Continue listening tapped: \(progress.itemIdentifier)")
-        #endif
+        // Create a SearchResult from the progress data to navigate to ItemDetailView
+        let item = SearchResult(
+            identifier: progress.itemIdentifier,
+            title: progress.title,
+            mediatype: progress.mediaType
+        )
+        navigationPath.append(item)
     }
 
     /// Returns subtitle for item, or nil if it would duplicate the title

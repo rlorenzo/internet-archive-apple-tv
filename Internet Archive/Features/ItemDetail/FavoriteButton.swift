@@ -95,33 +95,78 @@ struct FavoriteButton: View {
 // MARK: - Favorite Button Style
 
 /// Custom button style for the favorite button with tvOS focus effects.
+/// Uses a separate view to properly track focus state on tvOS.
 struct FavoriteButtonStyle: ButtonStyle {
     let isFavorited: Bool
 
     func makeBody(configuration: Configuration) -> some View {
+        FavoriteButtonContent(
+            configuration: configuration,
+            isFavorited: isFavorited
+        )
+    }
+}
+
+/// Inner view that properly tracks focus state using @Environment(\.isFocused)
+private struct FavoriteButtonContent: View {
+    let configuration: ButtonStyleConfiguration
+    let isFavorited: Bool
+
+    @Environment(\.isFocused) private var isFocused
+
+    var body: some View {
         configuration.label
             .foregroundStyle(isFavorited ? .white : .primary)
             .background(
                 RoundedRectangle(cornerRadius: 14)
-                    .fill(backgroundColor(isPressed: configuration.isPressed))
+                    .fill(backgroundColor)
             )
             .overlay(
                 RoundedRectangle(cornerRadius: 14)
-                    .strokeBorder(
-                        isFavorited ? Color.red.opacity(0.6) : Color.gray.opacity(0.4),
-                        lineWidth: 2
-                    )
+                    .strokeBorder(borderColor, lineWidth: isFocused ? 4 : 2)
             )
-            .scaleEffect(configuration.isPressed ? 0.95 : 1.0)
+            .scaleEffect(scaleValue)
+            .shadow(color: shadowColor, radius: isFocused ? 15 : 0)
             .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
+            .animation(.easeInOut(duration: 0.2), value: isFocused)
     }
 
-    private func backgroundColor(isPressed: Bool) -> Color {
-        if isFavorited {
+    private var isPressed: Bool {
+        configuration.isPressed
+    }
+
+    private var scaleValue: CGFloat {
+        if isPressed {
+            return 0.95
+        } else if isFocused {
+            return 1.05
+        } else {
+            return 1.0
+        }
+    }
+
+    private var shadowColor: Color {
+        if isFocused {
+            return isFavorited ? Color.red.opacity(0.6) : Color.white.opacity(0.4)
+        }
+        return Color.clear
+    }
+
+    private var backgroundColor: Color {
+        if isFocused {
+            return isFavorited ? Color.red : Color.white.opacity(0.3)
+        } else if isFavorited {
             return isPressed ? Color.red.opacity(0.7) : Color.red.opacity(0.8)
         } else {
             return isPressed ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2)
         }
+    }
+
+    private var borderColor: Color {
+        if isFocused {
+            return isFavorited ? Color.red : Color.white
+        }
+        return isFavorited ? Color.red.opacity(0.6) : Color.gray.opacity(0.4)
     }
 }
 
