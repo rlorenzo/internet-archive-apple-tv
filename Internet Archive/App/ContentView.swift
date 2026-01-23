@@ -27,6 +27,9 @@ struct ContentView: View {
     /// Track if Music tab has navigation history
     @State private var musicHasNavigation = false
 
+    /// Track if Search tab has navigation history
+    @State private var searchHasNavigation = false
+
     var body: some View {
         TabView(selection: $selectedTab) {
             VideoHomeView(hasNavigationHistory: $videoHasNavigation)
@@ -41,7 +44,7 @@ struct ContentView: View {
                 }
                 .tag(Tab.music)
 
-            SearchView()
+            SearchView(hasNavigationHistory: $searchHasNavigation)
                 .tabItem {
                     Label("Search", systemImage: "magnifyingglass")
                 }
@@ -70,6 +73,10 @@ struct ContentView: View {
             case .music:
                 if musicHasNavigation {
                     NotificationCenter.default.post(name: .popMusicNavigation, object: nil)
+                }
+            case .search:
+                if searchHasNavigation {
+                    NotificationCenter.default.post(name: .popSearchNavigation, object: nil)
                 }
             default:
                 // Other tabs don't have navigation stacks yet

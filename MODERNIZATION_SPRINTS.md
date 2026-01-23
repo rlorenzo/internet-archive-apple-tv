@@ -1364,12 +1364,12 @@ Internet Archive/
 - [x] Resume playback support (video: currentTime, audio: trackIndex + trackCurrentTime)
 - [x] Updated `ItemDetailView` to use real players instead of placeholder
 
-**Phase 6: Search (15-20 hours)**
+**Phase 6: Search (15-20 hours)** ✅
 
-- [ ] `SearchView` with .searchable modifier
-- [ ] Filter picker (All/Video/Music)
-- [ ] Dual-section results display
-- [ ] Pagination with .onAppear triggers
+- [x] `SearchView` with .searchable modifier
+- [x] Filter picker (All/Video/Music)
+- [x] Dual-section results display
+- [x] Pagination with .onAppear triggers
 
 **Phase 7: Year-Based Browsing (15-20 hours)**
 
@@ -1506,6 +1506,28 @@ Key implementation details:
 - `ItemDetailView` updated to present real players based on media type (video vs audio)
 - Progress tracking integrated via `PlaybackProgressManager` (video: per-file, audio: album-level)
 - Error handling via `PlayerLoadingView` and `PlayerErrorView` fallback views
+
+#### Files Modified (Phase 6)
+
+```
+Internet Archive/Features/Search/SearchView.swift     ✅ Full implementation with:
+  - .searchable modifier for tvOS keyboard input
+  - Segmented filter picker (All/Video/Music)
+  - Dual-section results (Videos row + Music row)
+  - Debounced search (500ms delay)
+  - Parallel API calls for video/music results
+  - Pagination via .onAppear triggers
+  - Loading, error, empty, and no-results states
+  - Navigation to ItemDetailView
+```
+
+Key implementation details:
+
+- Uses `APIManager.networkService.search()` with mediatype filters
+- Results sorted by downloads (most popular first)
+- Pagination triggers when user scrolls near end (3 items from last)
+- SectionHeader extended with count display
+- Horizontal scroll rows with tvOS focus effects
 
 #### Deliverable
 
