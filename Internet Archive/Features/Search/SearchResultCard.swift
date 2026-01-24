@@ -44,5 +44,26 @@ struct SearchResultCard: View {
             }
         }
         .frame(width: size.width)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabelText)
+        .accessibilityHint("Double-tap to view details")
+    }
+
+    // MARK: - Accessibility
+
+    /// Combined accessibility label for the search result
+    private var accessibilityLabelText: String {
+        var components = [item.safeTitle]
+
+        if let creator = item.creator {
+            components.append(creator)
+        } else if let year = item.year {
+            components.append(year)
+        }
+
+        let typeLabel = mediaType == .video ? "Video" : "Music"
+        components.append(typeLabel)
+
+        return components.joined(separator: ", ")
     }
 }

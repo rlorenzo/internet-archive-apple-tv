@@ -110,6 +110,8 @@ struct SearchView: View {
         .padding(.horizontal, 80)
         .padding(.top, 20)
         .padding(.bottom, 10)
+        .accessibilityLabel("Content type filter")
+        .accessibilityHint("Select to filter results by content type")
     }
 
     // MARK: - Content Area
@@ -160,10 +162,12 @@ struct SearchView: View {
             Image(systemName: "magnifyingglass")
                 .font(.system(size: 80))
                 .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
 
             Text("Search the Internet Archive")
                 .font(.title2)
                 .foregroundStyle(.secondary)
+                .accessibilityAddTraits(.isHeader)
 
             Text("Find videos, music, and more from the world's largest digital library")
                 .font(.body)
@@ -174,6 +178,8 @@ struct SearchView: View {
             Spacer()
         }
         .padding()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Search the Internet Archive. Find videos, music, and more from the world's largest digital library.")
     }
 
     // MARK: - Loading State
@@ -300,6 +306,8 @@ struct SearchView: View {
                     }
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("See all \(results.count) \(title.lowercased()) results")
+                .accessibilityHint("Double-tap to view all results in a grid")
             }
 
             ScrollView(.horizontal, showsIndicators: false) {
@@ -319,12 +327,15 @@ struct SearchView: View {
                     if isLoadingMore {
                         ProgressView()
                             .frame(width: 100)
+                            .accessibilityLabel("Loading more results")
                     }
                 }
                 .padding(.horizontal, 40)
                 .padding(.vertical, 50)
             }
             .contentMargins(.horizontal, -40, for: .scrollContent)
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("\(title) search results")
         }
     }
 

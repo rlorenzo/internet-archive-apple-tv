@@ -101,6 +101,38 @@ struct MediaItemCard: View {
             thumbnailView
             textContent
         }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabelText)
+        .accessibilityHint(accessibilityHintText)
+    }
+
+    // MARK: - Accessibility
+
+    /// Combined accessibility label describing the media item
+    private var accessibilityLabelText: String {
+        var components: [String] = [title]
+
+        if let subtitle = subtitle {
+            components.append(subtitle)
+        }
+
+        let typeLabel = mediaType == .video ? "Video" : "Music"
+        components.append(typeLabel)
+
+        if let progress = progress, progress > 0 {
+            let percentage = Int(progress * 100)
+            components.append("\(percentage)% complete")
+        }
+
+        return components.joined(separator: ", ")
+    }
+
+    /// Accessibility hint for VoiceOver
+    private var accessibilityHintText: String {
+        if progress != nil && progress! > 0 {
+            return "Double-tap to resume playback"
+        }
+        return "Double-tap to view details"
     }
 
     // MARK: - Subviews

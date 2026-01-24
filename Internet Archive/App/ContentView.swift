@@ -18,8 +18,8 @@ import SwiftUI
 struct ContentView: View {
     @EnvironmentObject private var appState: AppState
 
-    /// The currently selected tab
-    @State private var selectedTab: Tab = .videos
+    /// The currently selected tab (persisted for focus restoration)
+    @SceneStorage("selectedTab") private var selectedTab: Tab = .videos
 
     /// Track if Video tab has navigation history
     @State private var videoHasNavigation = false
@@ -37,30 +37,40 @@ struct ContentView: View {
                     Label("Videos", systemImage: "film")
                 }
                 .tag(Tab.videos)
+                .accessibilityLabel(Tab.videos.accessibilityLabel)
+                .accessibilityHint(Tab.videos.accessibilityHint)
 
             MusicHomeView(hasNavigationHistory: $musicHasNavigation)
                 .tabItem {
                     Label("Music", systemImage: "music.note")
                 }
                 .tag(Tab.music)
+                .accessibilityLabel(Tab.music.accessibilityLabel)
+                .accessibilityHint(Tab.music.accessibilityHint)
 
             SearchView(hasNavigationHistory: $searchHasNavigation)
                 .tabItem {
                     Label("Search", systemImage: "magnifyingglass")
                 }
                 .tag(Tab.search)
+                .accessibilityLabel(Tab.search.accessibilityLabel)
+                .accessibilityHint(Tab.search.accessibilityHint)
 
             FavoritesView()
                 .tabItem {
                     Label("Favorites", systemImage: "heart.fill")
                 }
                 .tag(Tab.favorites)
+                .accessibilityLabel(Tab.favorites.accessibilityLabel)
+                .accessibilityHint(Tab.favorites.accessibilityHint)
 
             AccountView()
                 .tabItem {
                     Label("Account", systemImage: "person.crop.circle")
                 }
                 .tag(Tab.account)
+                .accessibilityLabel(Tab.account.accessibilityLabel)
+                .accessibilityHint(Tab.account.accessibilityHint)
         }
         .onExitCommand {
             // Handle Menu button at TabView level
@@ -90,12 +100,34 @@ struct ContentView: View {
 
 extension ContentView {
     /// Represents the available tabs in the app's main navigation
-    enum Tab: Hashable {
-        case videos
-        case music
-        case search
-        case favorites
-        case account
+    enum Tab: String, Hashable {
+        case videos = "videos"
+        case music = "music"
+        case search = "search"
+        case favorites = "favorites"
+        case account = "account"
+
+        /// Accessibility label for VoiceOver
+        var accessibilityLabel: String {
+            switch self {
+            case .videos: return "Videos tab"
+            case .music: return "Music tab"
+            case .search: return "Search tab"
+            case .favorites: return "Favorites tab"
+            case .account: return "Account tab"
+            }
+        }
+
+        /// Accessibility hint for VoiceOver
+        var accessibilityHint: String {
+            switch self {
+            case .videos: return "Browse and watch video content"
+            case .music: return "Browse and listen to music"
+            case .search: return "Search the Internet Archive"
+            case .favorites: return "View your saved favorites"
+            case .account: return "Manage your account settings"
+            }
+        }
     }
 }
 

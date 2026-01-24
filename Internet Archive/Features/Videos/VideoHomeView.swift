@@ -98,6 +98,7 @@ struct VideoHomeView: View {
         if !continueWatchingItems.isEmpty {
             VStack(alignment: .leading, spacing: 20) {
                 SectionHeader("Continue Watching")
+                    .accessibilityAddTraits(.isHeader)
 
                 ContinueWatchingSection(
                     items: continueWatchingItems,
@@ -106,6 +107,8 @@ struct VideoHomeView: View {
                     handleContinueWatchingTap(progress)
                 }
             }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Continue watching section with \(continueWatchingItems.count) videos")
         }
     }
 
@@ -117,6 +120,7 @@ struct VideoHomeView: View {
     private var featuredVideosSection: some View {
         VStack(alignment: .leading, spacing: 20) {
             SectionHeader("Featured Videos")
+                .accessibilityAddTraits(.isHeader)
 
             if viewModel.state.hasItems {
                 // Use horizontal scroll rows for proper aspect ratio support
@@ -129,6 +133,8 @@ struct VideoHomeView: View {
                 EmptyContentView.emptyCollection(collectionName: "videos")
             }
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Featured videos section with \(viewModel.state.items.count) items")
     }
 
     private func videoRow(items: [SearchResult]) -> some View {
@@ -163,9 +169,23 @@ struct VideoHomeView: View {
                     .frame(width: videoCardWidth)
                 }
                 .tvCardStyle()
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(videoAccessibilityLabel(for: item))
+                .accessibilityHint("Double-tap to view details")
             }
         }
         .padding(.vertical, 50)
+    }
+
+    /// Generate accessibility label for a video item
+    private func videoAccessibilityLabel(for item: SearchResult) -> String {
+        var components = [item.safeTitle, "Video"]
+        if let creator = item.creator {
+            components.insert(creator, at: 1)
+        } else if let year = item.year {
+            components.insert(year, at: 1)
+        }
+        return components.joined(separator: ", ")
     }
 
     // MARK: - Loading View

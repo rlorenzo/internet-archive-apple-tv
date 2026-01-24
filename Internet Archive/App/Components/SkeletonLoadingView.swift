@@ -90,6 +90,7 @@ struct SkeletonCard: View {
                     .shimmer()
             }
         }
+        .accessibilityHidden(true)
     }
 
     // MARK: - Convenience Constructors
@@ -254,6 +255,10 @@ struct SkeletonLoadingView: View {
             }
             .padding(.vertical, 40)
         }
+        .accessibilityElement(children: .ignore)
+        .accessibilityLabel("Loading \(title ?? "content")")
+        .accessibilityAddTraits(.updatesFrequently)
+        .transition(.opacity)
     }
 }
 

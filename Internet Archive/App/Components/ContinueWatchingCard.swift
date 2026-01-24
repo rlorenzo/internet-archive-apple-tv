@@ -46,6 +46,31 @@ struct ContinueWatchingCard: View {
             }
         }
         .tvCardStyle()
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel(accessibilityLabelText)
+        .accessibilityHint("Double-tap to resume playback")
+    }
+
+    // MARK: - Accessibility
+
+    /// Combined accessibility label describing the continue watching item
+    private var accessibilityLabelText: String {
+        var components: [String] = []
+
+        // Title
+        components.append(progress.title ?? progress.itemIdentifier)
+
+        // Media type
+        components.append(progress.isVideo ? "Video" : "Music")
+
+        // Progress info
+        let percentage = Int(progress.progressPercentage * 100)
+        components.append("\(percentage)% complete")
+
+        // Time remaining
+        components.append(progress.formattedTimeRemaining)
+
+        return components.joined(separator: ", ")
     }
 
     // MARK: - Subviews
@@ -234,7 +259,19 @@ struct ContinueWatchingSection: View {
                 .padding(.vertical, 50)
             }
             .scrollClipDisabled()
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel(sectionAccessibilityLabel)
         }
+    }
+
+    // MARK: - Accessibility
+
+    /// Accessibility label for the section
+    private var sectionAccessibilityLabel: String {
+        let typeLabel = mediaType == .video ? "Continue watching" :
+                        mediaType == .audio ? "Continue listening" :
+                        "Continue playing"
+        return "\(typeLabel) section with \(filteredItems.count) items"
     }
 
     // MARK: - Computed Properties

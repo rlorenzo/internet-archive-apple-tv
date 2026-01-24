@@ -98,6 +98,7 @@ struct MusicHomeView: View {
         if !continueListeningItems.isEmpty {
             VStack(alignment: .leading, spacing: 20) {
                 SectionHeader("Continue Listening")
+                    .accessibilityAddTraits(.isHeader)
 
                 ContinueWatchingSection(
                     items: continueListeningItems,
@@ -106,6 +107,8 @@ struct MusicHomeView: View {
                     handleContinueListeningTap(progress)
                 }
             }
+            .accessibilityElement(children: .contain)
+            .accessibilityLabel("Continue listening section with \(continueListeningItems.count) items")
         }
     }
 
@@ -119,6 +122,7 @@ struct MusicHomeView: View {
             // Only show title after load attempt to avoid flash
             SectionHeader(viewModel.state.displayTitle)
                 .opacity(viewModel.state.hasTitleLoadAttempted ? 1 : 0)
+                .accessibilityAddTraits(.isHeader)
 
             if viewModel.state.hasItems {
                 // Use horizontal scroll rows for proper aspect ratio support
@@ -130,6 +134,8 @@ struct MusicHomeView: View {
                 EmptyContentView.emptyCollection(collectionName: "music")
             }
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(viewModel.state.displayTitle) section with \(viewModel.state.items.count) items")
     }
 
     private func musicRow(items: [SearchResult]) -> some View {
@@ -164,9 +170,21 @@ struct MusicHomeView: View {
                     .frame(width: musicCardSize)
                 }
                 .tvCardStyle()
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(musicAccessibilityLabel(for: item))
+                .accessibilityHint("Double-tap to view details")
             }
         }
         .padding(.vertical, 50)
+    }
+
+    /// Generate accessibility label for a music item
+    private func musicAccessibilityLabel(for item: SearchResult) -> String {
+        var components = [item.safeTitle, "Music"]
+        if let subtitle = subtitleFor(item) {
+            components.insert(subtitle, at: 1)
+        }
+        return components.joined(separator: ", ")
     }
 
     // MARK: - Loading View

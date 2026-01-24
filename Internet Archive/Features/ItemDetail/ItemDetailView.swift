@@ -71,6 +71,9 @@ struct ItemDetailView: View {
     /// Whether playback is pending (waiting for metadata to load)
     @State private var playbackPending = false
 
+    /// Task for loading metadata (stored for cancellation)
+    @State private var loadMetadataTask: Task<Void, Never>?
+
     // MARK: - Body
 
     var body: some View {
@@ -96,6 +99,10 @@ struct ItemDetailView: View {
             loadMetadata()
             checkFavoriteStatus()
             checkSavedProgress()
+        }
+        .onDisappear {
+            loadMetadataTask?.cancel()
+            loadMetadataTask = nil
         }
         .fullScreenCover(isPresented: $showPlayer) {
             playerView
@@ -154,10 +161,13 @@ struct ItemDetailView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "person.fill")
                         .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                     Text(creator)
                         .font(.title3)
                         .foregroundStyle(.secondary)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Creator: \(creator)")
             }
 
             // Date and License
@@ -165,10 +175,13 @@ struct ItemDetailView: View {
                 HStack(spacing: 8) {
                     Image(systemName: "calendar")
                         .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
                     Text(dateText)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel(dateText)
             }
 
             // Subtitle info (if video has subtitles)
@@ -181,16 +194,20 @@ struct ItemDetailView: View {
                         .padding(.vertical, 2)
                         .background(Color.white.opacity(0.2))
                         .clipShape(RoundedRectangle(cornerRadius: 4))
+                        .accessibilityHidden(true)
                     Text(subtitleInfo)
                         .font(.callout)
                         .foregroundStyle(.secondary)
                 }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Closed captions available. \(subtitleInfo)")
             }
 
             // Description
             if isLoading {
                 ProgressView()
                     .padding(.top, 10)
+                    .accessibilityLabel("Loading item details")
             } else if let description = displayDescription, !description.isEmpty {
                 DescriptionView(htmlContent: description)
                     .padding(.top, 10)
@@ -283,11 +300,18 @@ struct ItemDetailView: View {
         isLoading = true
         errorMessage = nil
 
-        Task { @MainActor in
+        // Cancel any previous task before starting new one
+        loadMetadataTask?.cancel()
+
+        loadMetadataTask = Task { @MainActor in
             do {
                 let response = try await APIManager.sharedManager.getMetaDataTyped(
                     identifier: item.identifier
                 )
+
+                // Check for cancellation before updating state
+                guard !Task.isCancelled else { return }
+
                 metadataResponse = response
                 metadata = response.metadata
                 files = response.files
@@ -299,6 +323,7 @@ struct ItemDetailView: View {
                     presentPlayer()
                 }
             } catch let networkError as NetworkError {
+                guard !Task.isCancelled else { return }
                 errorMessage = ErrorPresenter.shared.userFriendlyMessage(for: networkError)
                 isLoading = false
                 // Dismiss loading view if playback was pending so user sees the error
@@ -307,6 +332,7 @@ struct ItemDetailView: View {
                     playbackPending = false
                 }
             } catch {
+                guard !Task.isCancelled else { return }
                 errorMessage = "Failed to load item details. Please try again."
                 isLoading = false
                 // Dismiss loading view if playback was pending so user sees the error

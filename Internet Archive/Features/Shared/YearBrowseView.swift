@@ -182,6 +182,9 @@ struct YearBrowseView: View {
             )
         }
         .buttonStyle(.plain)
+        .accessibilityLabel("\(year), \(itemCount) items")
+        .accessibilityHint(isSelected ? "Currently selected" : "Double-tap to browse items from \(year)")
+        .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
     private var yearListEmpty: some View {
@@ -223,6 +226,7 @@ struct YearBrowseView: View {
                     Text(year)
                         .font(.title)
                         .fontWeight(.bold)
+                        .accessibilityAddTraits(.isHeader)
 
                     Text("\(items.count) items")
                         .font(.callout)
@@ -230,6 +234,8 @@ struct YearBrowseView: View {
                 }
                 .padding(.horizontal, 60)
                 .padding(.top, 40)
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("\(year), \(items.count) items")
 
                 // Items grid
                 LazyVGrid(
@@ -243,12 +249,26 @@ struct YearBrowseView: View {
                             itemCard(for: item)
                         }
                         .tvCardStyle()
+                        .accessibilityElement(children: .combine)
+                        .accessibilityLabel(itemAccessibilityLabel(for: item))
+                        .accessibilityHint("Double-tap to view details")
                     }
                 }
                 .padding(.horizontal, 60)
                 .padding(.bottom, 60)
             }
         }
+    }
+
+    /// Generate accessibility label for an item
+    private func itemAccessibilityLabel(for item: SearchResult) -> String {
+        var components = [item.safeTitle]
+        if let creator = item.creator {
+            components.append(creator)
+        }
+        let typeLabel = mediaType == .video ? "Video" : "Music"
+        components.append(typeLabel)
+        return components.joined(separator: ", ")
     }
 
     private var gridColumns: [GridItem] {

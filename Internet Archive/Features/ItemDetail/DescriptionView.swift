@@ -52,6 +52,8 @@ struct DescriptionView: View {
                 lineLimit: collapsedLineLimit,
                 isTruncated: $isTruncated
             )
+            .accessibilityLabel(isTruncated ? "Description, truncated" : "Description")
+            .accessibilityValue(plainText)
 
             // Read More button - only show when text is actually truncated
             if isTruncated {
@@ -67,6 +69,8 @@ struct DescriptionView: View {
                     }
                 }
                 .buttonStyle(.bordered)
+                .accessibilityLabel("Read full description")
+                .accessibilityHint("Double-tap to view the complete description")
             }
         }
         .fullScreenCover(isPresented: $showFullText) {
@@ -227,11 +231,10 @@ private struct TruncationDetectingText: View {
                         }
                     )
             )
-            .onAppear {
-                // Delay check to ensure geometry is measured
-                DispatchQueue.main.async {
-                    updateTruncationState()
-                }
+            .task {
+                // Small delay to ensure geometry is measured
+                try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+                updateTruncationState()
             }
     }
 

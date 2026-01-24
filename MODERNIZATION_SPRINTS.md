@@ -1387,12 +1387,12 @@ Internet Archive/
 - [x] `ValidationHelper` utility for email/password validation
 - [x] Task lifecycle management for async operations
 
-**Phase 9: Accessibility & Polish (15-20 hours)**
+**Phase 9: Accessibility & Polish (15-20 hours)** ✅
 
-- [ ] VoiceOver labels on all elements
-- [ ] Focus restoration via @SceneStorage
-- [ ] Animation polish
-- [ ] Memory/performance profiling
+- [x] VoiceOver labels on all elements
+- [x] Focus restoration via @SceneStorage
+- [x] Animation polish
+- [x] Memory/performance profiling
 
 **Phase 10: Cleanup**
 

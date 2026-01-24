@@ -65,6 +65,7 @@ struct SectionHeader: View {
                 .font(.title2)
                 .fontWeight(.semibold)
                 .foregroundStyle(.secondary)
+                .accessibilityAddTraits(.isHeader)
 
             Spacer()
 
@@ -79,8 +80,11 @@ struct SectionHeader: View {
                     .foregroundStyle(.secondary)
                 }
                 .buttonStyle(.plain)
+                .accessibilityLabel("\(seeAllText) for \(title)")
+                .accessibilityHint("Double-tap to view all items in this section")
             }
         }
+        .accessibilityElement(children: .contain)
     }
 }
 

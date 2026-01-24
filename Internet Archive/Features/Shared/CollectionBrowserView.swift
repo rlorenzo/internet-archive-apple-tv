@@ -103,6 +103,7 @@ struct CollectionBrowserView: View {
             }
             .frame(width: 300, height: mediaType == .video ? 169 : 300)
             .clipShape(RoundedRectangle(cornerRadius: 12))
+            .accessibilityHidden(true)
 
             // Metadata
             VStack(alignment: .leading, spacing: 16) {
@@ -110,15 +111,19 @@ struct CollectionBrowserView: View {
                     .font(.title)
                     .fontWeight(.bold)
                     .lineLimit(2)
+                    .accessibilityAddTraits(.isHeader)
 
                 if let creator = collection.creator {
                     HStack(spacing: 8) {
                         Image(systemName: "person.fill")
                             .foregroundStyle(.secondary)
+                            .accessibilityHidden(true)
                         Text(creator)
                             .font(.title3)
                             .foregroundStyle(.secondary)
                     }
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("Creator: \(creator)")
                 }
 
                 if let description = collectionMetadata?.description ?? collection.description {
@@ -144,6 +149,8 @@ struct CollectionBrowserView: View {
                             .font(.callout)
                         }
                         .buttonStyle(.bordered)
+                        .accessibilityLabel("Browse by year")
+                        .accessibilityHint("Double-tap to browse this collection organized by year")
                     }
                 }
             }
@@ -171,6 +178,7 @@ struct CollectionBrowserView: View {
     private var itemsGrid: some View {
         VStack(alignment: .leading, spacing: 20) {
             SectionHeader("Items")
+                .accessibilityAddTraits(.isHeader)
 
             LazyVGrid(
                 columns: gridColumns,
@@ -183,9 +191,25 @@ struct CollectionBrowserView: View {
                         itemCard(for: item)
                     }
                     .tvCardStyle()
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel(itemAccessibilityLabel(for: item))
+                    .accessibilityHint("Double-tap to view details")
                 }
             }
         }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Items section with \(items.count) items")
+    }
+
+    /// Generate accessibility label for an item
+    private func itemAccessibilityLabel(for item: SearchResult) -> String {
+        var components = [item.safeTitle]
+        if let subtitle = item.creator ?? item.year {
+            components.append(subtitle)
+        }
+        let typeLabel = mediaType == .video ? "Video" : "Music"
+        components.append(typeLabel)
+        return components.joined(separator: ", ")
     }
 
     private var gridColumns: [GridItem] {

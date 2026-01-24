@@ -77,12 +77,14 @@ struct EmptyContentView: View {
             Image(systemName: icon)
                 .font(.system(size: 60))
                 .foregroundStyle(.tertiary)
+                .accessibilityHidden(true)
 
             VStack(spacing: 8) {
                 Text(title)
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.primary)
+                    .accessibilityAddTraits(.isHeader)
 
                 Text(message)
                     .font(.body)
@@ -99,9 +101,13 @@ struct EmptyContentView: View {
                 }
                 .buttonStyle(.bordered)
                 .padding(.top, 8)
+                .accessibilityHint("Double-tap to \(buttonTitle.lowercased())")
             }
         }
         .padding(40)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(title). \(message)")
+        .transition(.opacity.combined(with: .scale(scale: 0.95)))
     }
 }
 
@@ -232,12 +238,14 @@ struct ErrorContentView: View {
             Image(systemName: icon)
                 .font(.system(size: 60))
                 .foregroundStyle(.red.opacity(0.8))
+                .accessibilityHidden(true)
 
             VStack(spacing: 8) {
                 Text(title)
                     .font(.title2)
                     .fontWeight(.semibold)
                     .foregroundStyle(.primary)
+                    .accessibilityAddTraits(.isHeader)
 
                 Text(message)
                     .font(.body)
@@ -257,9 +265,14 @@ struct ErrorContentView: View {
                 }
                 .buttonStyle(.bordered)
                 .padding(.top, 8)
+                .accessibilityLabel("Try again")
+                .accessibilityHint("Double-tap to retry loading")
             }
         }
         .padding(40)
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Error: \(title). \(message)")
+        .transition(.opacity.combined(with: .scale(scale: 0.95)))
     }
 }
 
