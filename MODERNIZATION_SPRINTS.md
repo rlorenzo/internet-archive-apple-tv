@@ -1377,12 +1377,15 @@ Internet Archive/
 - [x] Year list selection
 - [x] Items grid for selected year
 
-**Phase 8: Favorites & Account (20-25 hours)**
+**Phase 8: Favorites & Account (20-25 hours)** ✅ COMPLETE
 
-- [ ] `FavoritesView` with 3 sections
-- [ ] `PeopleDetailView` for creator browsing
-- [ ] `LoginView` and `RegisterView` forms
-- [ ] `AccountView` with user info
+- [x] `FavoritesView` with 3 sections (Videos, Music, Followed Creators)
+- [x] `PeopleDetailView` for creator browsing
+- [x] `LoginFormView` and `RegisterFormView` forms in AccountView
+- [x] `AccountView` with user info and auth management
+- [x] `MediaGridSection` shared component (DRY refactor)
+- [x] `ValidationHelper` utility for email/password validation
+- [x] Task lifecycle management for async operations
 
 **Phase 9: Accessibility & Polish (15-20 hours)**
 
@@ -1414,9 +1417,10 @@ Internet Archive/Features/
 ├── Search/
 │   └── SearchView.swift        ✅ Placeholder with .searchable modifier
 ├── Favorites/
-│   └── FavoritesView.swift     ✅ Placeholder with auth-aware UI
+│   ├── FavoritesView.swift     ✅ Full implementation with 3 sections
+│   └── PeopleDetailView.swift  ✅ Creator content browsing view
 └── Account/
-    └── AccountView.swift       ✅ Login/Register forms placeholder
+    └── AccountView.swift       ✅ Full auth with LoginFormView + RegisterFormView
 ```
 
 #### Files Modified (Phase 1)
@@ -1550,6 +1554,48 @@ Key implementation details:
 - Integrated via `YearBrowseDestination` hashable struct for navigation
 - "Browse by Year" button added to `CollectionBrowserView` header
 - Navigation destinations added to VideoHomeView and MusicHomeView
+
+#### Files Created/Modified (Phase 8)
+
+```
+Internet Archive/Features/Account/AccountView.swift  ✅ Full implementation with:
+  - AccountView main screen with authenticated/unauthenticated states
+  - LoginFormView with email/password fields, validation, error handling
+  - RegisterFormView with email/username/password, validation feedback
+  - Task lifecycle management (onDisappear cleanup)
+  - Full accessibility support (VoiceOver labels, hints, announcements)
+
+Internet Archive/Features/Favorites/FavoritesView.swift  ✅ Full implementation with:
+  - Three sections: Favorite Videos, Favorite Music, Followed Creators
+  - MediaGridSection shared component for DRY grid layouts
+  - PersonCard component for creator display
+  - PersonNavigation model for navigation data
+  - Task lifecycle management
+
+Internet Archive/Features/Favorites/PeopleDetailView.swift  ✅ New file with:
+  - Creator header with avatar and item count
+  - Videos section for creator's video favorites
+  - Music section for creator's music favorites
+  - Uses shared MediaGridSection component
+  - Loading, error, empty states
+
+Internet Archive/Utilities/ValidationHelper.swift  ✅ New utility with:
+  - Centralized isValidEmail() regex validation
+  - Password validation with minimumPasswordLength constant
+  - validatePassword() with error message tuple return
+
+Internet Archive/App/Components/MediaItemCard.swift  ✅ Extended with:
+  - MediaType.gridColumns computed property for consistent grid layouts
+  - MediaGridSection reusable SwiftUI component
+```
+
+Key implementation details:
+
+- DRY principle: Extracted duplicate `gridColumns()` method into `MediaItemCard.MediaType.gridColumns`
+- Created `MediaGridSection` shared component used by both FavoritesView and PeopleDetailView
+- Single source of truth for validation via `ValidationHelper`
+- All async tasks use `@State private var task: Task<Void, Never>?` pattern with `onDisappear` cleanup
+- Comprehensive test coverage: 26 new tests across MediaItemCardTests, MediaGridSectionTests, ValidationHelperTests
 
 #### Deliverable
 

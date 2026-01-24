@@ -230,6 +230,73 @@ extension SearchResult: Identifiable {
     public var id: String { identifier }
 }
 
+// MARK: - Grid Layout Helpers
+
+extension MediaItemCard.MediaType {
+    /// Returns appropriate grid columns for this media type.
+    ///
+    /// - Video: Wider cards (16:9 aspect ratio) - 300-400pt
+    /// - Music: Square cards (1:1 aspect ratio) - 200-280pt
+    var gridColumns: [GridItem] {
+        switch self {
+        case .video:
+            return [GridItem(.adaptive(minimum: 300, maximum: 400), spacing: 40)]
+        case .music:
+            return [GridItem(.adaptive(minimum: 200, maximum: 280), spacing: 40)]
+        }
+    }
+}
+
+// MARK: - Media Grid Section
+
+/// A reusable section component for displaying media items in a grid layout.
+///
+/// This component provides:
+/// - Section header with item count
+/// - Lazy grid layout appropriate for the media type
+/// - tvOS card button styling
+/// - Accessibility support
+///
+/// ## Usage
+/// ```swift
+/// MediaGridSection(
+///     title: "Favorite Videos",
+///     items: viewModel.state.movieResults,
+///     mediaType: .video
+/// ) { item in
+///     selectedItem = item
+/// }
+/// ```
+struct MediaGridSection: View {
+    let title: String
+    let items: [SearchResult]
+    let mediaType: MediaItemCard.MediaType
+    let onItemSelected: (SearchResult) -> Void
+
+    var body: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            SectionHeader("\(title) (\(items.count))")
+                .accessibilityAddTraits(.isHeader)
+
+            LazyVGrid(
+                columns: mediaType.gridColumns,
+                spacing: 40
+            ) {
+                ForEach(items) { item in
+                    Button {
+                        onItemSelected(item)
+                    } label: {
+                        MediaItemCard(searchResult: item)
+                    }
+                    .tvCardStyle()
+                }
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("\(title) section with \(items.count) items")
+    }
+}
+
 // MARK: - Preview
 
 #Preview("Video Card") {

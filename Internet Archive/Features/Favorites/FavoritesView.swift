@@ -14,48 +14,194 @@ import SwiftUI
 /// - Favorite Music
 /// - Followed Creators/People
 ///
-/// ## Future Implementation
-/// This placeholder will be replaced with a full implementation using:
-/// - Integration with `APIManager.getFavoriteItemsTyped()`
-/// - Local favorites from `Global.getFavoriteData()`
-/// - Navigation to creator detail views
+/// Uses `FavoritesViewModel` for data loading and state management.
 struct FavoritesView: View {
     @EnvironmentObject private var appState: AppState
 
+    // MARK: - ViewModel
+
+    @StateObject private var viewModel = FavoritesViewModel(
+        favoritesService: DefaultFavoritesService()
+    )
+
+    // MARK: - Navigation State
+
+    @State private var selectedItem: SearchResult?
+    @State private var selectedMediaType: MediaItemCard.MediaType = .video
+    @State private var selectedPerson: PersonNavigation?
+
+    // MARK: - Task Management
+
+    @State private var loadTask: Task<Void, Never>?
+
+    // MARK: - Body
+
     var body: some View {
         NavigationStack {
-            if appState.isAuthenticated {
-                authenticatedContent()
-            } else {
-                unauthenticatedContent()
+            Group {
+                if appState.isAuthenticated {
+                    authenticatedContent
+                } else {
+                    unauthenticatedContent
+                }
+            }
+            .navigationTitle("Favorites")
+            .navigationDestination(item: $selectedItem) { item in
+                ItemDetailView(item: item, mediaType: selectedMediaType)
+            }
+            .navigationDestination(item: $selectedPerson) { person in
+                PeopleDetailView(
+                    identifier: person.identifier,
+                    name: person.name
+                )
+            }
+            .onDisappear {
+                cancelLoadTask()
             }
         }
     }
 
-    // MARK: - Content Views
+    // MARK: - Authenticated Content
 
-    private func authenticatedContent() -> some View {
+    @ViewBuilder
+    private var authenticatedContent: some View {
+        if viewModel.state.isLoading && !viewModel.state.hasResults {
+            loadingContent
+        } else if let errorMessage = viewModel.state.errorMessage {
+            errorContent(message: errorMessage)
+        } else if !viewModel.state.hasResults {
+            emptyContent
+        } else {
+            favoritesContent
+        }
+    }
+
+    private var loadingContent: some View {
+        VStack(spacing: 40) {
+            Spacer()
+            ProgressView()
+                .scaleEffect(1.5)
+            Text("Loading Favorites...")
+                .font(.headline)
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Loading your favorites")
+        .onAppear {
+            loadFavorites()
+        }
+    }
+
+    private func errorContent(message: String) -> some View {
+        ErrorContentView(
+            message: message,
+            onRetry: {
+                loadFavorites()
+            }
+        )
+    }
+
+    private var emptyContent: some View {
+        VStack(spacing: 40) {
+            Spacer()
+            EmptyContentView.noFavorites()
+            Spacer()
+        }
+        .onAppear {
+            loadFavorites()
+        }
+    }
+
+    private var favoritesContent: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 40) {
+            VStack(alignment: .leading, spacing: 60) {
                 // Favorite Videos Section
-                SectionHeader("Favorite Videos")
-                videosGrid()
+                if !viewModel.state.movieResults.isEmpty {
+                    favoriteSectionView(
+                        title: "Favorite Videos",
+                        items: viewModel.state.movieResults,
+                        mediaType: .video
+                    )
+                }
 
                 // Favorite Music Section
-                SectionHeader("Favorite Music")
-                musicGrid()
+                if !viewModel.state.musicResults.isEmpty {
+                    favoriteSectionView(
+                        title: "Favorite Music",
+                        items: viewModel.state.musicResults,
+                        mediaType: .music
+                    )
+                }
 
                 // Followed Creators Section
-                SectionHeader("Followed Creators")
-                creatorsPlaceholder()
+                if !viewModel.state.peopleResults.isEmpty {
+                    peopleSection
+                }
             }
             .padding(.horizontal, 80)
             .padding(.vertical, 40)
         }
-        .navigationTitle("Favorites")
+        .onAppear {
+            // Refresh if returning to screen and state might be stale
+            if viewModel.state.allItems.isEmpty {
+                loadFavorites()
+            }
+        }
+        .refreshable {
+            loadFavorites()
+        }
     }
 
-    private func unauthenticatedContent() -> some View {
+    // MARK: - Section Views
+
+    private func favoriteSectionView(
+        title: String,
+        items: [SearchResult],
+        mediaType: MediaItemCard.MediaType
+    ) -> some View {
+        MediaGridSection(
+            title: title,
+            items: items,
+            mediaType: mediaType
+        ) { item in
+            selectedMediaType = mediaType
+            selectedItem = item
+        }
+    }
+
+    private var peopleSection: some View {
+        VStack(alignment: .leading, spacing: 20) {
+            SectionHeader("Followed Creators (\(viewModel.state.peopleResults.count))")
+                .accessibilityAddTraits(.isHeader)
+
+            ScrollView(.horizontal, showsIndicators: false) {
+                HStack(spacing: 40) {
+                    ForEach(viewModel.state.peopleResults) { person in
+                        Button {
+                            selectedPerson = PersonNavigation(
+                                identifier: person.identifier,
+                                name: person.safeTitle
+                            )
+                        } label: {
+                            PersonCard(
+                                identifier: person.identifier,
+                                name: person.safeTitle
+                            )
+                        }
+                        .tvCardStyle()
+                    }
+                }
+                .padding(.vertical, 20) // Extra space for focus effects
+            }
+        }
+        .accessibilityElement(children: .contain)
+        .accessibilityLabel("Followed Creators section with \(viewModel.state.peopleResults.count) creators")
+    }
+
+    // MARK: - Unauthenticated Content
+
+    private var unauthenticatedContent: some View {
         VStack(spacing: 24) {
             Spacer()
 
@@ -73,63 +219,110 @@ struct FavoritesView: View {
                 .multilineTextAlignment(.center)
                 .frame(maxWidth: 500)
 
-            Button("Sign In") {
-                // TODO: Navigate to account tab or show login sheet
-            }
-            .buttonStyle(.borderedProminent)
-            .padding(.top, 20)
+            // Note: Users can sign in via the Account tab
+            Text("Go to the Account tab to sign in")
+                .font(.callout)
+                .foregroundStyle(.tertiary)
+                .padding(.top, 20)
 
             Spacer()
         }
         .padding()
-        .navigationTitle("Favorites")
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Sign in required to view favorites. Go to the Account tab to sign in.")
     }
 
-    // MARK: - Helper Views
+    // MARK: - Helper Methods
 
-    private func videosGrid() -> some View {
-        LazyVGrid(columns: [
-            GridItem(.adaptive(minimum: 250, maximum: 320), spacing: 40)
-        ], spacing: 40) {
-            ForEach(0..<4, id: \.self) { _ in
-                PlaceholderCard.video
-            }
+    private func loadFavorites() {
+        guard let username = appState.username else { return }
+
+        // Cancel any existing load task
+        loadTask?.cancel()
+
+        loadTask = Task {
+            await viewModel.loadFavoritesWithDetails(
+                username: username,
+                searchService: DefaultSearchService()
+            )
         }
     }
 
-    private func musicGrid() -> some View {
-        LazyVGrid(columns: [
-            GridItem(.adaptive(minimum: 250, maximum: 320), spacing: 40)
-        ], spacing: 40) {
-            ForEach(0..<4, id: \.self) { _ in
-                PlaceholderCard.music
-            }
-        }
+    private func cancelLoadTask() {
+        loadTask?.cancel()
+        loadTask = nil
     }
+}
 
-    private func creatorsPlaceholder() -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            HStack(spacing: 30) {
-                ForEach(0..<5, id: \.self) { _ in
-                    VStack(spacing: 12) {
-                        Circle()
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: 150, height: 150)
+// MARK: - Person Card
 
-                        RoundedRectangle(cornerRadius: 4)
-                            .fill(Color.gray.opacity(0.3))
-                            .frame(width: 120, height: 18)
-                    }
-                    .focusable()
+/// A card component for displaying a followed creator/person.
+private struct PersonCard: View {
+    let identifier: String
+    let name: String
+
+    var body: some View {
+        VStack(spacing: 16) {
+            // Avatar
+            AsyncImage(url: avatarURL) { phase in
+                switch phase {
+                case .empty:
+                    avatarPlaceholder
+                case .success(let image):
+                    image
+                        .resizable()
+                        .aspectRatio(contentMode: .fill)
+                case .failure:
+                    avatarPlaceholder
+                @unknown default:
+                    avatarPlaceholder
                 }
             }
+            .frame(width: 150, height: 150)
+            .clipShape(Circle())
+
+            // Name
+            Text(name)
+                .font(.callout)
+                .fontWeight(.medium)
+                .lineLimit(2)
+                .multilineTextAlignment(.center)
+                .foregroundStyle(.primary)
+        }
+        .frame(width: 180)
+        .accessibilityElement(children: .combine)
+        .accessibilityLabel("Creator: \(name)")
+        .accessibilityHint("Double-click to view content by this creator")
+    }
+
+    private var avatarPlaceholder: some View {
+        ZStack {
+            Circle()
+                .fill(Color.gray.opacity(0.3))
+            Image(systemName: "person.fill")
+                .font(.system(size: 50))
+                .foregroundStyle(.secondary)
         }
     }
+
+    private var avatarURL: URL? {
+        // Internet Archive user avatar URL pattern
+        URL(string: "https://archive.org/services/img/\(identifier)")
+    }
+}
+
+// MARK: - Navigation Models
+
+/// Navigation data for person detail view
+struct PersonNavigation: Identifiable, Hashable {
+    let id = UUID()
+    let identifier: String
+    let name: String
 }
 
 // MARK: - Preview
 
-#Preview {
+#Preview("Unauthenticated") {
     FavoritesView()
         .environmentObject(AppState())
 }
