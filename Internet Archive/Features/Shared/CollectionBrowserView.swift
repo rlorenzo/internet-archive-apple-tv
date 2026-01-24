@@ -126,9 +126,25 @@ struct CollectionBrowserView: View {
                 }
 
                 if !isLoading && !items.isEmpty {
-                    Text("\(items.count) items")
-                        .font(.callout)
-                        .foregroundStyle(.tertiary)
+                    HStack(spacing: 24) {
+                        Text("\(items.count) items")
+                            .font(.callout)
+                            .foregroundStyle(.tertiary)
+
+                        Button {
+                            navigationPath.append(YearBrowseDestination(
+                                collection: collection,
+                                mediaType: mediaType
+                            ))
+                        } label: {
+                            HStack(spacing: 8) {
+                                Image(systemName: "calendar")
+                                Text("Browse by Year")
+                            }
+                            .font(.callout)
+                        }
+                        .buttonStyle(.bordered)
+                    }
                 }
             }
             .frame(maxWidth: .infinity, alignment: .leading)
@@ -308,6 +324,13 @@ struct CollectionBrowserView: View {
         .navigationDestination(for: SearchResult.self) { item in
             ItemDetailView(item: item, mediaType: .video)
         }
+        .navigationDestination(for: YearBrowseDestination.self) { destination in
+            YearBrowseView(
+                collection: destination.collection,
+                mediaType: destination.mediaType,
+                navigationPath: $path
+            )
+        }
     }
 }
 
@@ -325,6 +348,13 @@ struct CollectionBrowserView: View {
         )
         .navigationDestination(for: SearchResult.self) { item in
             ItemDetailView(item: item, mediaType: .music)
+        }
+        .navigationDestination(for: YearBrowseDestination.self) { destination in
+            YearBrowseView(
+                collection: destination.collection,
+                mediaType: destination.mediaType,
+                navigationPath: $path
+            )
         }
     }
 }

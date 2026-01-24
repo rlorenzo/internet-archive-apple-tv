@@ -52,6 +52,13 @@ struct MusicHomeView: View {
                     ItemDetailView(item: item, mediaType: .music)
                 }
             }
+            .navigationDestination(for: YearBrowseDestination.self) { destination in
+                YearBrowseView(
+                    collection: destination.collection,
+                    mediaType: destination.mediaType,
+                    navigationPath: $navigationPath
+                )
+            }
         }
         .onChange(of: navigationPath.count) { _, newCount in
             // Sync navigation state with parent
@@ -126,44 +133,40 @@ struct MusicHomeView: View {
     }
 
     private func musicRow(items: [SearchResult]) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            LazyHStack(spacing: 40) {
-                ForEach(items) { item in
-                    Button {
-                        navigationPath.append(item)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 12) {
-                            // Square album art thumbnail
-                            MediaThumbnailView(
-                                identifier: item.identifier,
-                                mediaType: .music,
-                                size: CGSize(width: musicCardSize, height: musicCardSize)
-                            )
+        HStack(alignment: .top, spacing: 40) {
+            ForEach(items) { item in
+                Button {
+                    navigationPath.append(item)
+                } label: {
+                    VStack(alignment: .leading, spacing: 12) {
+                        // Square album art thumbnail
+                        MediaThumbnailView(
+                            identifier: item.identifier,
+                            mediaType: .music,
+                            size: CGSize(width: musicCardSize, height: musicCardSize)
+                        )
 
-                            // Text content - fixed height for consistent alignment
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(item.safeTitle)
-                                    .font(.caption)
-                                    .fontWeight(.medium)
-                                    .lineLimit(2)
-                                    .foregroundStyle(.primary)
-                                    .frame(height: 44, alignment: .bottomLeading)
+                        // Text content - fixed height for consistent alignment
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.safeTitle)
+                                .font(.caption)
+                                .fontWeight(.medium)
+                                .lineLimit(2)
+                                .foregroundStyle(.primary)
+                                .frame(height: 44, alignment: .bottomLeading)
 
-                                Text(subtitleFor(item) ?? " ")
-                                    .font(.caption2)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                            }
+                            Text(subtitleFor(item) ?? " ")
+                                .font(.caption2)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
                         }
-                        .frame(width: musicCardSize)
                     }
-                    .tvCardStyle()
+                    .frame(width: musicCardSize)
                 }
+                .tvCardStyle()
             }
-            .padding(.horizontal, 40)
-            .padding(.vertical, 50)
         }
-        .scrollClipDisabled()
+        .padding(.vertical, 50)
     }
 
     // MARK: - Loading View

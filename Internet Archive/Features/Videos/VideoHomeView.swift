@@ -52,6 +52,13 @@ struct VideoHomeView: View {
                     ItemDetailView(item: item, mediaType: .video)
                 }
             }
+            .navigationDestination(for: YearBrowseDestination.self) { destination in
+                YearBrowseView(
+                    collection: destination.collection,
+                    mediaType: destination.mediaType,
+                    navigationPath: $navigationPath
+                )
+            }
         }
         .onChange(of: navigationPath.count) { _, newCount in
             // Sync navigation state with parent
@@ -125,44 +132,40 @@ struct VideoHomeView: View {
     }
 
     private func videoRow(items: [SearchResult]) -> some View {
-        ScrollView(.horizontal, showsIndicators: false) {
-            LazyHStack(spacing: 48) {
-                ForEach(items) { item in
-                    Button {
-                        navigationPath.append(item)
-                    } label: {
-                        VStack(alignment: .leading, spacing: 12) {
-                            // Thumbnail with fixed aspect ratio
-                            MediaThumbnailView(
-                                identifier: item.identifier,
-                                mediaType: .video,
-                                size: CGSize(width: videoCardWidth, height: videoCardWidth * 9 / 16)
-                            )
+        HStack(alignment: .top, spacing: 48) {
+            ForEach(items) { item in
+                Button {
+                    navigationPath.append(item)
+                } label: {
+                    VStack(alignment: .leading, spacing: 12) {
+                        // Thumbnail with fixed aspect ratio
+                        MediaThumbnailView(
+                            identifier: item.identifier,
+                            mediaType: .video,
+                            size: CGSize(width: videoCardWidth, height: videoCardWidth * 9 / 16)
+                        )
 
-                            // Text content - fixed height for consistent alignment
-                            VStack(alignment: .leading, spacing: 4) {
-                                Text(item.safeTitle)
-                                    .font(.callout)
-                                    .fontWeight(.medium)
-                                    .lineLimit(2)
-                                    .foregroundStyle(.primary)
-                                    .frame(height: 56, alignment: .bottomLeading)
+                        // Text content - fixed height for consistent alignment
+                        VStack(alignment: .leading, spacing: 4) {
+                            Text(item.safeTitle)
+                                .font(.callout)
+                                .fontWeight(.medium)
+                                .lineLimit(2)
+                                .foregroundStyle(.primary)
+                                .frame(height: 56, alignment: .bottomLeading)
 
-                                Text(item.creator ?? item.year ?? " ")
-                                    .font(.caption)
-                                    .foregroundStyle(.secondary)
-                                    .lineLimit(1)
-                            }
+                            Text(item.creator ?? item.year ?? " ")
+                                .font(.caption)
+                                .foregroundStyle(.secondary)
+                                .lineLimit(1)
                         }
-                        .frame(width: videoCardWidth)
                     }
-                    .tvCardStyle()
+                    .frame(width: videoCardWidth)
                 }
+                .tvCardStyle()
             }
-            .padding(.horizontal, 40)
-            .padding(.vertical, 50)
         }
-        .scrollClipDisabled()
+        .padding(.vertical, 50)
     }
 
     // MARK: - Loading View

@@ -1373,9 +1373,9 @@ Internet Archive/
 
 **Phase 7: Year-Based Browsing (15-20 hours)**
 
-- [ ] `YearBrowseView` with sidebar + grid
-- [ ] Year list selection
-- [ ] Items grid for selected year
+- [x] `YearBrowseView` with sidebar + grid
+- [x] Year list selection
+- [x] Items grid for selected year
 
 **Phase 8: Favorites & Account (20-25 hours)**
 
@@ -1528,6 +1528,28 @@ Key implementation details:
 - Pagination triggers when user scrolls near end (3 items from last)
 - SectionHeader extended with count display
 - Horizontal scroll rows with tvOS focus effects
+
+#### Files Created (Phase 7)
+
+```
+Internet Archive/Features/Shared/YearBrowseView.swift  ✅ Full implementation with:
+  - Split-view layout with year sidebar + items grid
+  - Year list with item counts, sorted descending
+  - Items grid using MediaThumbnailView cards
+  - Reuses existing YearsViewModel for data management
+  - Navigation to ItemDetailView
+  - Loading, error, and empty states
+```
+
+Key implementation details:
+
+- `YearBrowseView` provides tvOS-optimized split layout with sidebar navigation
+- Uses existing `YearsViewModel` with `DefaultCollectionService` for API calls
+- Groups items by year client-side using `groupByYear()` method
+- Year selection updates grid content with smooth scrolling
+- Integrated via `YearBrowseDestination` hashable struct for navigation
+- "Browse by Year" button added to `CollectionBrowserView` header
+- Navigation destinations added to VideoHomeView and MusicHomeView
 
 #### Deliverable
 

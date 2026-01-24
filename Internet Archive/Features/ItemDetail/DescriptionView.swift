@@ -2,18 +2,17 @@
 //  DescriptionView.swift
 //  Internet Archive
 //
-//  SwiftUI wrapper for TvOSMoreButton with TvOSTextViewer expansion
+//  SwiftUI view for displaying expandable descriptions with TvOSTextViewer
 //
 
 import SwiftUI
-import TvOSMoreButton
 import TvOSTextViewer
 import UIKit
 
-/// A SwiftUI view that renders HTML content using TvOSMoreButton.
+/// A SwiftUI view that renders HTML content with expandable full-screen viewer.
 ///
-/// Displays truncated text with ellipsis that expands to full-screen
-/// TvOSTextViewer when selected - matching the existing UIKit UX.
+/// Displays truncated text that expands to full-screen TvOSTextViewer when
+/// the "Read More" button is pressed.
 ///
 /// ## Usage
 /// ```swift
@@ -28,58 +27,91 @@ struct DescriptionView: View {
     /// Maximum number of lines when collapsed (default 5)
     var collapsedLineLimit: Int = 5
 
+    // MARK: - State
+
+    /// Whether to show the full text viewer
+    @State private var showFullText = false
+
+    /// Whether the text is actually being truncated (detected via geometry)
+    @State private var isTruncated = false
+
     // MARK: - Computed Properties
 
-    /// Calculate appropriate height based on number of lines
-    /// Font size 29pt with line spacing gives roughly 40pt per line
-    private var estimatedHeight: CGFloat {
-        let lineHeight: CGFloat = 40
-        let padding: CGFloat = 20
-        return CGFloat(collapsedLineLimit) * lineHeight + padding
+    /// Plain text converted from HTML
+    private var plainText: String {
+        HTMLToAttributedString.shared.stripHTML(htmlContent)
     }
 
     // MARK: - Body
 
     var body: some View {
-        TvOSMoreButtonWrapper(
-            htmlContent: htmlContent,
-            numberOfLines: collapsedLineLimit
-        )
-        .frame(height: estimatedHeight)
+        VStack(alignment: .leading, spacing: 16) {
+            // Truncated description text with geometry-based truncation detection
+            TruncationDetectingText(
+                text: plainText,
+                lineLimit: collapsedLineLimit,
+                isTruncated: $isTruncated
+            )
+
+            // Read More button - only show when text is actually truncated
+            if isTruncated {
+                Button {
+                    showFullText = true
+                } label: {
+                    HStack(spacing: 8) {
+                        Text("Read More")
+                            .font(.callout)
+                            .fontWeight(.medium)
+                        Image(systemName: "arrow.up.right.square")
+                            .font(.callout)
+                    }
+                }
+                .buttonStyle(.bordered)
+            }
+        }
+        .fullScreenCover(isPresented: $showFullText) {
+            FullTextViewerWrapper(text: plainText) {
+                showFullText = false
+            }
+        }
     }
 }
 
-// MARK: - TvOSMoreButton Wrapper
+// MARK: - Full Text Viewer Wrapper
 
-/// UIViewRepresentable wrapper for TvOSMoreButton
-struct TvOSMoreButtonWrapper: UIViewControllerRepresentable {
-    let htmlContent: String
-    let numberOfLines: Int
+/// UIViewControllerRepresentable wrapper for TvOSTextViewerViewController
+private struct FullTextViewerWrapper: UIViewControllerRepresentable {
+    let text: String
+    let onDismiss: () -> Void
 
-    func makeUIViewController(context: Context) -> TvOSMoreButtonHostController {
-        TvOSMoreButtonHostController(
-            htmlContent: htmlContent,
-            numberOfLines: numberOfLines
+    func makeUIViewController(context: Context) -> UIViewController {
+        let textViewerController = TvOSTextViewerViewController()
+        textViewerController.text = text
+        textViewerController.textEdgeInsets = UIEdgeInsets(top: 100, left: 250, bottom: 100, right: 250)
+
+        // Wrap in a container that handles dismissal
+        let container = TextViewerContainerController(
+            textViewer: textViewerController,
+            onDismiss: onDismiss
         )
+        return container
     }
 
-    func updateUIViewController(_ uiViewController: TvOSMoreButtonHostController, context: Context) {
-        uiViewController.updateContent(htmlContent: htmlContent, numberOfLines: numberOfLines)
+    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
+        // No updates needed
     }
 }
 
-// MARK: - Host Controller
+// MARK: - Text Viewer Container
 
-/// Container view controller that hosts TvOSMoreButton and presents TvOSTextViewer
-final class TvOSMoreButtonHostController: UIViewController {
-    private var htmlContent: String
-    private var numberOfLines: Int
-    private var moreButton: TvOSMoreButton!
-    private var plainText: String = ""
+/// Container controller that wraps TvOSTextViewerViewController and handles dismissal
+private final class TextViewerContainerController: UIViewController {
+    private let textViewer: TvOSTextViewerViewController
+    private let onDismiss: () -> Void
 
-    init(htmlContent: String, numberOfLines: Int) {
-        self.htmlContent = htmlContent
-        self.numberOfLines = numberOfLines
+    init(textViewer: TvOSTextViewerViewController, onDismiss: @escaping () -> Void) {
+        self.textViewer = textViewer
+        self.onDismiss = onDismiss
         super.init(nibName: nil, bundle: nil)
     }
 
@@ -90,62 +122,22 @@ final class TvOSMoreButtonHostController: UIViewController {
 
     override func viewDidLoad() {
         super.viewDidLoad()
-        setupMoreButton()
+
+        // Add text viewer as child
+        addChild(textViewer)
+        textViewer.view.frame = view.bounds
+        textViewer.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
+        view.addSubview(textViewer.view)
+        textViewer.didMove(toParent: self)
+
+        // Add menu button gesture to dismiss
+        let menuPressRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleMenuPress))
+        menuPressRecognizer.allowedPressTypes = [NSNumber(value: UIPress.PressType.menu.rawValue)]
+        view.addGestureRecognizer(menuPressRecognizer)
     }
 
-    private func setupMoreButton() {
-        moreButton = TvOSMoreButton()
-        moreButton.translatesAutoresizingMaskIntoConstraints = false
-
-        // Style configuration
-        moreButton.textColor = .white
-        moreButton.font = .systemFont(ofSize: 29)
-        moreButton.ellipsesString = "..."
-        moreButton.trailingTextColor = .systemBlue
-        moreButton.trailingText = " More"
-
-        // Button press handler
-        moreButton.buttonWasPressed = { [weak self] _ in
-            self?.showFullDescription()
-        }
-
-        view.addSubview(moreButton)
-
-        NSLayoutConstraint.activate([
-            moreButton.topAnchor.constraint(equalTo: view.topAnchor),
-            moreButton.leadingAnchor.constraint(equalTo: view.leadingAnchor),
-            moreButton.trailingAnchor.constraint(equalTo: view.trailingAnchor),
-            moreButton.bottomAnchor.constraint(equalTo: view.bottomAnchor)
-        ])
-
-        updateButtonContent()
-    }
-
-    func updateContent(htmlContent: String, numberOfLines: Int) {
-        self.htmlContent = htmlContent
-        self.numberOfLines = numberOfLines
-        updateButtonContent()
-    }
-
-    private func updateButtonContent() {
-        guard let moreButton = moreButton else { return }
-
-        // Note: TvOSMoreButton doesn't have a numberOfLines property.
-        // It truncates based on view bounds, controlled by the frame height
-        // set in DescriptionView.estimatedHeight based on collapsedLineLimit.
-
-        // Convert HTML to plain text for display
-        plainText = HTMLToAttributedString.shared.stripHTML(htmlContent)
-        moreButton.text = plainText
-    }
-
-    private func showFullDescription() {
-        guard !plainText.isEmpty else { return }
-
-        let textViewerController = TvOSTextViewerViewController()
-        textViewerController.text = plainText
-        textViewerController.textEdgeInsets = UIEdgeInsets(top: 100, left: 250, bottom: 100, right: 250)
-        present(textViewerController, animated: true)
+    @objc private func handleMenuPress() {
+        onDismiss()
     }
 }
 
@@ -153,7 +145,6 @@ final class TvOSMoreButtonHostController: UIViewController {
 
 #Preview("Short Description") {
     DescriptionView(htmlContent: "This is a short description.")
-        .frame(height: 100)
         .padding(50)
         .background(Color.black)
 }
@@ -167,7 +158,6 @@ final class TvOSMoreButtonHostController: UIViewController {
             <li>List item two</li>
         </ul>
         """)
-        .frame(height: 200)
         .padding(50)
         .background(Color.black)
 }
@@ -184,7 +174,70 @@ final class TvOSMoreButtonHostController: UIViewController {
         <p>Additional paragraph with more content to ensure the description is long enough to require \
         expansion and the Read More button appears.</p>
         """, collapsedLineLimit: 4)
-        .frame(height: 200)
         .padding(50)
         .background(Color.black)
+}
+
+// MARK: - Truncation Detecting Text
+
+/// A text view that detects whether its content is being truncated.
+///
+/// Uses geometry measurement to compare the full text height against the
+/// line-limited height to determine if truncation is occurring.
+private struct TruncationDetectingText: View {
+    let text: String
+    let lineLimit: Int
+    @Binding var isTruncated: Bool
+
+    @State private var fullHeight: CGFloat = 0
+    @State private var truncatedHeight: CGFloat = 0
+
+    var body: some View {
+        Text(text)
+            .font(.system(size: 29))
+            .foregroundStyle(.white)
+            .lineLimit(lineLimit)
+            .lineSpacing(6)
+            .background(
+                GeometryReader { truncatedGeometry in
+                    Color.clear
+                        .onAppear { truncatedHeight = truncatedGeometry.size.height }
+                        .onChange(of: truncatedGeometry.size.height) { _, newHeight in
+                            truncatedHeight = newHeight
+                            updateTruncationState()
+                        }
+                }
+            )
+            .background(
+                // Hidden full-height text to measure actual required height
+                Text(text)
+                    .font(.system(size: 29))
+                    .lineSpacing(6)
+                    .lineLimit(nil)
+                    .fixedSize(horizontal: false, vertical: true)
+                    .hidden()
+                    .background(
+                        GeometryReader { fullGeometry in
+                            Color.clear
+                                .onAppear { fullHeight = fullGeometry.size.height }
+                                .onChange(of: fullGeometry.size.height) { _, newHeight in
+                                    fullHeight = newHeight
+                                    updateTruncationState()
+                                }
+                        }
+                    )
+            )
+            .onAppear {
+                // Delay check to ensure geometry is measured
+                DispatchQueue.main.async {
+                    updateTruncationState()
+                }
+            }
+    }
+
+    private func updateTruncationState() {
+        // Add small threshold to account for rounding differences
+        let threshold: CGFloat = 2
+        isTruncated = fullHeight > truncatedHeight + threshold
+    }
 }
