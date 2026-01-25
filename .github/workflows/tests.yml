@@ -10,22 +10,14 @@ env:
   XCODE_VERSION: "26.1"
 
 jobs:
-  # Smoke test on multiple tvOS versions to verify compatibility
+  # Smoke test to verify app builds and launches on tvOS
   smoke-test:
     name: Smoke Test (tvOS ${{ matrix.tvos-version }})
     runs-on: macos-latest
     strategy:
       fail-fast: false
       matrix:
-        include:
-          # Test on minimum supported version (tvOS 17)
-          - tvos-version: "18.2"
-            simulator-name: "Apple TV"
-            runtime: "com.apple.CoreSimulator.SimRuntime.tvOS-18-2"
-          # Test on latest tvOS
-          - tvos-version: "26.0"
-            simulator-name: "Apple TV"
-            runtime: "com.apple.CoreSimulator.SimRuntime.tvOS-26-0"
+        tvos-version: ['18.5', '26']
 
     steps:
     - name: Checkout code
@@ -54,28 +46,34 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-spm-
 
-    - name: Find simulator for tvOS version
+    - name: Find simulator
       id: find-simulator
       run: |
-        echo "Looking for Apple TV simulator with tvOS ${{ matrix.tvos-version }}..."
+        TVOS_VERSION="${{ matrix.tvos-version }}"
+        echo "Looking for Apple TV simulator with tvOS $TVOS_VERSION..."
 
         # List all available Apple TV devices
         echo "Available Apple TV simulators:"
         xcrun simctl list devices available | grep -i "apple tv" || true
 
-        # Find a device under the target runtime section
-        # The simctl output groups devices by runtime, so we need to find the right section
-        RUNTIME_SECTION=$(xcrun simctl list devices available | grep -A 20 "tvOS ${{ matrix.tvos-version }}" | head -20)
-        echo "Devices under tvOS ${{ matrix.tvos-version }}:"
-        echo "$RUNTIME_SECTION"
+        # Find the runtime identifier for the requested tvOS version
+        echo "Available tvOS runtimes:"
+        xcrun simctl list runtimes | grep -i tvos
 
-        # Extract the first Apple TV device ID from that section
-        DEVICE_ID=$(echo "$RUNTIME_SECTION" | grep -i "Apple TV" | head -1 | grep -oE '[A-F0-9-]{36}') || true
+        # Get the runtime ID for our target version (e.g., com.apple.CoreSimulator.SimRuntime.tvOS-18-5)
+        RUNTIME_ID=$(xcrun simctl list runtimes | grep -i "tvOS $TVOS_VERSION" | grep -oE 'com\.apple\.CoreSimulator\.SimRuntime\.[^ ]+' | head -1) || true
+
+        if [ -z "$RUNTIME_ID" ]; then
+          echo "::error::tvOS $TVOS_VERSION runtime not found"
+          exit 1
+        fi
+        echo "Found runtime: $RUNTIME_ID"
+
+        # Get the first available Apple TV simulator for this runtime
+        DEVICE_ID=$(xcrun simctl list devices available "$RUNTIME_ID" | grep -i "Apple TV" | head -1 | grep -oE '[A-F0-9-]{36}') || true
 
         if [ -z "$DEVICE_ID" ]; then
-          echo "::error::No Apple TV simulator found for tvOS ${{ matrix.tvos-version }}"
-          echo "Available runtimes:"
-          xcrun simctl list runtimes | grep -i tvos
+          echo "::error::No Apple TV simulator found for tvOS $TVOS_VERSION"
           exit 1
         fi
 
@@ -94,7 +92,7 @@ jobs:
     - name: Build app
       run: |
         DEVICE_ID="${{ steps.find-simulator.outputs.DEVICE_ID }}"
-        echo "Building app for tvOS ${{ matrix.tvos-version }}..."
+        echo "Building app for tvOS..."
         xcodebuild build \
           -project "Internet Archive.xcodeproj" \
           -scheme "Internet Archive" \
@@ -122,7 +120,7 @@ jobs:
         sleep 3
         # Check if the launch output contains a PID (format: "archivetv: 12345")
         if echo "$LAUNCH_OUTPUT" | grep -qE "archivetv: [0-9]+"; then
-          echo "✅ App launched successfully on tvOS ${{ matrix.tvos-version }}"
+          echo "✅ App launched successfully"
           exit 0
         fi
         # If launch failed, check if app is installed and try to get more info
@@ -135,7 +133,7 @@ jobs:
           # Exit code 4 often means the app crashed on launch - this IS a compatibility issue
           exit 1
         fi
-        echo "✅ App appears to have launched on tvOS ${{ matrix.tvos-version }}"
+        echo "✅ App appears to have launched"
 
   # Unit tests run on latest tvOS only
   test:
