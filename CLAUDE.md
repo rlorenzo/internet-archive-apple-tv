@@ -119,7 +119,7 @@ Config/                         # Build configurations
 - App uses SwiftUI `TabView` for main navigation (5 tabs)
 - Feature views use `NavigationStack` with `@Binding` for presented items
 - Media playback uses UIKit via `UIViewControllerRepresentable` wrappers
-- Year browsing uses sheet presentation with `CollectionBrowserView`
+- Year browsing pushes `YearBrowseView` via `NavigationStack` `.navigationDestination` from `CollectionBrowserView`, `VideoHomeView`, and `MusicHomeView`
 
 ## Code Style
 
