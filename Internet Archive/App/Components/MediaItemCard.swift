@@ -129,7 +129,7 @@ struct MediaItemCard: View {
 
     /// Accessibility hint for VoiceOver
     private var accessibilityHintText: String {
-        if progress != nil && progress! > 0 {
+        if let progress = progress, progress > 0 {
             return "Double-tap to resume playback"
         }
         return "Double-tap to view details"

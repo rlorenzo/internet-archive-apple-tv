@@ -101,11 +101,11 @@ struct ContentView: View {
 extension ContentView {
     /// Represents the available tabs in the app's main navigation
     enum Tab: String, Hashable {
-        case videos = "videos"
-        case music = "music"
-        case search = "search"
-        case favorites = "favorites"
-        case account = "account"
+        case videos
+        case music
+        case search
+        case favorites
+        case account
 
         /// Accessibility label for VoiceOver
         var accessibilityLabel: String {

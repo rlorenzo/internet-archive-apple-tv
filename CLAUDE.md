@@ -39,23 +39,43 @@ swiftlint lint
 
 ```
 Internet Archive/
-├── AppDelegate.swift           # App entry point
-├── Base.lproj/                 # Storyboards (Main.storyboard, LaunchScreen.storyboard)
-├── Classes/                    # Reusable UI components (ItemCell, Slider)
+├── App/                        # SwiftUI app entry point
+│   ├── InternetArchiveApp.swift  # @main SwiftUI App
+│   ├── ContentView.swift       # Root TabView with 5 tabs
+│   ├── AppState.swift          # ObservableObject for app-wide state
+│   └── Components/             # Reusable SwiftUI components
+│       ├── MediaItemCard.swift
+│       ├── ContinueWatchingCard.swift
+│       ├── SectionHeader.swift
+│       └── Styles/
+├── Features/                   # Feature modules (SwiftUI views)
+│   ├── Videos/VideoHomeView.swift
+│   ├── Music/MusicHomeView.swift
+│   ├── Search/SearchView.swift
+│   ├── Favorites/FavoritesView.swift
+│   ├── Account/AccountView.swift
+│   ├── ItemDetail/ItemDetailView.swift
+│   ├── Player/                 # SwiftUI wrappers for playback
+│   │   ├── VideoPlayerView.swift
+│   │   └── NowPlayingView.swift
+│   └── Shared/                 # Shared feature components
+├── Base.lproj/                 # Storyboards (LaunchScreen.storyboard only)
+├── Classes/                    # Reusable UI components (Slider)
 ├── Configuration/              # App configuration
 ├── Models/                     # Data models (Codable structs)
 ├── Protocols/                  # Protocol definitions
-├── UI/                         # Modern UI components
+├── UI/                         # UIKit components
 │   ├── CollectionView/         # ModernItemCell, DiffableDataSource helpers
-│   └── ImageLoading/           # ImageCacheManager
+│   ├── ImageLoading/           # ImageCacheManager
+│   └── Subtitles/              # SubtitleOverlayView
 ├── Utilities/                  # Helpers and services
 │   ├── APIManager.swift        # Network API calls
 │   ├── ErrorHandling/          # Error logging, retry mechanism, network monitor
 │   └── Global.swift            # Global constants and helpers
-├── ViewControllers/            # All view controllers by feature
-│   ├── Item/                   # ItemVC (media playback)
-│   ├── Search/                 # SearchResultVC
-│   └── ...
+├── ViewControllers/            # UIKit view controllers (player only)
+│   ├── Video/VideoPlayerViewController.swift
+│   ├── Music/NowPlayingViewController.swift
+│   └── Subtitles/SubtitleSelectionViewController.swift
 └── Assets.xcassets/            # Asset catalog (images, app icons)
 
 Internet ArchiveTests/          # Unit tests
@@ -67,7 +87,7 @@ Config/                         # Build configurations
 
 - **Platform:** tvOS 17.0+ (deployment target)
 - **Language:** Swift 6.0 with strict concurrency
-- **UI:** UIKit with Storyboards (Main.storyboard)
+- **UI:** SwiftUI (primary) with UIKit wrappers for video/audio playback
 - **Networking:** Alamofire 5.11, AlamofireImage 4.3
 - **Dependencies:** Swift Package Manager (SPM)
 - **Testing:** XCTest
@@ -93,6 +113,13 @@ Config/                         # Build configurations
 ### Image Loading
 - Use `ImageCacheManager` for cached image loading
 - Use AlamofireImage's `af.setImage()` for collection view cells
+- Use `AsyncImage` for SwiftUI views with custom placeholder handling
+
+### SwiftUI Navigation
+- App uses SwiftUI `TabView` for main navigation (5 tabs)
+- Feature views use `NavigationStack` with `@Binding` for presented items
+- Media playback uses UIKit via `UIViewControllerRepresentable` wrappers
+- Year browsing uses sheet presentation with `CollectionBrowserView`
 
 ## Code Style
 
