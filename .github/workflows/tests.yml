@@ -52,28 +52,31 @@ jobs:
         TVOS_VERSION="${{ matrix.tvos-version }}"
         echo "Looking for Apple TV simulator with tvOS $TVOS_VERSION..."
 
-        # List all available Apple TV devices
-        echo "Available Apple TV simulators:"
-        xcrun simctl list devices available | grep -i "apple tv" || true
-
-        # Find the runtime identifier for the requested tvOS version
+        # Show available tvOS runtimes
         echo "Available tvOS runtimes:"
         xcrun simctl list runtimes | grep -i tvos
 
-        # Get the runtime ID for our target version (e.g., com.apple.CoreSimulator.SimRuntime.tvOS-18-5)
-        RUNTIME_ID=$(xcrun simctl list runtimes | grep -i "tvOS $TVOS_VERSION" | grep -oE 'com\.apple\.CoreSimulator\.SimRuntime\.[^ ]+' | head -1) || true
+        # Show all available devices (grouped by runtime)
+        echo ""
+        echo "Available devices by runtime:"
+        xcrun simctl list devices available | grep -E "(^--|Apple TV)" || true
 
-        if [ -z "$RUNTIME_ID" ]; then
-          echo "::error::tvOS $TVOS_VERSION runtime not found"
-          exit 1
-        fi
-        echo "Found runtime: $RUNTIME_ID"
-
-        # Get the first available Apple TV simulator for this runtime
-        DEVICE_ID=$(xcrun simctl list devices available "$RUNTIME_ID" | grep -i "Apple TV" | head -1 | grep -oE '[A-F0-9-]{36}') || true
+        # Find devices under the tvOS version section
+        # The output format groups devices under headers like "-- tvOS 18.5 --"
+        # We need to find devices listed after our target version header
+        DEVICE_ID=$(xcrun simctl list devices available | \
+          awk -v ver="$TVOS_VERSION" '
+            /^-- tvOS/ { in_section = ($0 ~ "tvOS " ver) }
+            in_section && /Apple TV/ {
+              match($0, /[A-F0-9-]{36}/);
+              if (RSTART > 0) { print substr($0, RSTART, 36); exit }
+            }
+          ')
 
         if [ -z "$DEVICE_ID" ]; then
           echo "::error::No Apple TV simulator found for tvOS $TVOS_VERSION"
+          echo "Available sections:"
+          xcrun simctl list devices available | grep "^--"
           exit 1
         fi
 
