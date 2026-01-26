@@ -11,11 +11,14 @@ import XCTest
 @MainActor
 final class HTMLToAttributedStringTests: XCTestCase {
 
-    private var converter: HTMLToAttributedString!
+    nonisolated(unsafe) private var converter: HTMLToAttributedString!
 
     override func setUp() {
         super.setUp()
-        converter = HTMLToAttributedString.shared
+        let newConverter = MainActor.assumeIsolated {
+            return HTMLToAttributedString.shared
+        }
+        converter = newConverter
     }
 
     // MARK: - Basic Entity Conversion Tests

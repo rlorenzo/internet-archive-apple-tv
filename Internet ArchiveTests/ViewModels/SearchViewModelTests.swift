@@ -47,13 +47,18 @@ final class MockSearchService: SearchServiceProtocol, @unchecked Sendable {
 @MainActor
 final class SearchViewModelTests: XCTestCase {
 
-    var viewModel: SearchViewModel!
-    var mockService: MockSearchService!
+    nonisolated(unsafe) var viewModel: SearchViewModel!
+    nonisolated(unsafe) var mockService: MockSearchService!
 
     override func setUp() {
         super.setUp()
-        mockService = MockSearchService()
-        viewModel = SearchViewModel(searchService: mockService, pageSize: 10)
+        let (newMockService, newViewModel) = MainActor.assumeIsolated {
+            let service = MockSearchService()
+            let vm = SearchViewModel(searchService: service, pageSize: 10)
+            return (service, vm)
+        }
+        mockService = newMockService
+        viewModel = newViewModel
     }
 
     override func tearDown() {

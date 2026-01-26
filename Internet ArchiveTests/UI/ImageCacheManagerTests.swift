@@ -201,11 +201,14 @@ final class ImageCacheManagerTests: XCTestCase {
 @MainActor
 final class UIImageViewLoadImageTests: XCTestCase {
 
-    var imageView: UIImageView!
+    nonisolated(unsafe) var imageView: UIImageView!
 
     override func setUp() {
         super.setUp()
-        imageView = UIImageView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
+        let newImageView = MainActor.assumeIsolated {
+            return UIImageView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
+        }
+        imageView = newImageView
     }
 
     override func tearDown() {

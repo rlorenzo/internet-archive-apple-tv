@@ -21,13 +21,17 @@ final class KeychainManagerTests: XCTestCase {
 
     override func setUp() {
         super.setUp()
-        // Clean up before each test
-        _ = KeychainManager.shared.deleteAll()
+        MainActor.assumeIsolated {
+            // Clean up before each test
+            _ = KeychainManager.shared.deleteAll()
+        }
     }
 
     override func tearDown() {
-        // Clean up after each test
-        _ = KeychainManager.shared.deleteAll()
+        MainActor.assumeIsolated {
+            // Clean up after each test
+            _ = KeychainManager.shared.deleteAll()
+        }
         super.tearDown()
     }
 

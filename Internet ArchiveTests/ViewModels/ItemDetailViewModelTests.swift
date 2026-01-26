@@ -44,18 +44,25 @@ final class MockMetadataService: MetadataServiceProtocol, @unchecked Sendable {
 @MainActor
 final class ItemDetailViewModelTests: XCTestCase {
 
-    var viewModel: ItemDetailViewModel!
-    var mockService: MockMetadataService!
+    nonisolated(unsafe) var viewModel: ItemDetailViewModel!
+    nonisolated(unsafe) var mockService: MockMetadataService!
 
     override func setUp() {
         super.setUp()
-        mockService = MockMetadataService()
-        viewModel = ItemDetailViewModel(metadataService: mockService)
-        Global.resetFavoriteData()
+        let (newMockService, newViewModel) = MainActor.assumeIsolated {
+            let service = MockMetadataService()
+            let vm = ItemDetailViewModel(metadataService: service)
+            Global.resetFavoriteData()
+            return (service, vm)
+        }
+        mockService = newMockService
+        viewModel = newViewModel
     }
 
     override func tearDown() {
-        Global.resetFavoriteData()
+        MainActor.assumeIsolated {
+            Global.resetFavoriteData()
+        }
         viewModel = nil
         mockService = nil
         super.tearDown()

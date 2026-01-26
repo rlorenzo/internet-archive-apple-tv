@@ -11,16 +11,22 @@ import XCTest
 @MainActor
 final class PlaybackProgressManagerTests: XCTestCase {
 
-    var manager: PlaybackProgressManager!
+    nonisolated(unsafe) var manager: PlaybackProgressManager!
 
     override func setUp() {
         super.setUp()
-        manager = PlaybackProgressManager.shared
-        manager.resetForTesting()
+        let newManager = MainActor.assumeIsolated {
+            let mgr = PlaybackProgressManager.shared
+            mgr.resetForTesting()
+            return mgr
+        }
+        manager = newManager
     }
 
     override func tearDown() {
-        manager.resetForTesting()
+        MainActor.assumeIsolated {
+            PlaybackProgressManager.shared.resetForTesting()
+        }
         super.tearDown()
     }
 
@@ -418,7 +424,9 @@ final class PlaybackProgressManagerTests: XCTestCase {
     func testPruningRemovesOldEntries() {
         // Create an entry that's 31 days old
         let oldDate = Calendar.current.date(byAdding: .day, value: -31, to: Date()) ?? Date()
-        let oldProgress = PlaybackProgress(
+        // Note: This variable documents what an old progress entry would look like,
+        // but can't be used since saveProgress() always updates the lastWatchedDate
+        _ = PlaybackProgress(
             itemIdentifier: "old-item",
             filename: "video.mp4",
             currentTime: 100,

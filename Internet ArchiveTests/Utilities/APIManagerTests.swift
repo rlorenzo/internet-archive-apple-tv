@@ -128,7 +128,7 @@ final class APIManagerTests: XCTestCase {
     }
 
     func testNetworkService_conformsToProtocol() {
-        let service = APIManager.networkService
+        let service: Any = APIManager.networkService
         XCTAssertTrue(service is NetworkServiceProtocol)
     }
 
@@ -189,7 +189,7 @@ final class APIManagerTests: XCTestCase {
     // MARK: - Manager Type Tests
 
     func testSharedManager_isNSObject() {
-        let manager = APIManager.sharedManager
+        let manager: Any = APIManager.sharedManager
         XCTAssertTrue(manager is NSObject)
     }
 }

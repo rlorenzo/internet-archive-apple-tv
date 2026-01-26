@@ -15,13 +15,18 @@ import XCTest
 @MainActor
 final class MusicViewModelTests: XCTestCase {
 
-    var viewModel: MusicViewModel!
-    var mockService: MockCollectionService!
+    nonisolated(unsafe) var viewModel: MusicViewModel!
+    nonisolated(unsafe) var mockService: MockCollectionService!
 
     override func setUp() {
         super.setUp()
-        mockService = MockCollectionService()
-        viewModel = MusicViewModel(collectionService: mockService)
+        let (newMockService, newViewModel) = MainActor.assumeIsolated {
+            let service = MockCollectionService()
+            let vm = MusicViewModel(collectionService: service)
+            return (service, vm)
+        }
+        mockService = newMockService
+        viewModel = newViewModel
     }
 
     override func tearDown() {

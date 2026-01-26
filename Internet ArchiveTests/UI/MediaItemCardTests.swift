@@ -9,6 +9,7 @@ import XCTest
 import SwiftUI
 @testable import Internet_Archive
 
+@MainActor
 final class MediaItemCardTests: XCTestCase {
 
     // MARK: - MediaType Tests

@@ -66,24 +66,29 @@ final class MockAuthService: AuthServiceProtocol, @unchecked Sendable {
 @MainActor
 final class LoginViewModelTests: XCTestCase {
 
-    var viewModel: LoginViewModel!
-    var mockService: MockAuthService!
+    nonisolated(unsafe) var viewModel: LoginViewModel!
+    nonisolated(unsafe) var mockService: MockAuthService!
 
     override func setUp() {
         super.setUp()
-        mockService = MockAuthService()
-        viewModel = LoginViewModel(authService: mockService)
-
-        // Clean up any stored data
-        Global.saveUserData(userData: [:])
-        _ = KeychainManager.shared.clearUserCredentials()
+        let (newMockService, newViewModel) = MainActor.assumeIsolated {
+            let service = MockAuthService()
+            let vm = LoginViewModel(authService: service)
+            // Clean up any stored data
+            Global.saveUserData(userData: [:])
+            _ = KeychainManager.shared.clearUserCredentials()
+            return (service, vm)
+        }
+        mockService = newMockService
+        viewModel = newViewModel
     }
 
     override func tearDown() {
-        // Clean up
-        Global.saveUserData(userData: [:])
-        _ = KeychainManager.shared.clearUserCredentials()
-
+        MainActor.assumeIsolated {
+            // Clean up
+            Global.saveUserData(userData: [:])
+            _ = KeychainManager.shared.clearUserCredentials()
+        }
         viewModel = nil
         mockService = nil
         super.tearDown()

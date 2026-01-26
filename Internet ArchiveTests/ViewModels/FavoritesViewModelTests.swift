@@ -44,20 +44,26 @@ final class MockFavoritesService: FavoritesServiceProtocol, @unchecked Sendable 
 @MainActor
 final class FavoritesViewModelTests: XCTestCase {
 
-    var viewModel: FavoritesViewModel!
-    var mockService: MockFavoritesService!
+    nonisolated(unsafe) var viewModel: FavoritesViewModel!
+    nonisolated(unsafe) var mockService: MockFavoritesService!
 
     override func setUp() {
         super.setUp()
-        mockService = MockFavoritesService()
-        viewModel = FavoritesViewModel(favoritesService: mockService)
-
-        // Clean up favorites
-        Global.resetFavoriteData()
+        let (newMockService, newViewModel) = MainActor.assumeIsolated {
+            let service = MockFavoritesService()
+            let vm = FavoritesViewModel(favoritesService: service)
+            // Clean up favorites
+            Global.resetFavoriteData()
+            return (service, vm)
+        }
+        mockService = newMockService
+        viewModel = newViewModel
     }
 
     override func tearDown() {
-        Global.resetFavoriteData()
+        MainActor.assumeIsolated {
+            Global.resetFavoriteData()
+        }
         viewModel = nil
         mockService = nil
         super.tearDown()

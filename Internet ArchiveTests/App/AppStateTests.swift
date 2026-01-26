@@ -23,18 +23,23 @@ final class AppStateTests: XCTestCase {
     private let refreshEmail = "refresh@example.com"
     private let refreshUsername = "RefreshUser"
 
-    var sut: AppState!
+    nonisolated(unsafe) var sut: AppState!
 
     override func setUp() {
         super.setUp()
-        // Clear any existing keychain data before each test
-        _ = KeychainManager.shared.clearUserCredentials()
-        sut = AppState()
+        let newSut = MainActor.assumeIsolated {
+            // Clear any existing keychain data before each test
+            _ = KeychainManager.shared.clearUserCredentials()
+            return AppState()
+        }
+        sut = newSut
     }
 
     override func tearDown() {
-        // Clean up keychain after each test
-        _ = KeychainManager.shared.clearUserCredentials()
+        MainActor.assumeIsolated {
+            // Clean up keychain after each test
+            _ = KeychainManager.shared.clearUserCredentials()
+        }
         sut = nil
         super.tearDown()
     }

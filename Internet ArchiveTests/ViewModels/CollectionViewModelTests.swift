@@ -68,13 +68,18 @@ final class MockCollectionService: CollectionServiceProtocol, @unchecked Sendabl
 @MainActor
 final class CollectionViewModelTests: XCTestCase {
 
-    var viewModel: CollectionViewModel!
-    var mockService: MockCollectionService!
+    nonisolated(unsafe) var viewModel: CollectionViewModel!
+    nonisolated(unsafe) var mockService: MockCollectionService!
 
     override func setUp() {
         super.setUp()
-        mockService = MockCollectionService()
-        viewModel = CollectionViewModel(collectionService: mockService)
+        let (newMockService, newViewModel) = MainActor.assumeIsolated {
+            let service = MockCollectionService()
+            let vm = CollectionViewModel(collectionService: service)
+            return (service, vm)
+        }
+        mockService = newMockService
+        viewModel = newViewModel
     }
 
     override func tearDown() {
