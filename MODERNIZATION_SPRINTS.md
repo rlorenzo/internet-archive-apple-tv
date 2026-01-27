@@ -1401,6 +1401,64 @@ Internet Archive/
 - [x] Remove TabbarController and navigation controllers
 - [x] Update CLAUDE.md documentation
 
+**Phase 11: Testing Infrastructure (7-8 hours)** ✅ COMPLETED
+
+Enable deterministic testing and deeper SwiftUI view verification per code review findings.
+
+*Part 1: NetworkMonitor Dependency Injection* ✅
+
+- [x] Create `NetworkMonitorProtocol` in `Internet Archive/Protocols/`
+- [x] Add protocol conformance to `NetworkMonitor.swift`
+- [x] Update `RetryMechanism.swift` with optional `networkMonitor` parameter for DI
+- [x] Create `MockNetworkMonitor.swift` in `Internet ArchiveTests/Mocks/`
+- [x] Add deterministic tests for online/offline paths in `NetworkMonitorTests.swift`
+- [x] Add network injection tests in `RetryMechanismTests.swift`
+
+*Part 2: Enhanced SwiftUI Tests* ✅
+
+- [x] Add `SectionHeaderTests.swift` with accessibility and interaction tests
+- [x] Add `MediaItemCardTests.swift` with type and layout verification
+- [x] Add `SearchViewTests.swift` for ContentFilter enum coverage
+- [x] Add `MediaThumbnailViewTests.swift` for thumbnail rendering tests
+- [x] Add `MediaHomeErrorViewTests.swift` for error state tests
+
+*Part 3: Test Fixtures* ✅
+
+- [x] Add `makeNetworkError()` factory to `TestFixtures.swift`
+- [x] Add `makeVideoResults(count:)` and `makeMusicResults(count:)` helpers
+- [x] Add `makeMusicMetadataResponse()` and `makeVideoMetadataResponse()` factories
+
+*Code Review Fixes Implemented:*
+
+- [x] Fixed `RetryMechanism.execute()` `@MainActor` issue - production version runs off main thread, only wraps network checks in `MainActor.run`
+- [x] Fixed `SubtitleTrackCell` accessibility issue - removed problematic `accessibilityElements = []`
+
+*Files Created:*
+
+```
+Internet Archive/Protocols/NetworkMonitorProtocol.swift ✅
+Internet ArchiveTests/Mocks/MockNetworkMonitor.swift ✅
+Internet ArchiveTests/Features/SearchViewTests.swift ✅
+Internet ArchiveTests/Features/MediaThumbnailViewTests.swift ✅
+Internet ArchiveTests/Features/MediaHomeErrorViewTests.swift ✅
+Internet ArchiveTests/App/SectionHeaderTests.swift ✅
+Internet ArchiveTests/App/MediaItemCardTests.swift → TVCardButtonStyleTests.swift ✅
+Internet ArchiveTests/App/PlaceholderCardTests.swift ✅
+Internet ArchiveTests/App/ContentViewTests.swift ✅
+Internet ArchiveTests/App/AppInfoFooterTests.swift ✅
+Internet ArchiveTests/Utilities/NetworkMonitorTests.swift ✅
+Internet ArchiveTests/ErrorHandling/RetryMechanismTests.swift (extended) ✅
+```
+
+*Files Modified:*
+
+```
+Internet Archive/Utilities/ErrorHandling/NetworkMonitor.swift (added conformance) ✅
+Internet Archive/Utilities/ErrorHandling/RetryMechanism.swift (DI param, MainActor fix) ✅
+Internet Archive/ViewControllers/Subtitles/SubtitleSelectionViewController.swift (accessibility fix) ✅
+Internet ArchiveTests/Fixtures/TestFixtures.swift (new factories) ✅
+```
+
 #### Files Created (Phase 1)
 
 ```
