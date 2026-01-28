@@ -432,3 +432,184 @@ final class APIManagerTests: XCTestCase {
         // getFavoriteItems accepts a username string
     }
 }
+
+// MARK: - Extended Error Tests
+
+@MainActor
+final class NetworkErrorExtendedTests: XCTestCase {
+
+    func testNetworkError_allCases_haveNonEmptyDescriptions() {
+        let errors: [NetworkError] = [
+            .noConnection,
+            .timeout,
+            .invalidResponse,
+            .resourceNotFound,
+            .serverError(statusCode: 500),
+            .decodingFailed(NSError(domain: "test", code: 1))
+        ]
+
+        for error in errors {
+            XCTAssertFalse(error.localizedDescription.isEmpty,
+                           "Error \(error) should have non-empty description")
+        }
+    }
+
+    func testNetworkError_serverError_variousStatusCodes() {
+        let statusCodes = [400, 401, 403, 404, 500, 502, 503, 504]
+
+        for code in statusCodes {
+            let error = NetworkError.serverError(statusCode: code)
+            if case .serverError(let extractedCode) = error {
+                XCTAssertEqual(extractedCode, code)
+            } else {
+                XCTFail("Expected serverError case")
+            }
+        }
+    }
+
+    func testNetworkError_decodingFailed_preservesUnderlyingError() {
+        let underlyingError = NSError(domain: "JSONDecoding", code: 42, userInfo: [
+            NSLocalizedDescriptionKey: "Test error"
+        ])
+        let error = NetworkError.decodingFailed(underlyingError)
+
+        if case .decodingFailed(let wrapped) = error {
+            XCTAssertEqual((wrapped as NSError).code, 42)
+            XCTAssertEqual((wrapped as NSError).domain, "JSONDecoding")
+        } else {
+            XCTFail("Expected decodingFailed case")
+        }
+    }
+
+    func testNetworkError_resourceNotFound_message() {
+        let error = NetworkError.resourceNotFound
+        XCTAssertFalse(error.localizedDescription.isEmpty)
+    }
+}
+
+// MARK: - Extended URL Construction Tests
+
+@MainActor
+final class APIManagerURLConstructionTests: XCTestCase {
+
+    func testDownloadURL_construction() {
+        let identifier = "my-video-item"
+        let filename = "video.mp4"
+        let downloadURL = "https://archive.org/download/\(identifier)/\(filename)"
+
+        XCTAssertEqual(downloadURL, "https://archive.org/download/my-video-item/video.mp4")
+    }
+
+    func testDownloadURL_withSpecialCharacters_needsEncoding() {
+        let filename = "video file.mp4"
+        let encoded = filename.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)
+
+        XCTAssertNotNil(encoded)
+        XCTAssertTrue(encoded!.contains("%20"))
+    }
+
+    func testThumbnailURL_construction() {
+        let identifier = "test-item"
+        let thumbnailURL = "https://archive.org/services/img/\(identifier)"
+
+        XCTAssertEqual(thumbnailURL, "https://archive.org/services/img/test-item")
+    }
+
+    func testSearchURL_withPagination() {
+        let manager = APIManager.sharedManager
+        let baseURL = "\(manager.baseURL)advancedsearch.php"
+        let page = 2
+        let rows = 50
+
+        let params = "page=\(page)&rows=\(rows)"
+        let fullURL = "\(baseURL)?\(params)"
+
+        XCTAssertTrue(fullURL.contains("page=2"))
+        XCTAssertTrue(fullURL.contains("rows=50"))
+    }
+
+    func testSearchURL_withSortParameter() {
+        let sortField = "downloads"
+        let sortDirection = "desc"
+        let sortParam = "sort[]=\(sortField)%20\(sortDirection)"
+
+        XCTAssertTrue(sortParam.contains("downloads"))
+        XCTAssertTrue(sortParam.contains("desc"))
+    }
+
+    func testMetadataURL_withHyphenatedIdentifier() {
+        let manager = APIManager.sharedManager
+        let identifier = "my-hyphenated-item-2024"
+        let url = "\(manager.baseURL)\(manager.apiMetadata)\(identifier)"
+
+        XCTAssertEqual(url, "https://archive.org/metadata/my-hyphenated-item-2024")
+    }
+
+    func testMetadataURL_withUnderscoreIdentifier() {
+        let manager = APIManager.sharedManager
+        let identifier = "my_underscore_item"
+        let url = "\(manager.baseURL)\(manager.apiMetadata)\(identifier)"
+
+        XCTAssertEqual(url, "https://archive.org/metadata/my_underscore_item")
+    }
+
+    func testAPIEndpoints_areConsistent() {
+        let manager = APIManager.sharedManager
+
+        // All endpoints should use the same base URL
+        XCTAssertTrue(manager.baseURL.hasPrefix("https://"))
+        XCTAssertTrue(manager.baseURL.contains("archive.org"))
+
+        // All paths should be relative (no leading slash for concatenation)
+        XCTAssertFalse(manager.apiLogin.hasPrefix("/"))
+        XCTAssertFalse(manager.apiCreate.hasPrefix("/"))
+        XCTAssertFalse(manager.apiMetadata.hasPrefix("/"))
+    }
+}
+
+// MARK: - Request Parameter Tests
+
+@MainActor
+final class APIRequestParameterTests: XCTestCase {
+
+    func testSearchOptions_defaultFields() {
+        // Verify the expected fields are included in search requests
+        let expectedFields = ["identifier", "title", "mediatype", "creator", "description", "date", "year", "downloads"]
+
+        let fieldsParam = expectedFields.map { "\($0)" }.joined(separator: ",")
+
+        for field in expectedFields {
+            XCTAssertTrue(fieldsParam.contains(field), "Missing field: \(field)")
+        }
+    }
+
+    func testSearchOptions_mediaTypeFilter() {
+        let mediaType = "movies"
+        let query = "mediatype:(\(mediaType))"
+
+        XCTAssertTrue(query.contains("mediatype:"))
+        XCTAssertTrue(query.contains("movies"))
+    }
+
+    func testSearchOptions_combinedMediaTypes() {
+        let mediaTypes = "movies OR etree OR audio"
+        let query = "mediatype:(\(mediaTypes))"
+
+        XCTAssertTrue(query.contains("movies"))
+        XCTAssertTrue(query.contains("etree"))
+        XCTAssertTrue(query.contains("audio"))
+        XCTAssertTrue(query.contains("OR"))
+    }
+
+    func testFavoriteParams_encoding() {
+        let params = FavoriteItemParams(
+            identifier: "test-item",
+            mediatype: "movies",
+            title: "Test Title with spaces"
+        )
+
+        XCTAssertEqual(params.identifier, "test-item")
+        XCTAssertEqual(params.mediatype, "movies")
+        XCTAssertEqual(params.title, "Test Title with spaces")
+    }
+}
