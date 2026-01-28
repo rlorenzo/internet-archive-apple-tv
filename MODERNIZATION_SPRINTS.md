@@ -1459,6 +1459,62 @@ Internet Archive/ViewControllers/Subtitles/SubtitleSelectionViewController.swift
 Internet ArchiveTests/Fixtures/TestFixtures.swift (new factories) ✅
 ```
 
+**Phase 12: Code Coverage Expansion (8-12 hours)** 🚧 IN PROGRESS
+
+Push test coverage from 45.73% to 55%+ to exceed CI threshold with comfortable margin.
+
+*Part 1: SwiftUI Feature View Tests*
+
+- [x] `YearBrowseViewTests.swift` - Year selection, navigation (destination types tested)
+- [x] `VideoHomeViewTests.swift` - Loading state, notifications (continue watching in PlaybackProgressManagerTests)
+- [x] `MusicHomeViewTests.swift` - Notifications (continue listening in PlaybackProgressManagerTests)
+- [x] `FavoritesViewTests.swift` - PersonNavigation type tests
+- Note: Login/authentication tests are in `LoginViewModelTests.swift`
+
+*Part 2: Player Integration Tests*
+
+- [ ] `VideoPlayerViewTests.swift` (10 tests) - Coordinator, subtitle tracks
+- [ ] `NowPlayingViewTests.swift` (10 tests) - Track list, album progress
+
+*Part 3: ViewModel Edge Cases*
+
+- [ ] Expand `ItemDetailViewModelTests.swift` (+10 tests) - File filtering, URL encoding
+- [ ] Expand `SearchViewModelTests.swift` (+8 tests) - Pagination, filter switching
+- [ ] Expand `FavoritesViewModelTests.swift` (+8 tests) - Media type filtering
+- [ ] Expand `CollectionViewModelTests.swift` (+6 tests) - All sort criteria
+
+*Part 4: Utility and Infrastructure*
+
+- [ ] Expand `ImageCacheManagerTests.swift` (+10 tests) - Memory pressure, eviction
+- [ ] Expand `PlaybackProgressManagerTests.swift` (+8 tests) - Pruning, migration
+- [ ] Expand `APIManagerTests.swift` (+10 tests) - Request building, error parsing
+
+*Files to Create:*
+
+```
+Internet ArchiveTests/Features/YearBrowseViewTests.swift ✓
+Internet ArchiveTests/Features/VideoHomeViewTests.swift ✓
+Internet ArchiveTests/Features/MusicHomeViewTests.swift ✓
+Internet ArchiveTests/Features/FavoritesViewTests.swift ✓
+Internet ArchiveTests/Features/VideoPlayerViewTests.swift
+Internet ArchiveTests/Features/NowPlayingViewTests.swift
+```
+
+*Files to Expand:*
+
+```
+Internet ArchiveTests/ViewModels/ItemDetailViewModelTests.swift
+Internet ArchiveTests/ViewModels/SearchViewModelTests.swift
+Internet ArchiveTests/ViewModels/FavoritesViewModelTests.swift
+Internet ArchiveTests/ViewModels/CollectionViewModelTests.swift
+Internet ArchiveTests/UI/ImageCacheManagerTests.swift
+Internet ArchiveTests/Utilities/PlaybackProgressManagerTests.swift
+Internet ArchiveTests/Utilities/APIManagerTests.swift
+```
+
+*Total New Tests:* ~120
+*Projected Coverage:* 52-55%
+
 #### Files Created (Phase 1)
 
 ```

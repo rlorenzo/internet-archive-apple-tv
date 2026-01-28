@@ -368,6 +368,403 @@ final class FavoritesViewModelTests: XCTestCase {
 
         XCTAssertEqual(viewModel.peopleFavoritesCount, 1)
     }
+
+    // MARK: - Case-Insensitive Media Type Tests
+
+    func testLoadFavorites_caseInsensitive_uppercaseMovies() async {
+        let item = FavoriteItem(identifier: "movie1", mediatype: "Movies", title: "Test")
+        mockService.mockResponse = FavoritesResponse(members: [item])
+
+        await viewModel.loadFavorites(username: "testuser")
+
+        XCTAssertEqual(viewModel.state.movieItems.count, 1)
+        XCTAssertEqual(viewModel.state.movieItems.first?.identifier, "movie1")
+    }
+
+    func testLoadFavorites_caseInsensitive_uppercaseETREE() async {
+        let item = FavoriteItem(identifier: "concert1", mediatype: "ETREE", title: "Test")
+        mockService.mockResponse = FavoritesResponse(members: [item])
+
+        await viewModel.loadFavorites(username: "testuser")
+
+        XCTAssertEqual(viewModel.state.musicItems.count, 1)
+        XCTAssertEqual(viewModel.state.musicItems.first?.identifier, "concert1")
+    }
+
+    func testLoadFavorites_caseInsensitive_mixedCaseVideo() async {
+        let item = FavoriteItem(identifier: "video1", mediatype: "Video", title: "Test")
+        mockService.mockResponse = FavoritesResponse(members: [item])
+
+        await viewModel.loadFavorites(username: "testuser")
+
+        // "video" should be treated as movie type
+        XCTAssertEqual(viewModel.state.movieItems.count, 1)
+        XCTAssertEqual(viewModel.state.movieItems.first?.identifier, "video1")
+    }
+
+    func testLoadFavorites_caseInsensitive_uppercaseAUDIO() async {
+        let item = FavoriteItem(identifier: "audio1", mediatype: "AUDIO", title: "Test")
+        mockService.mockResponse = FavoritesResponse(members: [item])
+
+        await viewModel.loadFavorites(username: "testuser")
+
+        XCTAssertEqual(viewModel.state.musicItems.count, 1)
+        XCTAssertEqual(viewModel.state.musicItems.first?.identifier, "audio1")
+    }
+
+    func testLoadFavorites_videoTreatedAsMovie() async {
+        let videoItem = FavoriteItem(identifier: "video1", mediatype: "video", title: "Video Item")
+        let movieItem = FavoriteItem(identifier: "movie1", mediatype: "movies", title: "Movie Item")
+        mockService.mockResponse = FavoritesResponse(members: [videoItem, movieItem])
+
+        await viewModel.loadFavorites(username: "testuser")
+
+        // Both video and movies should be in movieItems
+        XCTAssertEqual(viewModel.state.movieItems.count, 2)
+        XCTAssertTrue(viewModel.state.musicItems.isEmpty)
+    }
+
+    // MARK: - Unsupported Media Types Only Tests
+
+    func testLoadFavoritesWithDetails_onlyUnsupportedTypes_skipsSearch() async {
+        // All favorites have unsupported media types
+        let textItem = FavoriteItem(identifier: "text1", mediatype: "texts", title: "Text")
+        let imageItem = FavoriteItem(identifier: "image1", mediatype: "image", title: "Image")
+        let webItem = FavoriteItem(identifier: "web1", mediatype: "web", title: "Web")
+        mockService.mockResponse = FavoritesResponse(members: [textItem, imageItem, webItem])
+
+        let mockSearchService = MockSearchService()
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService
+        )
+
+        // Search should NOT be called when no supported types
+        XCTAssertFalse(mockSearchService.searchCalled)
+
+        // All state should be cleared/reset
+        XCTAssertTrue(viewModel.state.allItems.isEmpty, "allItems should be cleared")
+        XCTAssertTrue(viewModel.state.movieResults.isEmpty)
+        XCTAssertTrue(viewModel.state.musicResults.isEmpty)
+        XCTAssertTrue(viewModel.state.peopleResults.isEmpty)
+        XCTAssertFalse(viewModel.state.isLoading)
+    }
+
+    func testLoadFavoritesWithDetails_nilMediaTypes_skipsSearch() async {
+        // All favorites have nil media types
+        let item1 = FavoriteItem(identifier: "item1", mediatype: nil, title: "Item 1")
+        let item2 = FavoriteItem(identifier: "item2", mediatype: nil, title: "Item 2")
+        mockService.mockResponse = FavoritesResponse(members: [item1, item2])
+
+        let mockSearchService = MockSearchService()
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService
+        )
+
+        // Search should NOT be called when no supported types
+        XCTAssertFalse(mockSearchService.searchCalled)
+
+        // All state should be cleared/reset
+        XCTAssertTrue(viewModel.state.allItems.isEmpty, "allItems should be cleared")
+        XCTAssertTrue(viewModel.state.movieResults.isEmpty)
+        XCTAssertTrue(viewModel.state.musicResults.isEmpty)
+        XCTAssertTrue(viewModel.state.peopleResults.isEmpty)
+    }
+
+    func testLoadFavoritesWithDetails_mixedSupportedAndUnsupported_onlyQueriesSupported() async {
+        // Mix of supported and unsupported media types
+        let movieItem = FavoriteItem(identifier: "movie1", mediatype: "movies", title: "Movie")
+        let textItem = FavoriteItem(identifier: "text1", mediatype: "texts", title: "Text")
+        let audioItem = FavoriteItem(identifier: "audio1", mediatype: "audio", title: "Audio")
+        mockService.mockResponse = FavoritesResponse(members: [movieItem, textItem, audioItem])
+
+        let mockSearchService = MockSearchService()
+        mockSearchService.mockResponse = TestFixtures.makeSearchResponse(numFound: 2, docs: [
+            TestFixtures.makeSearchResult(identifier: "movie1", mediatype: "movies"),
+            TestFixtures.makeSearchResult(identifier: "audio1", mediatype: "audio")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService
+        )
+
+        // Search should be called
+        XCTAssertTrue(mockSearchService.searchCalled)
+
+        // Query should include supported types but not unsupported
+        XCTAssertTrue(mockSearchService.lastQuery?.contains("movie1") ?? false)
+        XCTAssertTrue(mockSearchService.lastQuery?.contains("audio1") ?? false)
+        XCTAssertFalse(mockSearchService.lastQuery?.contains("text1") ?? true)
+    }
+
+    // MARK: - Case-Insensitive loadFavoritesWithDetails Tests
+
+    func testLoadFavoritesWithDetails_caseInsensitive_uppercaseMOVIES() async {
+        let item = FavoriteItem(identifier: "movie1", mediatype: "MOVIES", title: "Test")
+        mockService.mockResponse = FavoritesResponse(members: [item])
+
+        let mockSearchService = MockSearchService()
+        mockSearchService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "movie1", mediatype: "MOVIES")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService
+        )
+
+        // Should include the uppercase MOVIES item
+        XCTAssertTrue(mockSearchService.searchCalled)
+        XCTAssertTrue(mockSearchService.lastQuery?.contains("movie1") ?? false)
+        XCTAssertEqual(viewModel.state.movieResults.count, 1)
+    }
+
+    func testLoadFavoritesWithDetails_caseInsensitive_mixedCaseVideo() async {
+        let item = FavoriteItem(identifier: "video1", mediatype: "Video", title: "Test")
+        mockService.mockResponse = FavoritesResponse(members: [item])
+
+        let mockSearchService = MockSearchService()
+        mockSearchService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "video1", mediatype: "Video")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService
+        )
+
+        // "Video" should be treated as movies (case-insensitive)
+        XCTAssertTrue(mockSearchService.searchCalled)
+        XCTAssertTrue(mockSearchService.lastQuery?.contains("video1") ?? false)
+        XCTAssertEqual(viewModel.state.movieResults.count, 1)
+    }
+
+    func testLoadFavoritesWithDetails_caseInsensitive_uppercaseETREE() async {
+        let item = FavoriteItem(identifier: "concert1", mediatype: "ETREE", title: "Test")
+        mockService.mockResponse = FavoritesResponse(members: [item])
+
+        let mockSearchService = MockSearchService()
+        mockSearchService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "concert1", mediatype: "ETREE")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService
+        )
+
+        // "ETREE" should be treated as music (case-insensitive)
+        XCTAssertTrue(mockSearchService.searchCalled)
+        XCTAssertTrue(mockSearchService.lastQuery?.contains("concert1") ?? false)
+        XCTAssertEqual(viewModel.state.musicResults.count, 1)
+    }
+
+    func testLoadFavoritesWithDetails_caseInsensitive_uppercaseAUDIO() async {
+        let item = FavoriteItem(identifier: "audio1", mediatype: "AUDIO", title: "Test")
+        mockService.mockResponse = FavoritesResponse(members: [item])
+
+        let mockSearchService = MockSearchService()
+        mockSearchService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "audio1", mediatype: "AUDIO")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService
+        )
+
+        // "AUDIO" should be treated as music (case-insensitive)
+        XCTAssertTrue(mockSearchService.searchCalled)
+        XCTAssertTrue(mockSearchService.lastQuery?.contains("audio1") ?? false)
+        XCTAssertEqual(viewModel.state.musicResults.count, 1)
+    }
+
+    func testLoadFavoritesWithDetails_caseInsensitive_uppercaseACCOUNT() async {
+        let item = FavoriteItem(identifier: "person1", mediatype: "ACCOUNT", title: "Test Person")
+        mockService.mockResponse = FavoritesResponse(members: [item])
+
+        let mockSearchService = MockSearchService()
+        mockSearchService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "person1", mediatype: "ACCOUNT")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService
+        )
+
+        // "ACCOUNT" should be categorized into peopleResults (case-insensitive)
+        XCTAssertTrue(mockSearchService.searchCalled)
+        XCTAssertTrue(mockSearchService.lastQuery?.contains("person1") ?? false)
+        XCTAssertEqual(viewModel.state.peopleResults.count, 1)
+    }
+
+    func testLoadFavoritesWithDetails_videoAndEtreeTypesIncluded() async {
+        // Test that "video" and "etree" types are included as supported types
+        let videoItem = FavoriteItem(identifier: "video1", mediatype: "video", title: "Video Item")
+        let etreeItem = FavoriteItem(identifier: "etree1", mediatype: "etree", title: "Etree Item")
+        mockService.mockResponse = FavoritesResponse(members: [videoItem, etreeItem])
+
+        let mockSearchService = MockSearchService()
+        mockSearchService.mockResponse = TestFixtures.makeSearchResponse(numFound: 2, docs: [
+            TestFixtures.makeSearchResult(identifier: "video1", mediatype: "video"),
+            TestFixtures.makeSearchResult(identifier: "etree1", mediatype: "etree")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService
+        )
+
+        // Both should be queried
+        XCTAssertTrue(mockSearchService.searchCalled)
+        XCTAssertTrue(mockSearchService.lastQuery?.contains("video1") ?? false)
+        XCTAssertTrue(mockSearchService.lastQuery?.contains("etree1") ?? false)
+
+        // video categorized as movies, etree categorized as music
+        XCTAssertEqual(viewModel.state.movieResults.count, 1)
+        XCTAssertEqual(viewModel.state.musicResults.count, 1)
+    }
+
+    func testLoadFavoritesWithDetails_unknownMediatypeIgnored() async {
+        // Test that unknown mediatypes from API are ignored (guards against future API changes)
+        let movieItem = FavoriteItem(identifier: "movie1", mediatype: "movies", title: "Movie")
+        let unknownItem = FavoriteItem(identifier: "unknown1", mediatype: "software", title: "Software Item")
+        let anotherUnknown = FavoriteItem(identifier: "unknown2", mediatype: "web", title: "Web Archive")
+        mockService.mockResponse = FavoritesResponse(members: [movieItem, unknownItem, anotherUnknown])
+
+        let mockSearchService = MockSearchService()
+        // Simulate API returning results including unknown types
+        mockSearchService.mockResponse = TestFixtures.makeSearchResponse(numFound: 3, docs: [
+            TestFixtures.makeSearchResult(identifier: "movie1", mediatype: "movies"),
+            TestFixtures.makeSearchResult(identifier: "unknown1", mediatype: "software"),
+            TestFixtures.makeSearchResult(identifier: "unknown2", mediatype: "web")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService
+        )
+
+        // Only the known mediatype should be queried (unknown types filtered out during query construction)
+        XCTAssertTrue(mockSearchService.searchCalled)
+        XCTAssertTrue(mockSearchService.lastQuery?.contains("movie1") ?? false)
+        XCTAssertFalse(mockSearchService.lastQuery?.contains("unknown1") ?? true)
+        XCTAssertFalse(mockSearchService.lastQuery?.contains("unknown2") ?? true)
+
+        // Only the movie should be categorized
+        XCTAssertEqual(viewModel.state.movieResults.count, 1)
+        XCTAssertEqual(viewModel.state.musicResults.count, 0)
+        XCTAssertEqual(viewModel.state.peopleResults.count, 0)
+
+        // Verify the movie is the correct one
+        XCTAssertEqual(viewModel.state.movieResults.first?.identifier, "movie1")
+    }
+
+    // MARK: - State Reset Between Calls Tests
+
+    func testLoadFavoritesWithDetails_resetsStateBetweenCalls() async {
+        // First call with movies
+        let movieItem = FavoriteItem(identifier: "movie1", mediatype: "movies", title: "Movie")
+        mockService.mockResponse = FavoritesResponse(members: [movieItem])
+
+        let mockSearchService1 = MockSearchService()
+        mockSearchService1.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "movie1", mediatype: "movies")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService1
+        )
+
+        XCTAssertEqual(viewModel.state.movieResults.count, 1)
+        XCTAssertEqual(viewModel.state.musicResults.count, 0)
+
+        // Second call with only music (no movies)
+        let musicItem = FavoriteItem(identifier: "music1", mediatype: "etree", title: "Music")
+        mockService.mockResponse = FavoritesResponse(members: [musicItem])
+
+        let mockSearchService2 = MockSearchService()
+        mockSearchService2.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "music1", mediatype: "etree")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService2
+        )
+
+        // Movie results should be cleared from previous call
+        XCTAssertEqual(viewModel.state.movieResults.count, 0)
+        XCTAssertEqual(viewModel.state.musicResults.count, 1)
+    }
+
+    func testLoadFavoritesWithDetails_clearsErrorOnNewCall() async {
+        // First call with error
+        mockService.errorToThrow = NetworkError.timeout
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: MockSearchService()
+        )
+
+        XCTAssertNotNil(viewModel.state.errorMessage)
+
+        // Second call succeeds
+        mockService.errorToThrow = nil
+        let movieItem = FavoriteItem(identifier: "movie1", mediatype: "movies", title: "Movie")
+        mockService.mockResponse = FavoritesResponse(members: [movieItem])
+
+        let mockSearchService = MockSearchService()
+        mockSearchService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "movie1", mediatype: "movies")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService
+        )
+
+        // Error should be cleared
+        XCTAssertNil(viewModel.state.errorMessage)
+        XCTAssertEqual(viewModel.state.movieResults.count, 1)
+    }
+
+    func testLoadFavoritesWithDetails_emptyResponse_clearsAllResults() async {
+        // First call with results
+        let movieItem = FavoriteItem(identifier: "movie1", mediatype: "movies", title: "Movie")
+        mockService.mockResponse = FavoritesResponse(members: [movieItem])
+
+        let mockSearchService1 = MockSearchService()
+        mockSearchService1.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "movie1", mediatype: "movies")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService1
+        )
+
+        XCTAssertEqual(viewModel.state.movieResults.count, 1)
+
+        // Second call with empty favorites
+        mockService.mockResponse = FavoritesResponse(members: [])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: MockSearchService()
+        )
+
+        // All results should be cleared
+        XCTAssertEqual(viewModel.state.movieResults.count, 0)
+        XCTAssertEqual(viewModel.state.musicResults.count, 0)
+        XCTAssertEqual(viewModel.state.peopleResults.count, 0)
+    }
 }
 
 // MARK: - FavoritesViewState Tests

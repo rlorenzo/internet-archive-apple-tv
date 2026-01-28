@@ -317,6 +317,76 @@ final class MusicViewModelTests: XCTestCase {
     func testLoadCollection_hasLoadedFalse_beforeLoad() {
         XCTAssertFalse(viewModel.state.hasLoaded)
     }
+
+    // MARK: - Metadata Loading Tests
+
+    func testLoadCollection_metadataSuccess_setsCollectionTitle() async {
+        mockService.mockCollectionsResponse = (
+            collection: "etree",
+            results: [TestFixtures.makeSearchResult(identifier: "test1")]
+        )
+        mockService.mockMetadataResponse = ItemMetadataResponse(
+            created: nil, d1: nil, d2: nil, dir: nil, files: nil, filesCount: nil,
+            itemSize: nil,
+            metadata: ItemMetadata(
+                identifier: "etree",
+                title: "Live Music Archive",
+                mediatype: nil,
+                creator: nil,
+                description: nil
+            ),
+            server: nil, uniq: nil
+        )
+
+        await viewModel.loadCollection()
+
+        XCTAssertEqual(viewModel.state.collectionTitle, "Live Music Archive")
+        XCTAssertEqual(viewModel.state.displayTitle, "Live Music Archive")
+        XCTAssertTrue(viewModel.state.hasTitleLoadAttempted)
+    }
+
+    func testLoadCollection_metadataFailure_usesFallbackTitle() async {
+        mockService.mockCollectionsResponse = (
+            collection: "etree",
+            results: [TestFixtures.makeSearchResult(identifier: "test1")]
+        )
+        // Don't set mockMetadataResponse - getMetadata will throw NetworkError.resourceNotFound
+
+        await viewModel.loadCollection()
+
+        XCTAssertNil(viewModel.state.collectionTitle)
+        XCTAssertEqual(viewModel.state.displayTitle, "Music") // Falls back to "Music"
+        XCTAssertTrue(viewModel.state.hasTitleLoadAttempted)
+    }
+
+    func testLoadCollection_metadataWithNilTitle_usesFallback() async {
+        mockService.mockCollectionsResponse = (
+            collection: "etree",
+            results: [TestFixtures.makeSearchResult(identifier: "test1")]
+        )
+        mockService.mockMetadataResponse = ItemMetadataResponse(
+            created: nil, d1: nil, d2: nil, dir: nil, files: nil, filesCount: nil,
+            itemSize: nil,
+            metadata: ItemMetadata(
+                identifier: "etree",
+                title: nil, // No title in metadata
+                mediatype: nil,
+                creator: nil,
+                description: nil
+            ),
+            server: nil, uniq: nil
+        )
+
+        await viewModel.loadCollection()
+
+        XCTAssertNil(viewModel.state.collectionTitle)
+        XCTAssertEqual(viewModel.state.displayTitle, "Music")
+        XCTAssertTrue(viewModel.state.hasTitleLoadAttempted)
+    }
+
+    func testHasTitleLoadAttempted_falseBeforeLoad() {
+        XCTAssertFalse(viewModel.state.hasTitleLoadAttempted)
+    }
 }
 
 // MARK: - MusicViewState Tests
