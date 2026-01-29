@@ -10,6 +10,18 @@ import Foundation
 /// Represents saved playback progress for a media item
 struct PlaybackProgress: Codable, Sendable, Hashable {
 
+    // MARK: - Static Properties
+
+    // Pre-compiled regex for validating Internet Archive identifiers.
+    // Valid identifiers contain only alphanumeric characters, periods, underscores, and hyphens.
+    private static let validIdentifierRegex: NSRegularExpression = {
+        do {
+            return try NSRegularExpression(pattern: "^[a-zA-Z0-9._-]+$", options: [])
+        } catch {
+            preconditionFailure("Invalid identifier regex: \(error)")
+        }
+    }()
+
     // MARK: - Properties
 
     /// Internet Archive item identifier
@@ -136,6 +148,25 @@ struct PlaybackProgress: Codable, Sendable, Hashable {
     /// Whether this is audio content
     var isAudio: Bool {
         mediaType == "etree"
+    }
+
+    /// Whether this progress entry has valid data for display
+    /// Filters out corrupted entries with empty identifiers or titles
+    var isValid: Bool {
+        // Must have a non-empty identifier (needed for thumbnail URL)
+        guard !itemIdentifier.isEmpty else { return false }
+
+        // Identifier should look like a valid Internet Archive identifier
+        // (alphanumeric, hyphens, underscores, periods - no spaces or special chars)
+        let range = NSRange(itemIdentifier.startIndex..<itemIdentifier.endIndex, in: itemIdentifier)
+        guard Self.validIdentifierRegex.firstMatch(in: itemIdentifier, options: [], range: range) != nil else {
+            return false
+        }
+
+        // Must have a non-empty title for display (trimmed of whitespace)
+        guard let title = title, !title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty else { return false }
+
+        return true
     }
 
     /// Whether there is enough progress to offer resume

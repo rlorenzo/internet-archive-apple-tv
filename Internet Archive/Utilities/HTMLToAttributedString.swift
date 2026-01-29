@@ -98,6 +98,11 @@ final class HTMLToAttributedString {
     /// Pre-process HTML to handle double-encoded content from the API
     /// Internet Archive sometimes returns descriptions with encoded HTML entities
     /// e.g., "&lt;p&gt;text&lt;/p&gt;" instead of "<p>text</p>"
+    /// Also preserves literal newlines in the text as <br> tags
+    ///
+    /// - Note: Uses multiple sequential string replacements which is O(n×m) where n is string
+    ///   length and m is number of replacements. This prioritizes code clarity over optimization
+    ///   for typical description lengths (<10KB). Profile before optimizing.
     private func preprocessHTML(_ html: String) -> String {
         var result = html
 
@@ -113,6 +118,13 @@ final class HTMLToAttributedString {
         for (entity, replacement) in tagEntities {
             result = result.replacingOccurrences(of: entity, with: replacement)
         }
+
+        // Convert literal newlines to <br> tags before SwiftSoup parsing
+        // This preserves paragraph breaks in descriptions that use plain text newlines
+        // instead of HTML block elements. Handle various newline formats.
+        result = result.replacingOccurrences(of: "\r\n", with: "<br>")
+        result = result.replacingOccurrences(of: "\r", with: "<br>")
+        result = result.replacingOccurrences(of: "\n", with: "<br>")
 
         return result
     }

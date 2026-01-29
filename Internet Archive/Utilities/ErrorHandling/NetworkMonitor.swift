@@ -8,14 +8,17 @@
 import Foundation
 import Network
 
-/// Monitors network connectivity status
+/// Monitors network connectivity status.
+///
+/// The shared singleton monitors actual network state using NWPathMonitor.
+/// For testing, use a `MockNetworkMonitor` conforming to `NetworkMonitorProtocol`.
 @MainActor
-final class NetworkMonitor: ObservableObject {
+final class NetworkMonitor: ObservableObject, NetworkMonitorProtocol {
 
     static let shared = NetworkMonitor()
 
     @Published private(set) var isConnected = true
-    @Published private(set) var connectionType: ConnectionType = .unknown
+    @Published private(set) var connectionType: NetworkConnectionType = .unknown
 
     private let monitor = NWPathMonitor()
     private let queue = DispatchQueue(label: "NetworkMonitor")
@@ -25,12 +28,8 @@ final class NetworkMonitor: ObservableObject {
         NSClassFromString("XCTestCase") != nil
     }
 
-    enum ConnectionType {
-        case wifi
-        case cellular
-        case wired
-        case unknown
-    }
+    /// Convenience typealias for backward compatibility with existing code.
+    typealias ConnectionType = NetworkConnectionType
 
     private init() {
         startMonitoring()

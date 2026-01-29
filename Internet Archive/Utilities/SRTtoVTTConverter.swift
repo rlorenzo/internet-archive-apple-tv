@@ -132,20 +132,17 @@ actor SRTtoVTTConverter {
             return utf8String
         }
 
-        // Try Latin-1 (ISO-8859-1) for European subtitles
-        if let latinString = String(data: data, encoding: .isoLatin1) {
-            return latinString
-        }
-
-        // Try Windows-1252
+        // Try Windows-1252 (common legacy encoding; preserves smart quotes, em-dashes, etc.)
+        // Must try before Latin-1 since Latin-1 is a "total" decode that always succeeds.
         if let windowsString = String(data: data, encoding: .windowsCP1252) {
             return windowsString
         }
 
-        // Fallback to UTF-8 with lossy conversion (replaces invalid bytes with �)
-        // This ensures subtitles remain usable even with uncommon encodings
-        // swiftlint:disable:next optional_data_string_conversion - Intentional lossy decoding after UTF-8/Latin-1/CP1252 failed
-        return String(decoding: data, as: UTF8.self)
+        // Final fallback: treat bytes as Latin-1 (ISO-8859-1).
+        // Latin-1 can decode any byte sequence since it maps bytes 0x00-0xFF directly.
+        // This ensures subtitles remain displayable even with unknown encodings,
+        // though some characters may appear incorrect for non-Latin-1 content.
+        return String(data: data, encoding: .isoLatin1) ?? ""
     }
 
     /// Convert SRT format string to WebVTT format

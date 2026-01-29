@@ -15,13 +15,18 @@ import XCTest
 @MainActor
 final class VideoViewModelTests: XCTestCase {
 
-    var viewModel: VideoViewModel!
-    var mockService: MockCollectionService!
+    nonisolated(unsafe) var viewModel: VideoViewModel!
+    nonisolated(unsafe) var mockService: MockCollectionService!
 
     override func setUp() {
         super.setUp()
-        mockService = MockCollectionService()
-        viewModel = VideoViewModel(collectionService: mockService)
+        let (newMockService, newViewModel) = MainActor.assumeIsolated {
+            let service = MockCollectionService()
+            let vm = VideoViewModel(collectionService: service)
+            return (service, vm)
+        }
+        mockService = newMockService
+        viewModel = newViewModel
     }
 
     override func tearDown() {

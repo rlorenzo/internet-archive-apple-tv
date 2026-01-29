@@ -94,6 +94,15 @@ final class YearsViewModel: ObservableObject {
                 )
             }
 
+            // Log warning if we hit the limit - collection may be truncated
+            if results.count >= 5000 {
+                ErrorLogger.shared.logWarning(
+                    "Collection \(state.identifier) returned \(results.count) items (limit reached). " +
+                    "Some items may not be displayed.",
+                    operation: .getCollections
+                )
+            }
+
             // Group items by year
             let grouped = groupByYear(results)
             state.sortedData = grouped

@@ -11,11 +11,14 @@ import XCTest
 @MainActor
 final class UITestingHelperTests: XCTestCase {
 
-    var helper: UITestingHelper!
+    nonisolated(unsafe) var helper: UITestingHelper!
 
     override func setUp() {
         super.setUp()
-        helper = UITestingHelper.shared
+        let newHelper = MainActor.assumeIsolated {
+            return UITestingHelper.shared
+        }
+        helper = newHelper
     }
 
     override func tearDown() {

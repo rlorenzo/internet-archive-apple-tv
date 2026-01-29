@@ -177,25 +177,48 @@ final class ItemDetailViewModel: ObservableObject {
         }
     }
 
-    /// Filter files for playable media
+    // MARK: - Supported Formats
+
+    /// Video formats natively supported by tvOS AVPlayer
+    private static let supportedVideoExtensions: Set<String> = [".mp4", ".mov", ".m4v"]
+
+    /// Audio formats natively supported by tvOS AVPlayer
+    private static let supportedAudioExtensions: Set<String> = [".mp3", ".m4a", ".aac"]
+
+    /// Filter files for playable media based on tvOS-supported formats
     func filterPlayableFiles(files: [FileInfo]) -> [FileInfo] {
         files.filter { file in
             let ext = String(file.name.suffix(4)).lowercased()
             if state.isVideo {
-                return ext == ".mp4"
+                return Self.supportedVideoExtensions.contains(ext)
             } else if state.isAudio {
-                return ext == ".mp3"
+                return Self.supportedAudioExtensions.contains(ext)
             }
             return false
         }
     }
 
+    /// Character set for URL path segment encoding (more restrictive than urlPathAllowed)
+    /// Excludes ?, &, #, and other characters that could break URL parsing when used in paths
+    private static let urlPathSegmentAllowed: CharacterSet = {
+        var allowed = CharacterSet.alphanumerics
+        allowed.insert(charactersIn: "-._~")  // Unreserved characters safe in paths
+        return allowed
+    }()
+
     /// Build media URL for download
     func buildMediaURL(identifier: String, filename: String) -> URL? {
-        guard let encodedFilename = filename.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+        guard let encodedIdentifier = identifier.addingPercentEncoding(
+            withAllowedCharacters: Self.urlPathSegmentAllowed
+        ) else {
             return nil
         }
-        return URL(string: "https://archive.org/download/\(identifier)/\(encodedFilename)")
+        guard let encodedFilename = filename.addingPercentEncoding(
+            withAllowedCharacters: Self.urlPathSegmentAllowed
+        ) else {
+            return nil
+        }
+        return URL(string: "https://archive.org/download/\(encodedIdentifier)/\(encodedFilename)")
     }
 
     /// Set playing state

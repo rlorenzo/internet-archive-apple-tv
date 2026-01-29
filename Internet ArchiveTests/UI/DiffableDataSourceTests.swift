@@ -209,28 +209,33 @@ final class DiffableDataSourceTests: XCTestCase {
 @MainActor
 final class DiffableDataSourceExtensionTests: XCTestCase {
 
-    var collectionView: UICollectionView!
-    var dataSource: ItemDataSource!
+    nonisolated(unsafe) var collectionView: UICollectionView!
+    nonisolated(unsafe) var dataSource: ItemDataSource!
 
     override func setUp() {
         super.setUp()
-        let layout = UICollectionViewFlowLayout()
-        collectionView = UICollectionView(frame: CGRect(x: 0, y: 0, width: 400, height: 400), collectionViewLayout: layout)
-        collectionView.register(
-            ModernItemCell.self,
-            forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
-        )
+        let (newCollectionView, newDataSource) = MainActor.assumeIsolated {
+            let layout = UICollectionViewFlowLayout()
+            let cv = UICollectionView(frame: CGRect(x: 0, y: 0, width: 400, height: 400), collectionViewLayout: layout)
+            cv.register(
+                ModernItemCell.self,
+                forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
+            )
 
-        dataSource = ItemDataSource(
-            collectionView: collectionView,
-            cellProvider: { collectionView, indexPath, viewModel in
-                let cell = collectionView.dequeueReusableCell(
-                    withReuseIdentifier: ModernItemCell.reuseIdentifier,
-                    for: indexPath
-                ) as? ModernItemCell
-                return cell
-            }
-        )
+            let ds = ItemDataSource(
+                collectionView: cv,
+                cellProvider: { collectionView, indexPath, viewModel in
+                    let cell = collectionView.dequeueReusableCell(
+                        withReuseIdentifier: ModernItemCell.reuseIdentifier,
+                        for: indexPath
+                    ) as? ModernItemCell
+                    return cell
+                }
+            )
+            return (cv, ds)
+        }
+        collectionView = newCollectionView
+        dataSource = newDataSource
     }
 
     override func tearDown() {

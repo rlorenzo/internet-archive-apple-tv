@@ -14,6 +14,7 @@ struct MusicViewState: Sendable {
     var isLoading: Bool = false
     var hasLoaded: Bool = false
     var collection: String = "etree"
+    var collectionTitle: String?
     var items: [SearchResult] = []
     var errorMessage: String?
 
@@ -28,6 +29,14 @@ struct MusicViewState: Sendable {
     var itemCount: Int {
         items.count
     }
+
+    /// Display title for the collection (fetched from API or fallback)
+    var displayTitle: String {
+        collectionTitle ?? "Music"
+    }
+
+    /// Whether we've attempted to load the title (success or failure)
+    var hasTitleLoadAttempted: Bool = false
 }
 
 /// ViewModel for music screen - handles all business logic
@@ -83,6 +92,9 @@ final class MusicViewModel: ObservableObject {
             state.isLoading = false
             state.hasLoaded = true
 
+            // Fetch collection metadata for the display title
+            await loadCollectionTitle()
+
             ErrorLogger.shared.logSuccess(
                 operation: .getCollections,
                 info: ["collection": state.collection, "count": state.items.count]
@@ -101,6 +113,18 @@ final class MusicViewModel: ObservableObject {
                 )
             )
         }
+    }
+
+    /// Load the collection's display title from metadata
+    private func loadCollectionTitle() async {
+        do {
+            let metadata = try await collectionService.getMetadata(identifier: state.collection)
+            state.collectionTitle = metadata.metadata?.title
+        } catch {
+            // Non-fatal: use fallback title
+        }
+        // Mark as attempted regardless of success/failure so header shows
+        state.hasTitleLoadAttempted = true
     }
 
     /// Sort items by download count (highest first)

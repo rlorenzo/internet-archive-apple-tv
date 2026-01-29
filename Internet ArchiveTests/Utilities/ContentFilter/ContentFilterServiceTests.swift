@@ -171,6 +171,8 @@ final class ContentFilterServiceTests: XCTestCase {
 
         XCTAssertTrue(service.isOpenLicense("https://creativecommons.org/publicdomain/zero/1.0/"))
         XCTAssertTrue(service.isOpenLicense("http://creativecommons.org/publicdomain/mark/1.0/"))
+        // Legacy public domain URL format used by older Internet Archive items
+        XCTAssertTrue(service.isOpenLicense("http://creativecommons.org/licenses/publicdomain/"))
     }
 
     func testIsOpenLicense_creativeCommonsBy() {
@@ -196,6 +198,8 @@ final class ContentFilterServiceTests: XCTestCase {
 
         XCTAssertEqual(service.getLicenseType("https://creativecommons.org/publicdomain/zero/1.0/"), "CC0 (Public Domain)")
         XCTAssertEqual(service.getLicenseType("https://creativecommons.org/publicdomain/mark/1.0/"), "Public Domain")
+        // Legacy public domain URL format used by older Internet Archive items
+        XCTAssertEqual(service.getLicenseType("http://creativecommons.org/licenses/publicdomain/"), "Public Domain")
     }
 
     func testGetLicenseType_creativeCommons() {

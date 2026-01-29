@@ -129,7 +129,7 @@ final class PlaybackProgressManager {
     /// - Returns: Video progress items sorted by most recently watched
     func getContinueWatchingItems(limit: Int = 20) -> [PlaybackProgress] {
         allProgress
-            .filter { $0.isVideo && !$0.isComplete }
+            .filter { $0.isVideo && !$0.isComplete && $0.isValid }
             .sorted { $0.lastWatchedDate > $1.lastWatchedDate }
             .prefix(limit)
             .map { $0 }
@@ -140,7 +140,7 @@ final class PlaybackProgressManager {
     /// - Returns: Audio progress items sorted by most recently listened
     func getContinueListeningItems(limit: Int = 20) -> [PlaybackProgress] {
         allProgress
-            .filter { $0.isAudio && !$0.isComplete }
+            .filter { $0.isAudio && !$0.isComplete && $0.isValid }
             .sorted { $0.lastWatchedDate > $1.lastWatchedDate }
             .prefix(limit)
             .map { $0 }
