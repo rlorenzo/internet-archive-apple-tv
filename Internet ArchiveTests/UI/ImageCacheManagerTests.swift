@@ -70,7 +70,13 @@ final class ImageCacheManagerTests: XCTestCase {
 
     // MARK: - Load Image Tests
 
-    func testLoadImage_callsCompletionHandler() {
+    func testLoadImage_callsCompletionHandler() throws {
+        // Skip in CI - network requests to external services are unreliable
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
         let expectation = self.expectation(description: "Load image completion")
         let url = URL(string: "https://archive.org/services/img/test_load_image")!
 
@@ -82,10 +88,16 @@ final class ImageCacheManagerTests: XCTestCase {
             }
         }
 
-        wait(for: [expectation], timeout: 10.0)
+        wait(for: [expectation], timeout: 30.0)
     }
 
-    func testLoadImage_withInvalidURL() {
+    func testLoadImage_withInvalidURL() throws {
+        // Skip in CI - network requests to external services are unreliable
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
         let expectation = self.expectation(description: "Load invalid image")
         let url = URL(string: "https://invalid.example.com/nonexistent_image_12345.jpg")!
 
@@ -101,7 +113,7 @@ final class ImageCacheManagerTests: XCTestCase {
             expectation.fulfill()
         }
 
-        wait(for: [expectation], timeout: 10.0)
+        wait(for: [expectation], timeout: 30.0)
     }
 
     func testCachedImage_afterClear_returnsNil() {
@@ -175,7 +187,13 @@ final class ImageCacheManagerTests: XCTestCase {
 
     // MARK: - Concurrent Access Tests
 
-    func testLoadImage_multipleConcurrentRequests() {
+    func testLoadImage_multipleConcurrentRequests() throws {
+        // Skip in CI - network requests to external services are unreliable
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
         let expectations = (0..<3).map { i in
             expectation(description: "Load image \(i)")
         }
@@ -192,7 +210,7 @@ final class ImageCacheManagerTests: XCTestCase {
             }
         }
 
-        wait(for: expectations, timeout: 15.0)
+        wait(for: expectations, timeout: 30.0)
     }
 }
 
@@ -314,7 +332,13 @@ final class ImageCacheManagerExtendedTests: XCTestCase {
         XCTAssertNil(cachedImage)
     }
 
-    func testLoadImage_callsCompletionOnMainThread() {
+    func testLoadImage_callsCompletionOnMainThread() throws {
+        // Skip in CI - network requests to external services are unreliable
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
         let expectation = self.expectation(description: "Completion on main thread")
         let url = URL(string: "https://archive.org/services/img/main_thread_test")!
 
@@ -323,7 +347,7 @@ final class ImageCacheManagerExtendedTests: XCTestCase {
             expectation.fulfill()
         }
 
-        wait(for: [expectation], timeout: 10.0)
+        wait(for: [expectation], timeout: 30.0)
     }
 
     func testCacheMemoryUsage_isConsistent() {
@@ -354,7 +378,13 @@ final class ImageCacheManagerExtendedTests: XCTestCase {
         XCTAssertNil(cachedImage)
     }
 
-    func testLoadImage_rapidSuccessiveCalls() {
+    func testLoadImage_rapidSuccessiveCalls() throws {
+        // Skip in CI - network requests to external services are unreliable
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
         let expectation = self.expectation(description: "All callbacks received")
         expectation.expectedFulfillmentCount = 5
 
@@ -366,7 +396,7 @@ final class ImageCacheManagerExtendedTests: XCTestCase {
             }
         }
 
-        wait(for: [expectation], timeout: 15.0)
+        wait(for: [expectation], timeout: 30.0)
     }
 
     func testClearCache_afterPrefetch() {
