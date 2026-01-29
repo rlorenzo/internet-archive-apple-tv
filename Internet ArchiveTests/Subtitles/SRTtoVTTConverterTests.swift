@@ -262,3 +262,246 @@ final class SRTtoVTTConverterTests: XCTestCase {
         XCTAssertFalse(decoded.isEmpty)
     }
 }
+
+// MARK: - SRTConversionHelpers Tests
+
+final class SRTConversionHelpersTests: XCTestCase {
+
+    // MARK: - SRT to VTT Conversion Tests
+
+    func testConvertSRTStringToVTT_basicConversion() {
+        let srt = """
+        1
+        00:00:01,000 --> 00:00:04,000
+        Hello World
+
+        2
+        00:00:05,000 --> 00:00:08,000
+        Second subtitle
+        """
+
+        let vtt = SRTConversionHelpers.convertSRTStringToVTT(srt)
+
+        XCTAssertTrue(vtt.hasPrefix("WEBVTT"))
+        XCTAssertTrue(vtt.contains("00:00:01.000 --> 00:00:04.000"))
+        XCTAssertTrue(vtt.contains("Hello World"))
+        XCTAssertTrue(vtt.contains("00:00:05.000 --> 00:00:08.000"))
+        XCTAssertTrue(vtt.contains("Second subtitle"))
+    }
+
+    func testConvertSRTStringToVTT_convertsCommasToPeriods() {
+        let srt = """
+        1
+        00:01:23,456 --> 00:02:34,789
+        Test text
+        """
+
+        let vtt = SRTConversionHelpers.convertSRTStringToVTT(srt)
+
+        XCTAssertTrue(vtt.contains("00:01:23.456 --> 00:02:34.789"))
+        XCTAssertFalse(vtt.contains(","))
+    }
+
+    func testConvertSRTStringToVTT_handlesWindowsLineEndings() {
+        let srt = "1\r\n00:00:01,000 --> 00:00:02,000\r\nWindows line endings\r\n"
+
+        let vtt = SRTConversionHelpers.convertSRTStringToVTT(srt)
+
+        XCTAssertTrue(vtt.contains("Windows line endings"))
+    }
+
+    func testConvertSRTStringToVTT_handlesMacLineEndings() {
+        let srt = "1\r00:00:01,000 --> 00:00:02,000\rMac classic endings\r"
+
+        let vtt = SRTConversionHelpers.convertSRTStringToVTT(srt)
+
+        XCTAssertTrue(vtt.contains("Mac classic endings"))
+    }
+
+    func testConvertSRTStringToVTT_multilineSubtitle() {
+        let srt = """
+        1
+        00:00:01,000 --> 00:00:04,000
+        Line one
+        Line two
+        Line three
+        """
+
+        let vtt = SRTConversionHelpers.convertSRTStringToVTT(srt)
+
+        XCTAssertTrue(vtt.contains("Line one"))
+        XCTAssertTrue(vtt.contains("Line two"))
+        XCTAssertTrue(vtt.contains("Line three"))
+    }
+
+    func testConvertSRTStringToVTT_emptyInput() {
+        let vtt = SRTConversionHelpers.convertSRTStringToVTT("")
+
+        XCTAssertTrue(vtt.hasPrefix("WEBVTT"))
+        // Should only have header, no cues
+        XCTAssertEqual(vtt.trimmingCharacters(in: .whitespacesAndNewlines), "WEBVTT")
+    }
+
+    func testConvertSRTStringToVTT_skipsMalformedBlocks() {
+        let srt = """
+        1
+        00:00:01,000 --> 00:00:02,000
+        Valid subtitle
+
+        This is not a valid block
+        Missing timing line
+
+        2
+        00:00:05,000 --> 00:00:06,000
+        Another valid one
+        """
+
+        let vtt = SRTConversionHelpers.convertSRTStringToVTT(srt)
+
+        XCTAssertTrue(vtt.contains("Valid subtitle"))
+        XCTAssertTrue(vtt.contains("Another valid one"))
+        XCTAssertFalse(vtt.contains("Missing timing line"))
+    }
+
+    func testConvertSRTStringToVTT_skipsEmptyTextBlocks() {
+        let srt = """
+        1
+        00:00:01,000 --> 00:00:02,000
+
+
+        2
+        00:00:03,000 --> 00:00:04,000
+        Real subtitle
+        """
+
+        let vtt = SRTConversionHelpers.convertSRTStringToVTT(srt)
+
+        XCTAssertTrue(vtt.contains("Real subtitle"))
+        // Should not have empty cue
+        let cueCount = vtt.components(separatedBy: " --> ").count - 1
+        XCTAssertEqual(cueCount, 1)
+    }
+
+    func testConvertSRTStringToVTT_preservesSpecialCharacters() {
+        let srt = """
+        1
+        00:00:01,000 --> 00:00:02,000
+        Special chars: é à ü ñ 中文 🎬
+        """
+
+        let vtt = SRTConversionHelpers.convertSRTStringToVTT(srt)
+
+        XCTAssertTrue(vtt.contains("é à ü ñ 中文 🎬"))
+    }
+
+    func testConvertSRTStringToVTT_preservesHTMLTags() {
+        let srt = """
+        1
+        00:00:01,000 --> 00:00:02,000
+        <i>Italic text</i> and <b>bold</b>
+        """
+
+        let vtt = SRTConversionHelpers.convertSRTStringToVTT(srt)
+
+        XCTAssertTrue(vtt.contains("<i>Italic text</i>"))
+        XCTAssertTrue(vtt.contains("<b>bold</b>"))
+    }
+
+    // MARK: - Encoding Detection Tests
+
+    func testDecodeSubtitleData_utf8() {
+        let text = "Hello World - Héllo Wörld"
+        let data = text.data(using: .utf8)!
+
+        let decoded = SRTConversionHelpers.decodeSubtitleData(data)
+
+        XCTAssertEqual(decoded, text)
+    }
+
+    func testDecodeSubtitleData_windowsCP1252() {
+        // Windows-1252 specific characters: smart quotes and em-dash
+        // These bytes represent: "Hello" smart quote char
+        let data = Data([0x48, 0x65, 0x6C, 0x6C, 0x6F, 0x93]) // "Hello" + left smart quote
+
+        let decoded = SRTConversionHelpers.decodeSubtitleData(data)
+
+        XCTAssertTrue(decoded.hasPrefix("Hello"))
+        XCTAssertFalse(decoded.isEmpty)
+    }
+
+    func testDecodeSubtitleData_latin1Fallback() {
+        // Latin-1 can decode any byte sequence
+        let data = Data([0x48, 0x65, 0x6C, 0x6C, 0x6F, 0xE9]) // "Hello" + é in Latin-1
+
+        let decoded = SRTConversionHelpers.decodeSubtitleData(data)
+
+        XCTAssertTrue(decoded.hasPrefix("Hello"))
+    }
+
+    func testDecodeSubtitleData_emptyData() {
+        let decoded = SRTConversionHelpers.decodeSubtitleData(Data())
+        XCTAssertEqual(decoded, "")
+    }
+
+    // MARK: - VTT Filename Generation Tests
+
+    func testVttFilename_lowercaseSRT() {
+        let result = SRTConversionHelpers.vttFilename(from: "movie.srt")
+        XCTAssertEqual(result, "movie.vtt")
+    }
+
+    func testVttFilename_uppercaseSRT() {
+        let result = SRTConversionHelpers.vttFilename(from: "movie.SRT")
+        XCTAssertEqual(result, "movie.vtt")
+    }
+
+    func testVttFilename_mixedCaseSRT() {
+        let result = SRTConversionHelpers.vttFilename(from: "movie.Srt")
+        XCTAssertEqual(result, "movie.vtt")
+    }
+
+    func testVttFilename_noExtension() {
+        let result = SRTConversionHelpers.vttFilename(from: "movie")
+        XCTAssertEqual(result, "movie")
+    }
+
+    func testVttFilename_multipleDotsInName() {
+        let result = SRTConversionHelpers.vttFilename(from: "movie.en.srt")
+        XCTAssertEqual(result, "movie.en.vtt")
+    }
+
+    // MARK: - Timing Validation Tests
+
+    func testIsTimingLine_validLine() {
+        XCTAssertTrue(SRTConversionHelpers.isTimingLine("00:00:01,000 --> 00:00:04,000"))
+        XCTAssertTrue(SRTConversionHelpers.isTimingLine("00:00:01.000 --> 00:00:04.000"))
+    }
+
+    func testIsTimingLine_invalidLine() {
+        XCTAssertFalse(SRTConversionHelpers.isTimingLine("1"))
+        XCTAssertFalse(SRTConversionHelpers.isTimingLine("Hello World"))
+        XCTAssertFalse(SRTConversionHelpers.isTimingLine(""))
+    }
+
+    func testIsTimingLine_partialArrow() {
+        XCTAssertFalse(SRTConversionHelpers.isTimingLine("00:00:01 -> 00:00:04"))
+        XCTAssertFalse(SRTConversionHelpers.isTimingLine("00:00:01-->00:00:04")) // No spaces
+    }
+
+    // MARK: - Timestamp Conversion Tests
+
+    func testConvertTimestamp_commaToDecimal() {
+        let result = SRTConversionHelpers.convertTimestamp("00:01:23,456")
+        XCTAssertEqual(result, "00:01:23.456")
+    }
+
+    func testConvertTimestamp_alreadyDecimal() {
+        let result = SRTConversionHelpers.convertTimestamp("00:01:23.456")
+        XCTAssertEqual(result, "00:01:23.456")
+    }
+
+    func testConvertTimestamp_noMilliseconds() {
+        let result = SRTConversionHelpers.convertTimestamp("00:01:23")
+        XCTAssertEqual(result, "00:01:23")
+    }
+}

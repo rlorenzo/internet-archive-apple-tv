@@ -430,3 +430,291 @@ final class ContinueWatchingCardTests: XCTestCase {
         XCTAssertFalse(card.progress.formattedTimeRemaining.isEmpty)
     }
 }
+
+// MARK: - ContinueWatchingHelpers Tests
+
+@MainActor
+final class ContinueWatchingHelpersTests: XCTestCase {
+
+    // MARK: - Test Helpers
+
+    private func createVideoProgress(
+        identifier: String = "test-video",
+        currentTime: TimeInterval = 2700,
+        duration: TimeInterval = 7200,
+        lastWatchedDate: Date = Date(),
+        title: String? = "Test Movie"
+    ) -> PlaybackProgress {
+        PlaybackProgress(
+            itemIdentifier: identifier,
+            filename: "movie.mp4",
+            currentTime: currentTime,
+            duration: duration,
+            lastWatchedDate: lastWatchedDate,
+            title: title,
+            mediaType: "movies",
+            imageURL: nil
+        )
+    }
+
+    private func createAudioProgress(
+        identifier: String = "test-audio",
+        currentTime: TimeInterval = 45,
+        duration: TimeInterval = 100,
+        lastWatchedDate: Date = Date(),
+        title: String? = "Live Concert"
+    ) -> PlaybackProgress {
+        PlaybackProgress(
+            itemIdentifier: identifier,
+            filename: "album",
+            currentTime: currentTime,
+            duration: duration,
+            lastWatchedDate: lastWatchedDate,
+            title: title,
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 3,
+            trackFilename: "track04.mp3",
+            trackCurrentTime: 180
+        )
+    }
+
+    private func createCompletedProgress(
+        identifier: String = "completed",
+        isVideo: Bool = true
+    ) -> PlaybackProgress {
+        if isVideo {
+            return PlaybackProgress(
+                itemIdentifier: identifier,
+                filename: "movie.mp4",
+                currentTime: 9800, // 98% complete
+                duration: 10000,
+                lastWatchedDate: Date(),
+                title: "Completed Movie",
+                mediaType: "movies",
+                imageURL: nil
+            )
+        } else {
+            return PlaybackProgress(
+                itemIdentifier: identifier,
+                filename: "album",
+                currentTime: 980,
+                duration: 1000,
+                lastWatchedDate: Date(),
+                title: "Completed Album",
+                mediaType: "etree",
+                imageURL: nil
+            )
+        }
+    }
+
+    // MARK: - Filter Tests
+
+    func testFilterProgressItems_excludesCompletedItems() {
+        let items = [
+            createVideoProgress(identifier: "active", currentTime: 500, duration: 1000),
+            createCompletedProgress(identifier: "completed")
+        ]
+
+        let filtered = ContinueWatchingHelpers.filterProgressItems(items, mediaType: nil)
+
+        XCTAssertEqual(filtered.count, 1)
+        XCTAssertEqual(filtered.first?.itemIdentifier, "active")
+    }
+
+    func testFilterProgressItems_filtersVideoOnly() {
+        let items = [
+            createVideoProgress(identifier: "video-1"),
+            createAudioProgress(identifier: "audio-1"),
+            createVideoProgress(identifier: "video-2")
+        ]
+
+        let filtered = ContinueWatchingHelpers.filterProgressItems(items, mediaType: .video)
+
+        XCTAssertEqual(filtered.count, 2)
+        XCTAssertTrue(filtered.allSatisfy { $0.isVideo })
+    }
+
+    func testFilterProgressItems_filtersAudioOnly() {
+        let items = [
+            createVideoProgress(identifier: "video-1"),
+            createAudioProgress(identifier: "audio-1"),
+            createAudioProgress(identifier: "audio-2")
+        ]
+
+        let filtered = ContinueWatchingHelpers.filterProgressItems(items, mediaType: .audio)
+
+        XCTAssertEqual(filtered.count, 2)
+        XCTAssertTrue(filtered.allSatisfy { $0.isAudio })
+    }
+
+    func testFilterProgressItems_nilMediaTypeShowsAll() {
+        let items = [
+            createVideoProgress(identifier: "video-1"),
+            createAudioProgress(identifier: "audio-1")
+        ]
+
+        let filtered = ContinueWatchingHelpers.filterProgressItems(items, mediaType: nil)
+
+        XCTAssertEqual(filtered.count, 2)
+    }
+
+    func testFilterProgressItems_sortsByMostRecent() {
+        let old = Date().addingTimeInterval(-3600) // 1 hour ago
+        let recent = Date()
+
+        let items = [
+            createVideoProgress(identifier: "old", lastWatchedDate: old),
+            createVideoProgress(identifier: "recent", lastWatchedDate: recent)
+        ]
+
+        let filtered = ContinueWatchingHelpers.filterProgressItems(items, mediaType: nil)
+
+        XCTAssertEqual(filtered.first?.itemIdentifier, "recent")
+        XCTAssertEqual(filtered.last?.itemIdentifier, "old")
+    }
+
+    func testFilterProgressItems_emptyInput() {
+        let filtered = ContinueWatchingHelpers.filterProgressItems([], mediaType: nil)
+        XCTAssertTrue(filtered.isEmpty)
+    }
+
+    func testFilterProgressItems_allCompleted() {
+        let items = [
+            createCompletedProgress(identifier: "completed-1"),
+            createCompletedProgress(identifier: "completed-2")
+        ]
+
+        let filtered = ContinueWatchingHelpers.filterProgressItems(items, mediaType: nil)
+
+        XCTAssertTrue(filtered.isEmpty)
+    }
+
+    func testFilterProgressItems_combinedFiltering() {
+        let old = Date().addingTimeInterval(-3600)
+        let recent = Date()
+
+        let items = [
+            createVideoProgress(identifier: "old-video", lastWatchedDate: old),
+            createAudioProgress(identifier: "audio"),
+            createVideoProgress(identifier: "recent-video", lastWatchedDate: recent),
+            createCompletedProgress(identifier: "completed-video", isVideo: true)
+        ]
+
+        let filtered = ContinueWatchingHelpers.filterProgressItems(items, mediaType: .video)
+
+        XCTAssertEqual(filtered.count, 2)
+        XCTAssertEqual(filtered[0].itemIdentifier, "recent-video")
+        XCTAssertEqual(filtered[1].itemIdentifier, "old-video")
+    }
+
+    // MARK: - Card Width Tests
+
+    func testCardWidth_video() {
+        let width = ContinueWatchingHelpers.cardWidth(for: .video)
+        XCTAssertEqual(width, 350)
+    }
+
+    func testCardWidth_audio() {
+        let width = ContinueWatchingHelpers.cardWidth(for: .audio)
+        XCTAssertEqual(width, 200)
+    }
+
+    func testCardWidth_nilUsesVideoWidth() {
+        let width = ContinueWatchingHelpers.cardWidth(for: nil)
+        XCTAssertEqual(width, 350)
+    }
+
+    // MARK: - Aspect Ratio Tests
+
+    func testAspectRatio_video() {
+        let ratio = ContinueWatchingHelpers.aspectRatio(isVideo: true)
+        XCTAssertEqual(ratio, 16.0 / 9.0, accuracy: 0.001)
+    }
+
+    func testAspectRatio_audio() {
+        let ratio = ContinueWatchingHelpers.aspectRatio(isVideo: false)
+        XCTAssertEqual(ratio, 1.0)
+    }
+
+    // MARK: - Accessibility Label Tests
+
+    func testAccessibilityLabel_video() {
+        let progress = createVideoProgress(
+            currentTime: 3600,
+            duration: 7200,
+            title: "Test Movie"
+        )
+
+        let label = ContinueWatchingHelpers.accessibilityLabel(for: progress)
+
+        XCTAssertTrue(label.contains("Test Movie"))
+        XCTAssertTrue(label.contains("Video"))
+        XCTAssertTrue(label.contains("50% complete"))
+    }
+
+    func testAccessibilityLabel_audio() {
+        let progress = createAudioProgress(
+            currentTime: 25,
+            duration: 100,
+            title: "Concert"
+        )
+
+        let label = ContinueWatchingHelpers.accessibilityLabel(for: progress)
+
+        XCTAssertTrue(label.contains("Concert"))
+        XCTAssertTrue(label.contains("Music"))
+        XCTAssertTrue(label.contains("25% complete"))
+    }
+
+    func testAccessibilityLabel_nilTitleUsesIdentifier() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "my-identifier",
+            filename: "file.mp4",
+            currentTime: 100,
+            duration: 200,
+            lastWatchedDate: Date(),
+            title: nil,
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        let label = ContinueWatchingHelpers.accessibilityLabel(for: progress)
+
+        XCTAssertTrue(label.contains("my-identifier"))
+    }
+
+    // MARK: - Section Accessibility Label Tests
+
+    func testSectionAccessibilityLabel_video() {
+        let label = ContinueWatchingHelpers.sectionAccessibilityLabel(mediaType: .video, itemCount: 5)
+        XCTAssertEqual(label, "Continue watching section with 5 items")
+    }
+
+    func testSectionAccessibilityLabel_audio() {
+        let label = ContinueWatchingHelpers.sectionAccessibilityLabel(mediaType: .audio, itemCount: 3)
+        XCTAssertEqual(label, "Continue listening section with 3 items")
+    }
+
+    func testSectionAccessibilityLabel_nil() {
+        let label = ContinueWatchingHelpers.sectionAccessibilityLabel(mediaType: nil, itemCount: 10)
+        XCTAssertEqual(label, "Continue playing section with 10 items")
+    }
+
+    func testSectionAccessibilityLabel_zeroItems() {
+        let label = ContinueWatchingHelpers.sectionAccessibilityLabel(mediaType: .video, itemCount: 0)
+        XCTAssertEqual(label, "Continue watching section with 0 items")
+    }
+
+    // MARK: - Thumbnail URL Tests
+
+    func testThumbnailURL_validIdentifier() {
+        let url = ContinueWatchingHelpers.thumbnailURL(for: "my-movie-id")
+        XCTAssertEqual(url?.absoluteString, "https://archive.org/services/img/my-movie-id")
+    }
+
+    func testThumbnailURL_identifierWithSpecialCharacters() {
+        let url = ContinueWatchingHelpers.thumbnailURL(for: "movie-2024_version")
+        XCTAssertEqual(url?.absoluteString, "https://archive.org/services/img/movie-2024_version")
+    }
+}
