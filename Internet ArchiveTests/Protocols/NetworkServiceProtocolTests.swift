@@ -5,28 +5,29 @@
 //  Unit tests for NetworkServiceProtocol and APIManager conformance
 //
 
-import XCTest
+import Testing
 @testable import Internet_Archive
 
+@Suite("NetworkServiceProtocolTests")
 @MainActor
-final class NetworkServiceProtocolTests: XCTestCase {
+struct NetworkServiceProtocolTests {
 
     // MARK: - APIManager Conformance Tests
 
-    func testAPIManagerConformsToNetworkServiceProtocol() {
-        let service: NetworkServiceProtocol = APIManager.sharedManager
-        XCTAssertNotNil(service)
+    @Test func apiManagerConformsToNetworkServiceProtocol() {
+        // Protocol conformance verified at compile time by this assignment
+        let _: NetworkServiceProtocol = APIManager.sharedManager
     }
 
-    func testAPIManagerSharedManager_isSingleton() {
+    @Test func apiManagerSharedManagerIsSingleton() {
         let instance1 = APIManager.sharedManager
         let instance2 = APIManager.sharedManager
-        XCTAssertTrue(instance1 === instance2)
+        #expect(instance1 === instance2)
     }
 
     // MARK: - Protocol Method Availability Tests
 
-    func testProtocolDefinesRegisterMethod() async throws {
+    @Test func protocolDefinesRegisterMethod() async throws {
         // Verify the protocol method is accessible via MockNetworkService
         let mockService = MockNetworkService()
         mockService.mockAuthResponse = AuthResponse(
@@ -35,10 +36,10 @@ final class NetworkServiceProtocolTests: XCTestCase {
         )
         let service: NetworkServiceProtocol = mockService
         let result = try await service.register(params: ["email": "test@example.com"])
-        XCTAssertEqual(result.success, true)
+        #expect(result.success == true)
     }
 
-    func testProtocolDefinesLoginMethod() async throws {
+    @Test func protocolDefinesLoginMethod() async throws {
         let mockService = MockNetworkService()
         mockService.mockAuthResponse = AuthResponse(
             success: true,
@@ -46,10 +47,10 @@ final class NetworkServiceProtocolTests: XCTestCase {
         )
         let service: NetworkServiceProtocol = mockService
         let result = try await service.login(email: "test@example.com", password: "password")
-        XCTAssertEqual(result.success, true)
+        #expect(result.success == true)
     }
 
-    func testProtocolDefinesGetAccountInfoMethod() async throws {
+    @Test func protocolDefinesGetAccountInfoMethod() async throws {
         let mockService = MockNetworkService()
         mockService.mockAccountInfoResponse = AccountInfoResponse(
             success: true,
@@ -57,101 +58,97 @@ final class NetworkServiceProtocolTests: XCTestCase {
         )
         let service: NetworkServiceProtocol = mockService
         let result = try await service.getAccountInfo(email: "test@example.com")
-        XCTAssertEqual(result.success, true)
+        #expect(result.success == true)
     }
 
-    func testProtocolDefinesSearchMethod() async throws {
+    @Test func protocolDefinesSearchMethod() async throws {
         let mockService = MockNetworkService()
         mockService.mockSearchResponse = SearchResponse(
             response: SearchResponse.SearchResults(numFound: 0, start: 0, docs: [])
         )
         let service: NetworkServiceProtocol = mockService
         let result = try await service.search(query: "test", options: [:])
-        XCTAssertNotNil(result.response)
+        #expect(result.response.numFound == 0)
     }
 
-    func testProtocolDefinesGetCollectionsMethod() async throws {
+    @Test func protocolDefinesGetCollectionsMethod() async throws {
         let mockService = MockNetworkService()
         mockService.mockCollectionsResponse = ("test", [])
         let service: NetworkServiceProtocol = mockService
         let result = try await service.getCollections(collection: "test", resultType: "movies", limit: 10)
-        XCTAssertNotNil(result.results)
+        #expect(result.results.isEmpty)
     }
 
-    func testProtocolDefinesGetMetadataMethod() async throws {
+    @Test func protocolDefinesGetMetadataMethod() async throws {
         let mockService = MockNetworkService()
         mockService.mockMetadataResponse = ItemMetadataResponse(metadata: ItemMetadata(identifier: "test"))
         let service: NetworkServiceProtocol = mockService
         let result = try await service.getMetadata(identifier: "test_item")
-        XCTAssertNotNil(result)
+        #expect(result.metadata?.identifier == "test")
     }
 
-    func testProtocolDefinesGetFavoriteItemsMethod() async throws {
+    @Test func protocolDefinesGetFavoriteItemsMethod() async throws {
         let mockService = MockNetworkService()
         mockService.mockFavoritesResponse = FavoritesResponse(members: [])
         let service: NetworkServiceProtocol = mockService
         let result = try await service.getFavoriteItems(username: "testuser")
-        XCTAssertNotNil(result)
+        #expect(result.members?.isEmpty == true)
     }
 
     // MARK: - Mock Service Tests
 
-    func testMockServiceConformsToProtocol() {
-        let mockService = MockNetworkService()
-        let service: NetworkServiceProtocol = mockService
-        XCTAssertNotNil(service)
+    @Test func mockServiceConformsToProtocol() {
+        // Protocol conformance verified at compile time by this assignment
+        let _: NetworkServiceProtocol = MockNetworkService()
     }
 
-    func testMockServiceCanBeUsedAsProtocolType() {
+    @Test func mockServiceCanBeUsedAsProtocolType() async throws {
         let mockService = MockNetworkService()
-
-        // Verify it can be assigned to protocol type
+        mockService.mockSearchResponse = SearchResponse(
+            response: SearchResponse.SearchResults(numFound: 42, start: 0, docs: [])
+        )
+        // Verify the mock can be used through the protocol type
         let service: NetworkServiceProtocol = mockService
-        XCTAssertNotNil(service)
+        let result = try await service.search(query: "test", options: [:])
+        #expect(result.response.numFound == 42)
     }
 }
 
 // MARK: - APIManager Extension Tests
 
+@Suite("APIManagerProtocolExtensionTests")
 @MainActor
-final class APIManagerProtocolExtensionTests: XCTestCase {
+struct APIManagerProtocolExtensionTests {
 
     // Note: These tests verify the extension methods exist and are callable.
     // Actual network calls are tested in integration tests.
+    // Protocol conformance is verified at compile time by assigning to the protocol type.
 
-    func testRegister_extensionMethodExists() {
-        let manager = APIManager.sharedManager
-        // Just verify the method is accessible
-        XCTAssertNotNil(manager)
+    @Test func registerExtensionMethodExists() {
+        let _: NetworkServiceProtocol = APIManager.sharedManager
     }
 
-    func testLogin_extensionMethodExists() {
-        let manager = APIManager.sharedManager
-        XCTAssertNotNil(manager)
+    @Test func loginExtensionMethodExists() {
+        let _: NetworkServiceProtocol = APIManager.sharedManager
     }
 
-    func testGetAccountInfo_extensionMethodExists() {
-        let manager = APIManager.sharedManager
-        XCTAssertNotNil(manager)
+    @Test func getAccountInfoExtensionMethodExists() {
+        let _: NetworkServiceProtocol = APIManager.sharedManager
     }
 
-    func testSearch_extensionMethodExists() {
-        let manager = APIManager.sharedManager
-        XCTAssertNotNil(manager)
+    @Test func searchExtensionMethodExists() {
+        let _: NetworkServiceProtocol = APIManager.sharedManager
     }
 
-    func testGetCollections_extensionMethodExists() {
-        let manager = APIManager.sharedManager
-        XCTAssertNotNil(manager)
+    @Test func getCollectionsExtensionMethodExists() {
+        let _: NetworkServiceProtocol = APIManager.sharedManager
     }
 
-    func testGetMetadata_extensionMethodExists() {
-        let manager = APIManager.sharedManager
-        XCTAssertNotNil(manager)
+    @Test func getMetadataExtensionMethodExists() {
+        let _: NetworkServiceProtocol = APIManager.sharedManager
     }
 
-    func testGetFavoriteItems_extensionMethodExists() {
-        let manager = APIManager.sharedManager
-        XCTAssertNotNil(manager)
+    @Test func getFavoriteItemsExtensionMethodExists() {
+        let _: NetworkServiceProtocol = APIManager.sharedManager
     }
 }

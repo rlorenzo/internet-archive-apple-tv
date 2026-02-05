@@ -89,7 +89,7 @@ enum SearchResultsGridHelpers {
         itemsLoaded: Int,
         totalFound: Int
     ) -> Bool {
-        return itemsLoaded == pageSize &&
+        itemsLoaded == pageSize &&
             (currentPage + 1) * pageSize < totalFound
     }
 
