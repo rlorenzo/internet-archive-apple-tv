@@ -68,13 +68,18 @@ final class MockCollectionService: CollectionServiceProtocol, @unchecked Sendabl
 @MainActor
 final class CollectionViewModelTests: XCTestCase {
 
-    var viewModel: CollectionViewModel!
-    var mockService: MockCollectionService!
+    nonisolated(unsafe) var viewModel: CollectionViewModel!
+    nonisolated(unsafe) var mockService: MockCollectionService!
 
     override func setUp() {
         super.setUp()
-        mockService = MockCollectionService()
-        viewModel = CollectionViewModel(collectionService: mockService)
+        let (newMockService, newViewModel) = MainActor.assumeIsolated {
+            let service = MockCollectionService()
+            let vm = CollectionViewModel(collectionService: service)
+            return (service, vm)
+        }
+        mockService = newMockService
+        viewModel = newViewModel
     }
 
     override func tearDown() {
@@ -348,5 +353,114 @@ final class SortCriteriaTests: XCTestCase {
         XCTAssertEqual(SortCriteria.date.rawValue, "Date")
         XCTAssertEqual(SortCriteria.downloads.rawValue, "Downloads")
         XCTAssertEqual(SortCriteria.year.rawValue, "Year")
+    }
+}
+
+// MARK: - Extended Sort Tests
+
+@MainActor
+final class CollectionViewModelSortEdgeCasesTests: XCTestCase {
+
+    nonisolated(unsafe) var viewModel: CollectionViewModel!
+    nonisolated(unsafe) var mockService: MockCollectionService!
+
+    override func setUp() {
+        super.setUp()
+        let (newMockService, newViewModel) = MainActor.assumeIsolated {
+            let service = MockCollectionService()
+            let vm = CollectionViewModel(collectionService: service)
+            return (service, vm)
+        }
+        mockService = newMockService
+        viewModel = newViewModel
+    }
+
+    override func tearDown() {
+        viewModel = nil
+        mockService = nil
+        super.tearDown()
+    }
+
+    func testSortItems_byDownloads_handlesNilDownloads() async {
+        let items = [
+            TestFixtures.makeSearchResult(identifier: "1", downloads: nil),
+            TestFixtures.makeSearchResult(identifier: "2", downloads: 500),
+            TestFixtures.makeSearchResult(identifier: "3", downloads: nil)
+        ]
+        mockService.mockCollectionsResponse = ("test", items)
+        await viewModel.loadCollection(name: "test", mediaType: "movies")
+
+        let sorted = viewModel.sortItems(by: .downloads)
+
+        // Items with downloads should come first (sorted descending)
+        XCTAssertEqual(sorted[0].downloads, 500)
+        // Items without downloads treated as 0, sorted to end
+        XCTAssertNil(sorted[1].downloads)
+        XCTAssertNil(sorted[2].downloads)
+    }
+
+    func testSortItems_byDate_handlesNilDates() async {
+        let items = [
+            TestFixtures.makeSearchResult(identifier: "1", date: nil),
+            TestFixtures.makeSearchResult(identifier: "2", date: "2023-06-15"),
+            TestFixtures.makeSearchResult(identifier: "3", date: nil)
+        ]
+        mockService.mockCollectionsResponse = ("test", items)
+        await viewModel.loadCollection(name: "test", mediaType: "movies")
+
+        let sorted = viewModel.sortItems(by: .date)
+
+        // Items with dates should come first (sorted descending)
+        XCTAssertEqual(sorted[0].date, "2023-06-15")
+    }
+
+    func testSortItems_byYear_handlesNilYears() async {
+        let items = [
+            TestFixtures.makeSearchResult(identifier: "1", year: nil),
+            TestFixtures.makeSearchResult(identifier: "2", year: "2023"),
+            TestFixtures.makeSearchResult(identifier: "3", year: nil)
+        ]
+        mockService.mockCollectionsResponse = ("test", items)
+        await viewModel.loadCollection(name: "test", mediaType: "movies")
+
+        let sorted = viewModel.sortItems(by: .year)
+
+        // Items with years should come first (sorted descending)
+        XCTAssertEqual(sorted[0].year, "2023")
+    }
+
+    func testSortItems_emptyCollection_returnsEmpty() async {
+        mockService.mockCollectionsResponse = ("test", [])
+        await viewModel.loadCollection(name: "test", mediaType: "movies")
+
+        let sorted = viewModel.sortItems(by: .title)
+
+        XCTAssertTrue(sorted.isEmpty)
+    }
+
+    func testSortItems_singleItem_returnsSingleItem() async {
+        let items = [TestFixtures.makeSearchResult(identifier: "only")]
+        mockService.mockCollectionsResponse = ("test", items)
+        await viewModel.loadCollection(name: "test", mediaType: "movies")
+
+        let sorted = viewModel.sortItems(by: .downloads)
+
+        XCTAssertEqual(sorted.count, 1)
+        XCTAssertEqual(sorted[0].identifier, "only")
+    }
+
+    func testFilterItems_caseInsensitiveMediaType() async {
+        let items = [
+            TestFixtures.makeSearchResult(identifier: "1", mediatype: "Movies"),
+            TestFixtures.makeSearchResult(identifier: "2", mediatype: "MOVIES"),
+            TestFixtures.makeSearchResult(identifier: "3", mediatype: "movies")
+        ]
+        mockService.mockCollectionsResponse = ("test", items)
+        await viewModel.loadCollection(name: "test", mediaType: "movies")
+
+        // Filter should match regardless of case
+        let filtered = viewModel.filterItems(by: "movies")
+
+        XCTAssertEqual(filtered.count, 3)
     }
 }

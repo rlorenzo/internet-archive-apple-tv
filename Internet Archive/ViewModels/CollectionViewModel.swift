@@ -79,12 +79,12 @@ final class CollectionViewModel: ObservableObject {
         state = CollectionViewState.initial
     }
 
-    /// Filter items by media type
+    /// Filter items by media type (case-insensitive)
     func filterItems(by mediaType: String) -> [SearchResult] {
         if mediaType.isEmpty {
             return state.items
         }
-        return state.items.filter { $0.mediatype == mediaType }
+        return state.items.filter { $0.mediatype?.lowercased() == mediaType.lowercased() }
     }
 
     /// Sort items by various criteria

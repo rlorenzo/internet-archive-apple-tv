@@ -5,51 +5,43 @@
 //  Unit tests for ContentFilterService
 //
 
-import XCTest
+import Testing
 @testable import Internet_Archive
 
+@Suite("ContentFilterService Tests", .serialized)
 @MainActor
-final class ContentFilterServiceTests: XCTestCase {
+struct ContentFilterServiceTests {
 
-    // MARK: - Setup
-
-    override func setUp() async throws {
-        try await super.setUp()
+    init() {
         // Reset to defaults before each test
         ContentFilterService.shared.resetToDefaults()
         ContentFilterService.shared.resetStatistics()
     }
 
-    override func tearDown() async throws {
-        // Reset after tests
-        ContentFilterService.shared.resetToDefaults()
-        try await super.tearDown()
-    }
-
     // MARK: - Singleton Tests
 
-    func testSharedInstance_exists() {
+    @Test func sharedInstanceExists() {
         let service = ContentFilterService.shared
-        XCTAssertNotNil(service)
+        #expect(service != nil)
     }
 
-    func testSharedInstance_isSingleton() {
+    @Test func sharedInstanceIsSingleton() {
         let service1 = ContentFilterService.shared
         let service2 = ContentFilterService.shared
-        XCTAssertTrue(service1 === service2)
+        #expect(service1 === service2)
     }
 
     // MARK: - Default State Tests
 
-    func testDefaultState_licenseFilteringDisabled() {
+    @Test func defaultStateLicenseFilteringDisabled() {
         let service = ContentFilterService.shared
         service.resetToDefaults()
-        XCTAssertFalse(service.isLicenseFilteringEnabled, "License filtering should be disabled by default (most IA content lacks license metadata)")
+        #expect(!service.isLicenseFilteringEnabled, "License filtering should be disabled by default (most IA content lacks license metadata)")
     }
 
     // MARK: - Collection Filtering Tests (Always Active)
 
-    func testShouldFilter_blockedCollection_noPreview() {
+    @Test func shouldFilterBlockedCollectionNoPreview() {
         let result = SearchResult(
             identifier: "test-item",
             title: "Test Item",
@@ -57,15 +49,15 @@ final class ContentFilterServiceTests: XCTestCase {
         )
 
         let filterResult = ContentFilterService.shared.shouldFilter(result)
-        XCTAssertTrue(filterResult.isFiltered, "Items in no-preview collection should always be filtered")
+        #expect(filterResult.isFiltered, "Items in no-preview collection should always be filtered")
         if case .blockedCollection(let collection) = filterResult.reason {
-            XCTAssertEqual(collection, "no-preview")
+            #expect(collection == "no-preview")
         } else {
-            XCTFail("Expected blockedCollection reason")
+            Issue.record("Expected blockedCollection reason")
         }
     }
 
-    func testShouldFilter_blockedCollection_hentai() {
+    @Test func shouldFilterBlockedCollectionHentai() {
         let result = SearchResult(
             identifier: "test-item",
             title: "Test Item",
@@ -73,10 +65,10 @@ final class ContentFilterServiceTests: XCTestCase {
         )
 
         let filterResult = ContentFilterService.shared.shouldFilter(result)
-        XCTAssertTrue(filterResult.isFiltered, "Items in hentai collection should always be filtered")
+        #expect(filterResult.isFiltered, "Items in hentai collection should always be filtered")
     }
 
-    func testShouldFilter_blockedCollection_adultcdroms() {
+    @Test func shouldFilterBlockedCollectionAdultcdroms() {
         let result = SearchResult(
             identifier: "test-item",
             title: "Test Item",
@@ -84,10 +76,10 @@ final class ContentFilterServiceTests: XCTestCase {
         )
 
         let filterResult = ContentFilterService.shared.shouldFilter(result)
-        XCTAssertTrue(filterResult.isFiltered, "Items in adultcdroms collection should always be filtered")
+        #expect(filterResult.isFiltered, "Items in adultcdroms collection should always be filtered")
     }
 
-    func testShouldFilter_allowedCollection_withLicense() {
+    @Test func shouldFilterAllowedCollectionWithLicense() {
         // Need to disable license filtering to test collection-only filtering
         let service = ContentFilterService.shared
         service.setLicenseFilteringEnabled(false)
@@ -99,10 +91,10 @@ final class ContentFilterServiceTests: XCTestCase {
         )
 
         let filterResult = service.shouldFilter(result)
-        XCTAssertFalse(filterResult.isFiltered, "Items in normal collections should not be filtered when license filtering is off")
+        #expect(!filterResult.isFiltered, "Items in normal collections should not be filtered when license filtering is off")
     }
 
-    func testShouldFilter_allowedCollection_withOpenLicense() {
+    @Test func shouldFilterAllowedCollectionWithOpenLicense() {
         let result = SearchResult(
             identifier: "test-item",
             title: "Test Documentary",
@@ -111,10 +103,10 @@ final class ContentFilterServiceTests: XCTestCase {
         )
 
         let filterResult = ContentFilterService.shared.shouldFilter(result)
-        XCTAssertFalse(filterResult.isFiltered, "Items with open license should not be filtered")
+        #expect(!filterResult.isFiltered, "Items with open license should not be filtered")
     }
 
-    func testShouldFilter_caseInsensitive() {
+    @Test func shouldFilterCaseInsensitive() {
         let result = SearchResult(
             identifier: "test-item",
             title: "Test Item",
@@ -122,12 +114,12 @@ final class ContentFilterServiceTests: XCTestCase {
         )
 
         let filterResult = ContentFilterService.shared.shouldFilter(result)
-        XCTAssertTrue(filterResult.isFiltered, "Collection filtering should be case-insensitive")
+        #expect(filterResult.isFiltered, "Collection filtering should be case-insensitive")
     }
 
     // MARK: - Keyword Filtering Tests (Always Active)
 
-    func testShouldFilter_blockedKeyword_xxx() {
+    @Test func shouldFilterBlockedKeywordXxx() {
         let result = SearchResult(
             identifier: "test-item",
             title: "XXX Video",
@@ -135,10 +127,10 @@ final class ContentFilterServiceTests: XCTestCase {
         )
 
         let filterResult = ContentFilterService.shared.shouldFilter(result)
-        XCTAssertTrue(filterResult.isFiltered, "Items with xxx in title should always be filtered")
+        #expect(filterResult.isFiltered, "Items with xxx in title should always be filtered")
     }
 
-    func testShouldFilter_blockedKeyword_porn() {
+    @Test func shouldFilterBlockedKeywordPorn() {
         let result = SearchResult(
             identifier: "test-item",
             title: "Some porn content",
@@ -146,10 +138,10 @@ final class ContentFilterServiceTests: XCTestCase {
         )
 
         let filterResult = ContentFilterService.shared.shouldFilter(result)
-        XCTAssertTrue(filterResult.isFiltered, "Items with porn in title should always be filtered")
+        #expect(filterResult.isFiltered, "Items with porn in title should always be filtered")
     }
 
-    func testShouldFilter_safeTitle() {
+    @Test func shouldFilterSafeTitle() {
         // Disable license filtering to test keyword-only filtering
         let service = ContentFilterService.shared
         service.setLicenseFilteringEnabled(false)
@@ -161,53 +153,57 @@ final class ContentFilterServiceTests: XCTestCase {
         )
 
         let filterResult = service.shouldFilter(result)
-        XCTAssertFalse(filterResult.isFiltered, "Items with safe titles should not be filtered")
+        #expect(!filterResult.isFiltered, "Items with safe titles should not be filtered")
     }
 
     // MARK: - License Filtering Tests (Optional)
 
-    func testIsOpenLicense_creativeCommonsPublicDomain() {
+    @Test func isOpenLicenseCreativeCommonsPublicDomain() {
         let service = ContentFilterService.shared
 
-        XCTAssertTrue(service.isOpenLicense("https://creativecommons.org/publicdomain/zero/1.0/"))
-        XCTAssertTrue(service.isOpenLicense("http://creativecommons.org/publicdomain/mark/1.0/"))
+        #expect(service.isOpenLicense("https://creativecommons.org/publicdomain/zero/1.0/"))
+        #expect(service.isOpenLicense("http://creativecommons.org/publicdomain/mark/1.0/"))
+        // Legacy public domain URL format used by older Internet Archive items
+        #expect(service.isOpenLicense("http://creativecommons.org/licenses/publicdomain/"))
     }
 
-    func testIsOpenLicense_creativeCommonsBy() {
+    @Test func isOpenLicenseCreativeCommonsBy() {
         let service = ContentFilterService.shared
 
-        XCTAssertTrue(service.isOpenLicense("https://creativecommons.org/licenses/by/4.0/"))
-        XCTAssertTrue(service.isOpenLicense("https://creativecommons.org/licenses/by-sa/4.0/"))
-        XCTAssertTrue(service.isOpenLicense("https://creativecommons.org/licenses/by-nc/4.0/"))
-        XCTAssertTrue(service.isOpenLicense("https://creativecommons.org/licenses/by-nc-sa/4.0/"))
-        XCTAssertTrue(service.isOpenLicense("https://creativecommons.org/licenses/by-nd/4.0/"))
-        XCTAssertTrue(service.isOpenLicense("https://creativecommons.org/licenses/by-nc-nd/4.0/"))
+        #expect(service.isOpenLicense("https://creativecommons.org/licenses/by/4.0/"))
+        #expect(service.isOpenLicense("https://creativecommons.org/licenses/by-sa/4.0/"))
+        #expect(service.isOpenLicense("https://creativecommons.org/licenses/by-nc/4.0/"))
+        #expect(service.isOpenLicense("https://creativecommons.org/licenses/by-nc-sa/4.0/"))
+        #expect(service.isOpenLicense("https://creativecommons.org/licenses/by-nd/4.0/"))
+        #expect(service.isOpenLicense("https://creativecommons.org/licenses/by-nc-nd/4.0/"))
     }
 
-    func testIsOpenLicense_unknownLicense() {
+    @Test func isOpenLicenseUnknownLicense() {
         let service = ContentFilterService.shared
 
-        XCTAssertFalse(service.isOpenLicense("https://example.com/license"))
-        XCTAssertFalse(service.isOpenLicense("all rights reserved"))
+        #expect(!service.isOpenLicense("https://example.com/license"))
+        #expect(!service.isOpenLicense("all rights reserved"))
     }
 
-    func testGetLicenseType_publicDomain() {
+    @Test func getLicenseTypePublicDomain() {
         let service = ContentFilterService.shared
 
-        XCTAssertEqual(service.getLicenseType("https://creativecommons.org/publicdomain/zero/1.0/"), "CC0 (Public Domain)")
-        XCTAssertEqual(service.getLicenseType("https://creativecommons.org/publicdomain/mark/1.0/"), "Public Domain")
+        #expect(service.getLicenseType("https://creativecommons.org/publicdomain/zero/1.0/") == "CC0 (Public Domain)")
+        #expect(service.getLicenseType("https://creativecommons.org/publicdomain/mark/1.0/") == "Public Domain")
+        // Legacy public domain URL format used by older Internet Archive items
+        #expect(service.getLicenseType("http://creativecommons.org/licenses/publicdomain/") == "Public Domain")
     }
 
-    func testGetLicenseType_creativeCommons() {
+    @Test func getLicenseTypeCreativeCommons() {
         let service = ContentFilterService.shared
 
-        XCTAssertEqual(service.getLicenseType("https://creativecommons.org/licenses/by/4.0/"), "CC BY")
-        XCTAssertEqual(service.getLicenseType("https://creativecommons.org/licenses/by-sa/4.0/"), "CC BY-SA")
-        XCTAssertEqual(service.getLicenseType("https://creativecommons.org/licenses/by-nc/4.0/"), "CC BY-NC")
-        XCTAssertEqual(service.getLicenseType("https://creativecommons.org/licenses/by-nc-sa/4.0/"), "CC BY-NC-SA")
+        #expect(service.getLicenseType("https://creativecommons.org/licenses/by/4.0/") == "CC BY")
+        #expect(service.getLicenseType("https://creativecommons.org/licenses/by-sa/4.0/") == "CC BY-SA")
+        #expect(service.getLicenseType("https://creativecommons.org/licenses/by-nc/4.0/") == "CC BY-NC")
+        #expect(service.getLicenseType("https://creativecommons.org/licenses/by-nc-sa/4.0/") == "CC BY-NC-SA")
     }
 
-    func testShouldFilter_licenseFiltering_enabled() {
+    @Test func shouldFilterLicenseFilteringEnabled() {
         let service = ContentFilterService.shared
         service.setLicenseFilteringEnabled(true)
 
@@ -232,12 +228,12 @@ final class ContentFilterServiceTests: XCTestCase {
             licenseurl: "https://example.com/all-rights-reserved"
         )
 
-        XCTAssertFalse(service.shouldFilter(resultWithLicense).isFiltered, "Items with open license should pass")
-        XCTAssertTrue(service.shouldFilter(resultWithoutLicense).isFiltered, "Items without license should be filtered when license filtering is enabled")
-        XCTAssertTrue(service.shouldFilter(resultWithRestrictedLicense).isFiltered, "Items with restricted license should be filtered")
+        #expect(!service.shouldFilter(resultWithLicense).isFiltered, "Items with open license should pass")
+        #expect(service.shouldFilter(resultWithoutLicense).isFiltered, "Items without license should be filtered when license filtering is enabled")
+        #expect(service.shouldFilter(resultWithRestrictedLicense).isFiltered, "Items with restricted license should be filtered")
     }
 
-    func testShouldFilter_licenseFiltering_disabled() {
+    @Test func shouldFilterLicenseFilteringDisabled() {
         let service = ContentFilterService.shared
         service.setLicenseFilteringEnabled(false)
 
@@ -248,12 +244,12 @@ final class ContentFilterServiceTests: XCTestCase {
             licenseurl: nil
         )
 
-        XCTAssertFalse(service.shouldFilter(resultWithoutLicense).isFiltered, "Items without license should pass when license filtering is disabled")
+        #expect(!service.shouldFilter(resultWithoutLicense).isFiltered, "Items without license should pass when license filtering is disabled")
     }
 
     // MARK: - Filter Array Tests
 
-    func testFilter_removesBlockedItems() {
+    @Test func filterRemovesBlockedItems() {
         // Disable license filtering to test collection filtering only
         let service = ContentFilterService.shared
         service.setLicenseFilteringEnabled(false)
@@ -265,11 +261,11 @@ final class ContentFilterServiceTests: XCTestCase {
         ]
 
         let filtered = service.filter(results)
-        XCTAssertEqual(filtered.count, 2, "Should filter out blocked items")
-        XCTAssertTrue(filtered.allSatisfy { $0.identifier != "2" }, "Blocked item should be removed")
+        #expect(filtered.count == 2, "Should filter out blocked items")
+        #expect(filtered.allSatisfy { $0.identifier != "2" }, "Blocked item should be removed")
     }
 
-    func testFilter_withLicenseFiltering() {
+    @Test func filterWithLicenseFiltering() {
         let service = ContentFilterService.shared
         service.setLicenseFilteringEnabled(true)
 
@@ -280,44 +276,44 @@ final class ContentFilterServiceTests: XCTestCase {
         ]
 
         let filtered = service.filter(results)
-        XCTAssertEqual(filtered.count, 1, "Should only keep licensed, non-adult content")
-        XCTAssertEqual(filtered.first?.identifier, "1", "Only the licensed, safe item should remain")
+        #expect(filtered.count == 1, "Should only keep licensed, non-adult content")
+        #expect(filtered.first?.identifier == "1", "Only the licensed, safe item should remain")
     }
 
     // MARK: - Collection Blocking Tests
 
-    func testIsCollectionBlocked() {
+    @Test func isCollectionBlocked() {
         let service = ContentFilterService.shared
 
-        XCTAssertTrue(service.isCollectionBlocked("no-preview"))
-        XCTAssertTrue(service.isCollectionBlocked("hentai"))
-        XCTAssertTrue(service.isCollectionBlocked("adultcdroms"))
-        XCTAssertTrue(service.isCollectionBlocked("NO-PREVIEW"))  // Case insensitive
-        XCTAssertFalse(service.isCollectionBlocked("movies"))
-        XCTAssertFalse(service.isCollectionBlocked("documentary"))
+        #expect(service.isCollectionBlocked("no-preview"))
+        #expect(service.isCollectionBlocked("hentai"))
+        #expect(service.isCollectionBlocked("adultcdroms"))
+        #expect(service.isCollectionBlocked("NO-PREVIEW"))  // Case insensitive
+        #expect(!service.isCollectionBlocked("movies"))
+        #expect(!service.isCollectionBlocked("documentary"))
     }
 
-    func testHasContentWarning() {
+    @Test func hasContentWarning() {
         let service = ContentFilterService.shared
 
-        XCTAssertTrue(service.hasContentWarning(["movies", "no-preview"]))
-        XCTAssertTrue(service.hasContentWarning(["No-Preview"]))  // Case insensitive
-        XCTAssertFalse(service.hasContentWarning(["movies", "documentary"]))
+        #expect(service.hasContentWarning(["movies", "no-preview"]))
+        #expect(service.hasContentWarning(["No-Preview"]))  // Case insensitive
+        #expect(!service.hasContentWarning(["movies", "documentary"]))
     }
 
     // MARK: - Query Building Tests
 
-    func testBuildExclusionQuery() {
+    @Test func buildExclusionQuery() {
         let service = ContentFilterService.shared
         let query = service.buildExclusionQuery()
 
-        XCTAssertTrue(query.contains("-collection:(no-preview)"), "Exclusion query should include no-preview")
-        XCTAssertTrue(query.contains("-collection:(hentai)"), "Exclusion query should include hentai")
+        #expect(query.contains("-collection:(no-preview)"), "Exclusion query should include no-preview")
+        #expect(query.contains("-collection:(hentai)"), "Exclusion query should include hentai")
     }
 
     // MARK: - Statistics Tests
 
-    func testFilterStatistics() {
+    @Test func filterStatistics() {
         let service = ContentFilterService.shared
         service.setLicenseFilteringEnabled(false)  // Disable to test collection/keyword filtering only
 
@@ -331,12 +327,12 @@ final class ContentFilterServiceTests: XCTestCase {
         _ = service.filter(results)
 
         let stats = service.filterStatistics
-        XCTAssertEqual(stats.totalItemsChecked, 3)
-        XCTAssertEqual(stats.totalItemsFiltered, 2)
-        XCTAssertTrue(stats.filterPercentage > 60 && stats.filterPercentage < 70)
+        #expect(stats.totalItemsChecked == 3)
+        #expect(stats.totalItemsFiltered == 2)
+        #expect(stats.filterPercentage > 60 && stats.filterPercentage < 70)
     }
 
-    func testResetStatistics() {
+    @Test func resetStatistics() {
         let service = ContentFilterService.shared
 
         // Generate some stats
@@ -347,13 +343,13 @@ final class ContentFilterServiceTests: XCTestCase {
         service.resetStatistics()
 
         let stats = service.filterStatistics
-        XCTAssertEqual(stats.totalItemsChecked, 0)
-        XCTAssertEqual(stats.totalItemsFiltered, 0)
+        #expect(stats.totalItemsChecked == 0)
+        #expect(stats.totalItemsFiltered == 0)
     }
 
     // MARK: - Preferences Tests
 
-    func testResetToDefaults() {
+    @Test func resetToDefaults() {
         let service = ContentFilterService.shared
 
         // Modify settings
@@ -362,16 +358,16 @@ final class ContentFilterServiceTests: XCTestCase {
         // Reset
         service.resetToDefaults()
 
-        XCTAssertFalse(service.isLicenseFilteringEnabled, "Default should have license filtering OFF")
+        #expect(!service.isLicenseFilteringEnabled, "Default should have license filtering OFF")
     }
 
-    func testSetLicenseFilteringEnabled() {
+    @Test func setLicenseFilteringEnabled() {
         let service = ContentFilterService.shared
 
         service.setLicenseFilteringEnabled(true)
-        XCTAssertTrue(service.isLicenseFilteringEnabled)
+        #expect(service.isLicenseFilteringEnabled)
 
         service.setLicenseFilteringEnabled(false)
-        XCTAssertFalse(service.isLicenseFilteringEnabled)
+        #expect(!service.isLicenseFilteringEnabled)
     }
 }

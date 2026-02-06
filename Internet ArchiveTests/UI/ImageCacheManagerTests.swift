@@ -70,7 +70,13 @@ final class ImageCacheManagerTests: XCTestCase {
 
     // MARK: - Load Image Tests
 
-    func testLoadImage_callsCompletionHandler() {
+    func testLoadImage_callsCompletionHandler() throws {
+        // Skip in CI - network requests to external services are unreliable
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
         let expectation = self.expectation(description: "Load image completion")
         let url = URL(string: "https://archive.org/services/img/test_load_image")!
 
@@ -82,10 +88,16 @@ final class ImageCacheManagerTests: XCTestCase {
             }
         }
 
-        wait(for: [expectation], timeout: 10.0)
+        wait(for: [expectation], timeout: 30.0)
     }
 
-    func testLoadImage_withInvalidURL() {
+    func testLoadImage_withInvalidURL() throws {
+        // Skip in CI - network requests to external services are unreliable
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
         let expectation = self.expectation(description: "Load invalid image")
         let url = URL(string: "https://invalid.example.com/nonexistent_image_12345.jpg")!
 
@@ -101,7 +113,7 @@ final class ImageCacheManagerTests: XCTestCase {
             expectation.fulfill()
         }
 
-        wait(for: [expectation], timeout: 10.0)
+        wait(for: [expectation], timeout: 30.0)
     }
 
     func testCachedImage_afterClear_returnsNil() {
@@ -175,7 +187,13 @@ final class ImageCacheManagerTests: XCTestCase {
 
     // MARK: - Concurrent Access Tests
 
-    func testLoadImage_multipleConcurrentRequests() {
+    func testLoadImage_multipleConcurrentRequests() throws {
+        // Skip in CI - network requests to external services are unreliable
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
         let expectations = (0..<3).map { i in
             expectation(description: "Load image \(i)")
         }
@@ -192,7 +210,7 @@ final class ImageCacheManagerTests: XCTestCase {
             }
         }
 
-        wait(for: expectations, timeout: 15.0)
+        wait(for: expectations, timeout: 30.0)
     }
 }
 
@@ -201,11 +219,14 @@ final class ImageCacheManagerTests: XCTestCase {
 @MainActor
 final class UIImageViewLoadImageTests: XCTestCase {
 
-    var imageView: UIImageView!
+    nonisolated(unsafe) var imageView: UIImageView!
 
     override func setUp() {
         super.setUp()
-        imageView = UIImageView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
+        let newImageView = MainActor.assumeIsolated {
+            return UIImageView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
+        }
+        imageView = newImageView
     }
 
     override func tearDown() {
@@ -269,5 +290,126 @@ final class UIImageViewLoadImageTests: XCTestCase {
         imageView.loadImage(from: url, placeholder: placeholder)
 
         XCTAssertNotNil(imageView)
+    }
+}
+
+// MARK: - Extended Cache Tests
+
+@MainActor
+final class ImageCacheManagerExtendedTests: XCTestCase {
+
+    func testClearCache_canBeCalledMultipleTimes() {
+        // Should not crash when called multiple times in succession
+        ImageCacheManager.shared.clearCache()
+        ImageCacheManager.shared.clearCache()
+        ImageCacheManager.shared.clearCache()
+
+        XCTAssertNotNil(ImageCacheManager.shared)
+    }
+
+    func testPrefetchImages_handlesLargeNumberOfURLs() {
+        let urls = (0..<100).map { index in
+            URL(string: "https://archive.org/services/img/batch_prefetch_\(index)")!
+        }
+
+        // Should not crash with large batch
+        ImageCacheManager.shared.prefetchImages(for: urls)
+        XCTAssertNotNil(ImageCacheManager.shared)
+    }
+
+    func testCachedImage_withQueryParameters() {
+        let url = URL(string: "https://archive.org/services/img/test?size=large&format=jpg")!
+        let cachedImage = ImageCacheManager.shared.cachedImage(for: url)
+
+        // Should handle query parameters without crashing
+        XCTAssertNil(cachedImage)
+    }
+
+    func testCachedImage_withFragmentIdentifier() {
+        let url = URL(string: "https://archive.org/services/img/test#section")!
+        let cachedImage = ImageCacheManager.shared.cachedImage(for: url)
+
+        XCTAssertNil(cachedImage)
+    }
+
+    func testLoadImage_callsCompletionOnMainThread() throws {
+        // Skip in CI - network requests to external services are unreliable
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
+        let expectation = self.expectation(description: "Completion on main thread")
+        let url = URL(string: "https://archive.org/services/img/main_thread_test")!
+
+        ImageCacheManager.shared.loadImage(from: url) { _ in
+            XCTAssertTrue(Thread.isMainThread)
+            expectation.fulfill()
+        }
+
+        wait(for: [expectation], timeout: 30.0)
+    }
+
+    func testCacheMemoryUsage_isConsistent() {
+        let usage1 = ImageCacheManager.shared.cacheMemoryUsage
+        let usage2 = ImageCacheManager.shared.cacheMemoryUsage
+
+        // Should return consistent values when called rapidly
+        XCTAssertEqual(usage1, usage2)
+    }
+
+    func testPrefetchImages_withMixedValidAndInvalidURLs() {
+        let urls = [
+            URL(string: "https://archive.org/services/img/valid1")!,
+            URL(string: "https://archive.org/services/img/valid2")!,
+            URL(string: "https://invalid-domain-that-does-not-exist-12345.com/image.jpg")!
+        ]
+
+        // Should not crash with mix of valid and invalid URLs
+        ImageCacheManager.shared.prefetchImages(for: urls)
+        XCTAssertNotNil(ImageCacheManager.shared)
+    }
+
+    func testCachedImage_withUnicodeIdentifier() {
+        let url = URL(string: "https://archive.org/services/img/test_\u{1F600}_emoji")!
+        let cachedImage = ImageCacheManager.shared.cachedImage(for: url)
+
+        // Should handle unicode without crashing
+        XCTAssertNil(cachedImage)
+    }
+
+    func testLoadImage_rapidSuccessiveCalls() throws {
+        // Skip in CI - network requests to external services are unreliable
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
+        let expectation = self.expectation(description: "All callbacks received")
+        expectation.expectedFulfillmentCount = 5
+
+        let url = URL(string: "https://archive.org/services/img/rapid_test")!
+
+        for _ in 0..<5 {
+            ImageCacheManager.shared.loadImage(from: url) { _ in
+                expectation.fulfill()
+            }
+        }
+
+        wait(for: [expectation], timeout: 30.0)
+    }
+
+    func testClearCache_afterPrefetch() {
+        let urls = [
+            URL(string: "https://archive.org/services/img/prefetch_clear_1")!,
+            URL(string: "https://archive.org/services/img/prefetch_clear_2")!
+        ]
+
+        ImageCacheManager.shared.prefetchImages(for: urls)
+        ImageCacheManager.shared.clearCache()
+
+        // After clearing, cache should be empty
+        let cached = ImageCacheManager.shared.cachedImage(for: urls[0])
+        XCTAssertNil(cached)
     }
 }

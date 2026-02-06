@@ -11,11 +11,14 @@ import XCTest
 @MainActor
 final class MockAPIManagerTests: XCTestCase {
 
-    var mockManager: MockAPIManager!
+    nonisolated(unsafe) var mockManager: MockAPIManager!
 
     override func setUp() {
         super.setUp()
-        mockManager = MockAPIManager.shared
+        let newMockManager = MainActor.assumeIsolated {
+            return MockAPIManager.shared
+        }
+        mockManager = newMockManager
     }
 
     override func tearDown() {

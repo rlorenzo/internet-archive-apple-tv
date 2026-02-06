@@ -11,11 +11,14 @@ import XCTest
 @MainActor
 final class HTMLToAttributedStringTests: XCTestCase {
 
-    private var converter: HTMLToAttributedString!
+    nonisolated(unsafe) private var converter: HTMLToAttributedString!
 
     override func setUp() {
         super.setUp()
-        converter = HTMLToAttributedString.shared
+        let newConverter = MainActor.assumeIsolated {
+            return HTMLToAttributedString.shared
+        }
+        converter = newConverter
     }
 
     // MARK: - Basic Entity Conversion Tests
@@ -539,5 +542,55 @@ final class HTMLToAttributedStringTests: XCTestCase {
         XCTAssertTrue(result.contains("Normal"))
         XCTAssertTrue(result.contains("bold"))
         XCTAssertTrue(result.contains("paragraph"))
+    }
+
+    // MARK: - Literal Newline Preservation Tests
+
+    func testPreserveLiteralNewlines() {
+        // Internet Archive API sometimes returns descriptions with literal newlines
+        // instead of HTML tags for paragraph breaks
+        let textWithNewlines = "First paragraph.\n\nSecond paragraph.\n\nThird paragraph."
+        let result = converter.stripHTML(textWithNewlines)
+        XCTAssertTrue(result.contains("First paragraph"))
+        XCTAssertTrue(result.contains("Second paragraph"))
+        XCTAssertTrue(result.contains("Third paragraph"))
+        XCTAssertTrue(result.contains("\n"), "Should preserve newlines")
+    }
+
+    func testPreserveLiteralNewlinesWithHTML() {
+        // Mixed case: literal newlines AND HTML tags
+        let mixed = "First line\n\n<b>Bold text</b>\n\nThird line"
+        let result = converter.stripHTML(mixed)
+        XCTAssertTrue(result.contains("First line"))
+        XCTAssertTrue(result.contains("Bold text"))
+        XCTAssertTrue(result.contains("Third line"))
+        XCTAssertTrue(result.contains("\n"), "Should preserve newlines")
+    }
+
+    func testPreserveLiteralCarriageReturnNewlines() {
+        // Windows-style line endings (CRLF)
+        let windowsText = "Line 1\r\nLine 2\r\nLine 3"
+        let result = converter.stripHTML(windowsText)
+        XCTAssertTrue(result.contains("Line 1"))
+        XCTAssertTrue(result.contains("Line 2"))
+        XCTAssertTrue(result.contains("Line 3"))
+        XCTAssertTrue(result.contains("\n"), "Should convert CRLF to newlines")
+    }
+
+    func testRealWorldDescriptionWithNewlines() {
+        // Simulated real-world Internet Archive description with literal newlines
+        let description = """
+        This is a typical sex exploitation film from the early 1930s - complete with wild parties, sex out of wedlock, lesbianism, etc.
+
+        A chorus girl's exposure to the "casting couch" also exposes her to syphilis.
+
+        Exploitation filmmakers hoped to capitalize on the taboo subjects.
+        """
+        let result = converter.stripHTML(description)
+        XCTAssertTrue(result.contains("typical sex exploitation film"))
+        XCTAssertTrue(result.contains("chorus girl's exposure"))
+        XCTAssertTrue(result.contains("Exploitation filmmakers"))
+        // Should have paragraph breaks preserved
+        XCTAssertTrue(result.contains("\n"), "Should preserve paragraph breaks")
     }
 }

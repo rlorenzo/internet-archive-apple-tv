@@ -906,3 +906,248 @@ final class MediaProgressInfoTests: XCTestCase {
     }
 
 }
+
+// MARK: - isValid Property Tests
+
+extension PlaybackProgressTests {
+
+    // MARK: - Valid Cases
+
+    func testIsValid_withValidIdentifierAndTitle() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "valid-item-123",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "Valid Title",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertTrue(progress.isValid)
+    }
+
+    func testIsValid_withIdentifierContainingPeriods() {
+        // Internet Archive identifiers can contain periods (e.g., "movie.1080p.2024")
+        let progress = PlaybackProgress(
+            itemIdentifier: "movie.1080p.2024",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "Valid Movie",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertTrue(progress.isValid)
+    }
+
+    func testIsValid_withIdentifierContainingUnderscores() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "some_item_name",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "Valid Title",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertTrue(progress.isValid)
+    }
+
+    func testIsValid_withIdentifierContainingHyphens() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "item-with-hyphens",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "Valid Title",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertTrue(progress.isValid)
+    }
+
+    func testIsValid_withNumericOnlyIdentifier() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "12345",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "Valid Title",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertTrue(progress.isValid)
+    }
+
+    // MARK: - Invalid Identifier Cases
+
+    func testIsValid_withEmptyIdentifier() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "Valid Title",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertFalse(progress.isValid)
+    }
+
+    func testIsValid_withIdentifierContainingSpaces() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "invalid item with spaces",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "Valid Title",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertFalse(progress.isValid)
+    }
+
+    func testIsValid_withIdentifierContainingSpecialChars() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "invalid@item#name",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "Valid Title",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertFalse(progress.isValid)
+    }
+
+    func testIsValid_withIdentifierContainingSlashes() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "path/to/item",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "Valid Title",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertFalse(progress.isValid)
+    }
+
+    // MARK: - Invalid Title Cases
+
+    func testIsValid_withNilTitle() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "valid-item",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: nil,
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertFalse(progress.isValid)
+    }
+
+    func testIsValid_withEmptyTitle() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "valid-item",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertFalse(progress.isValid)
+    }
+
+    func testIsValid_withWhitespaceOnlyTitle() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "valid-item",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "   ",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertFalse(progress.isValid)
+    }
+
+    func testIsValid_withNewlinesOnlyTitle() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "valid-item",
+            filename: "video.mp4",
+            currentTime: 100,
+            duration: 3600,
+            lastWatchedDate: Date(),
+            title: "\n\t\n",
+            mediaType: "movies",
+            imageURL: nil
+        )
+
+        XCTAssertFalse(progress.isValid)
+    }
+
+    // MARK: - Audio-Specific Cases
+
+    func testIsValid_withValidAudioProgress() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-123",
+            filename: "__album__",
+            currentTime: 50.0,
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "Artist: Track 5",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 4,
+            trackFilename: "track05.mp3",
+            trackCurrentTime: 120.0
+        )
+
+        XCTAssertTrue(progress.isValid)
+    }
+
+    func testIsValid_withInvalidAudioProgress_emptyTitle() {
+        let progress = PlaybackProgress(
+            itemIdentifier: "album-123",
+            filename: "__album__",
+            currentTime: 50.0,
+            duration: 100.0,
+            lastWatchedDate: Date(),
+            title: "",
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 4,
+            trackFilename: "track05.mp3",
+            trackCurrentTime: 120.0
+        )
+
+        XCTAssertFalse(progress.isValid)
+    }
+}

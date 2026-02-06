@@ -68,13 +68,18 @@ final class MockPeopleFavoritesService: PeopleFavoritesServiceProtocol, @uncheck
 @MainActor
 final class PeopleViewModelTests: XCTestCase {
 
-    var viewModel: PeopleViewModel!
-    var mockService: MockPeopleFavoritesService!
+    nonisolated(unsafe) var viewModel: PeopleViewModel!
+    nonisolated(unsafe) var mockService: MockPeopleFavoritesService!
 
     override func setUp() {
         super.setUp()
-        mockService = MockPeopleFavoritesService()
-        viewModel = PeopleViewModel(favoritesService: mockService)
+        let (newMockService, newViewModel) = MainActor.assumeIsolated {
+            let service = MockPeopleFavoritesService()
+            let vm = PeopleViewModel(favoritesService: service)
+            return (service, vm)
+        }
+        mockService = newMockService
+        viewModel = newViewModel
     }
 
     override func tearDown() {

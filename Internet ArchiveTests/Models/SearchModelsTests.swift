@@ -76,6 +76,54 @@ final class SearchModelsTests: XCTestCase {
         XCTAssertEqual(resultNoTitle.safeTitle, "Untitled")
     }
 
+    // MARK: - Hashable Tests
+
+    func testSearchResultHashable_equalityByIdentifier() {
+        let result1 = SearchResult(identifier: "test_001", title: "Title 1", mediatype: "movies")
+        let result2 = SearchResult(identifier: "test_001", title: "Different Title", mediatype: "audio")
+        let result3 = SearchResult(identifier: "test_002", title: "Title 1", mediatype: "movies")
+
+        // Same identifier = equal, regardless of other properties
+        XCTAssertEqual(result1, result2)
+        // Different identifier = not equal
+        XCTAssertNotEqual(result1, result3)
+    }
+
+    func testSearchResultHashable_hashValueConsistency() {
+        let result1 = SearchResult(identifier: "test_001", title: "Title 1")
+        let result2 = SearchResult(identifier: "test_001", title: "Title 2")
+
+        // Equal objects must have equal hash values
+        XCTAssertEqual(result1.hashValue, result2.hashValue)
+    }
+
+    func testSearchResultHashable_setBehavior() {
+        let result1 = SearchResult(identifier: "test_001", title: "Title 1")
+        let result2 = SearchResult(identifier: "test_001", title: "Title 2")
+        let result3 = SearchResult(identifier: "test_002", title: "Title 3")
+
+        var set: Set<SearchResult> = []
+        set.insert(result1)
+        set.insert(result2) // Same identifier, should not increase count
+        set.insert(result3)
+
+        XCTAssertEqual(set.count, 2)
+        XCTAssertTrue(set.contains(result1))
+        XCTAssertTrue(set.contains(result3))
+    }
+
+    func testSearchResultHashable_dictionaryKey() {
+        let result1 = SearchResult(identifier: "test_001", title: "Title 1")
+        let result2 = SearchResult(identifier: "test_001", title: "Different")
+
+        var dict: [SearchResult: String] = [:]
+        dict[result1] = "First"
+        dict[result2] = "Second" // Same identifier, should overwrite
+
+        XCTAssertEqual(dict.count, 1)
+        XCTAssertEqual(dict[result1], "Second")
+    }
+
     // MARK: - SearchResponse Tests
 
     func testSearchResponseDecoding() throws {

@@ -1289,10 +1289,11 @@ CocoaPods has announced it will transition to read-only mode in 2026. Swift Pack
 
 ---
 
-### Sprint 19: SwiftUI Migration
+### Sprint 19: SwiftUI Migration ✅ COMPLETED
 
 **Estimated Time:** 175-220 hours
 **PR Title:** `feat: Migrate to SwiftUI for tvOS`
+**Status:** All Phases Complete
 
 Full UI rewrite using SwiftUI with TabView navigation. Leverages existing MVVM ViewModels.
 
@@ -1321,80 +1322,405 @@ Internet Archive/
 
 #### Tasks
 
-**Phase 1: Foundation (15-20 hours)**
+**Phase 1: Foundation (15-20 hours)** ✅ COMPLETED
 
-- [ ] Create `InternetArchiveApp.swift` with @main
-- [ ] Create `ContentView.swift` with 5-tab TabView
-- [ ] Create `AppState.swift` for auth state
-- [ ] Create placeholder views for each tab
-- [ ] Update Info.plist for SwiftUI App lifecycle
+- [x] Create `InternetArchiveApp.swift` with @main
+- [x] Create `ContentView.swift` with 5-tab TabView
+- [x] Create `AppState.swift` for auth state
+- [x] Create placeholder views for each tab
+- [x] Update Info.plist for SwiftUI App lifecycle
 
-**Phase 2: Core Components (20-25 hours)**
+**Phase 2: Core Components (20-25 hours)** ✅ COMPLETED
 
-- [ ] `MediaItemCard` - grid item with thumbnail, title, progress
-- [ ] `TVCardButtonStyle` - tvOS focus effects (scale, shadow)
-- [ ] `ContinueWatchingCard` and `ContinueWatchingSection`
-- [ ] `SectionHeader` with optional "See All" button
-- [ ] `EmptyStateView` and `ErrorStateView`
-- [ ] `SkeletonLoadingView` with shimmer animation
+- [x] `MediaItemCard` - grid item with thumbnail, title, progress
+- [x] `TVCardButtonStyle` - tvOS focus effects (scale, shadow)
+- [x] `ContinueWatchingCard` and `ContinueWatchingSection`
+- [x] `SectionHeader` with optional "See All" button
+- [x] `EmptyContentView` and `ErrorContentView` (SwiftUI versions)
+- [x] `SkeletonLoadingView` with shimmer animation
 
-**Phase 3: Content Browsing (25-30 hours)**
+**Phase 3: Content Browsing (25-30 hours)** ✅ COMPLETED
 
-- [ ] `VideoHomeView` with LazyVGrid layout
-- [ ] `MusicHomeView` with LazyVGrid layout
-- [ ] Continue Watching/Listening sections
-- [ ] Year navigation (sidebar + grid)
-- [ ] Integrate existing VideoViewModel and MusicViewModel
+- [x] `VideoHomeView` with LazyVGrid layout
+- [x] `MusicHomeView` with LazyVGrid layout
+- [x] Continue Watching/Listening sections
+- [x] Year navigation (sidebar + grid)
+- [x] Integrate existing VideoViewModel and MusicViewModel
 
-**Phase 4: Item Details (20-25 hours)**
+**Phase 4: Item Details (20-25 hours)** ✅ COMPLETED
 
-- [ ] `ItemDetailView` modal with metadata display
-- [ ] `PlaybackButtons` - Play, Resume, Start Over
-- [ ] `DescriptionView` - HTML rendering
-- [ ] `FavoriteButton` with animation
-- [ ] Navigation to player via .fullScreenCover
+- [x] `ItemDetailView` modal with metadata display
+- [x] `PlaybackButtons` - Play, Resume, Start Over
+- [x] `DescriptionView` - HTML rendering with AttributedString
+- [x] `FavoriteButton` with animation
+- [x] Navigation to player via .fullScreenCover (placeholder for Phase 5)
 
-**Phase 5: Media Playback (30-35 hours)**
+**Phase 5: Media Playback (30-35 hours)** ✅ COMPLETED
 
-- [ ] `VideoPlayerView` - UIViewControllerRepresentable wrapper
-- [ ] `VideoPlayerController` - ObservableObject for state
-- [ ] `SubtitleOverlay` in SwiftUI
-- [ ] `NowPlayingView` - full-screen music player
-- [ ] Progress tracking with PlaybackProgressManager
+- [x] `VideoPlayerView` - UIViewControllerRepresentable wrapper for video playback
+- [x] `NowPlayingView` - UIViewControllerRepresentable wrapper for audio playback
+- [x] Subtitle support via existing `VideoPlayerViewController` and `SubtitleOverlayView`
+- [x] Progress tracking with PlaybackProgressManager (video and audio)
+- [x] Resume playback support (video: currentTime, audio: trackIndex + trackCurrentTime)
+- [x] Updated `ItemDetailView` to use real players instead of placeholder
 
-**Phase 6: Search (15-20 hours)**
+**Phase 6: Search (15-20 hours)** ✅
 
-- [ ] `SearchView` with .searchable modifier
-- [ ] Filter picker (All/Video/Music)
-- [ ] Dual-section results display
-- [ ] Pagination with .onAppear triggers
+- [x] `SearchView` with .searchable modifier
+- [x] Filter picker (All/Video/Music)
+- [x] Dual-section results display
+- [x] Pagination with .onAppear triggers
 
 **Phase 7: Year-Based Browsing (15-20 hours)**
 
-- [ ] `YearBrowseView` with sidebar + grid
-- [ ] Year list selection
-- [ ] Items grid for selected year
+- [x] `YearBrowseView` with sidebar + grid
+- [x] Year list selection
+- [x] Items grid for selected year
 
-**Phase 8: Favorites & Account (20-25 hours)**
+**Phase 8: Favorites & Account (20-25 hours)** ✅ COMPLETE
 
-- [ ] `FavoritesView` with 3 sections
-- [ ] `PeopleDetailView` for creator browsing
-- [ ] `LoginView` and `RegisterView` forms
-- [ ] `AccountView` with user info
+- [x] `FavoritesView` with 3 sections (Videos, Music, Followed Creators)
+- [x] `PeopleDetailView` for creator browsing
+- [x] `LoginFormView` and `RegisterFormView` forms in AccountView
+- [x] `AccountView` with user info and auth management
+- [x] `MediaGridSection` shared component (DRY refactor)
+- [x] `ValidationHelper` utility for email/password validation
+- [x] Task lifecycle management for async operations
 
-**Phase 9: Accessibility & Polish (15-20 hours)**
+**Phase 9: Accessibility & Polish (15-20 hours)** ✅
 
-- [ ] VoiceOver labels on all elements
-- [ ] Focus restoration via @SceneStorage
-- [ ] Animation polish
-- [ ] Memory/performance profiling
+- [x] VoiceOver labels on all elements
+- [x] Focus restoration via @SceneStorage
+- [x] Animation polish
+- [x] Memory/performance profiling
 
-**Phase 10: Cleanup**
+**Phase 10: Cleanup** ✅
 
-- [ ] Remove Main.storyboard
-- [ ] Delete old UIKit ViewControllers
-- [ ] Remove TabbarController and navigation controllers
-- [ ] Update CLAUDE.md documentation
+- [x] Remove Main.storyboard
+- [x] Delete old UIKit ViewControllers
+- [x] Remove TabbarController and navigation controllers
+- [x] Update CLAUDE.md documentation
+
+**Phase 11: Testing Infrastructure (7-8 hours)** ✅ COMPLETED
+
+Enable deterministic testing and deeper SwiftUI view verification per code review findings.
+
+*Part 1: NetworkMonitor Dependency Injection* ✅
+
+- [x] Create `NetworkMonitorProtocol` in `Internet Archive/Protocols/`
+- [x] Add protocol conformance to `NetworkMonitor.swift`
+- [x] Update `RetryMechanism.swift` with optional `networkMonitor` parameter for DI
+- [x] Create `MockNetworkMonitor.swift` in `Internet ArchiveTests/Mocks/`
+- [x] Add deterministic tests for online/offline paths in `NetworkMonitorTests.swift`
+- [x] Add network injection tests in `RetryMechanismTests.swift`
+
+*Part 2: Enhanced SwiftUI Tests* ✅
+
+- [x] Add `SectionHeaderTests.swift` with accessibility and interaction tests
+- [x] Add `MediaItemCardTests.swift` with type and layout verification
+- [x] Add `SearchViewTests.swift` for ContentFilter enum coverage
+- [x] Add `MediaThumbnailViewTests.swift` for thumbnail rendering tests
+- [x] Add `MediaHomeErrorViewTests.swift` for error state tests
+
+*Part 3: Test Fixtures* ✅
+
+- [x] Add `makeNetworkError()` factory to `TestFixtures.swift`
+- [x] Add `makeVideoResults(count:)` and `makeMusicResults(count:)` helpers
+- [x] Add `makeMusicMetadataResponse()` and `makeVideoMetadataResponse()` factories
+
+*Code Review Fixes Implemented:*
+
+- [x] Fixed `RetryMechanism.execute()` `@MainActor` issue - production version runs off main thread, only wraps network checks in `MainActor.run`
+- [x] Fixed `SubtitleTrackCell` accessibility issue - removed problematic `accessibilityElements = []`
+
+*Files Created:*
+
+```
+Internet Archive/Protocols/NetworkMonitorProtocol.swift ✅
+Internet ArchiveTests/Mocks/MockNetworkMonitor.swift ✅
+Internet ArchiveTests/Features/SearchViewTests.swift ✅
+Internet ArchiveTests/Features/MediaThumbnailViewTests.swift ✅
+Internet ArchiveTests/Features/MediaHomeErrorViewTests.swift ✅
+Internet ArchiveTests/App/SectionHeaderTests.swift ✅
+Internet ArchiveTests/App/MediaItemCardTests.swift → TVCardButtonStyleTests.swift ✅
+Internet ArchiveTests/App/PlaceholderCardTests.swift ✅
+Internet ArchiveTests/App/ContentViewTests.swift ✅
+Internet ArchiveTests/App/AppInfoFooterTests.swift ✅
+Internet ArchiveTests/Utilities/NetworkMonitorTests.swift ✅
+Internet ArchiveTests/ErrorHandling/RetryMechanismTests.swift (extended) ✅
+```
+
+*Files Modified:*
+
+```
+Internet Archive/Utilities/ErrorHandling/NetworkMonitor.swift (added conformance) ✅
+Internet Archive/Utilities/ErrorHandling/RetryMechanism.swift (DI param, MainActor fix) ✅
+Internet Archive/ViewControllers/Subtitles/SubtitleSelectionViewController.swift (accessibility fix) ✅
+Internet ArchiveTests/Fixtures/TestFixtures.swift (new factories) ✅
+```
+
+**Phase 12: Code Coverage Expansion (8-12 hours)** ✅ COMPLETE
+
+Push test coverage from 45.73% to 55%+ to exceed CI threshold with comfortable margin.
+
+*Part 1: SwiftUI Feature View Tests*
+
+- [x] `YearBrowseViewTests.swift` - Year selection, navigation (destination types tested)
+- [x] `VideoHomeViewTests.swift` - Loading state, notifications (continue watching in PlaybackProgressManagerTests)
+- [x] `MusicHomeViewTests.swift` - Notifications (continue listening in PlaybackProgressManagerTests)
+- [x] `FavoritesViewTests.swift` - PersonNavigation type tests
+- Note: Login/authentication tests are in `LoginViewModelTests.swift`
+
+*Part 2: Player Integration Tests*
+
+- [x] `VideoPlayerViewTests.swift` (17 tests) - Coordinator, video format selection, initialization
+- [x] `NowPlayingViewTests.swift` (15 tests) - Audio format filtering, track resume logic, metadata conversion
+
+*Part 3: ViewModel Edge Cases*
+
+- [x] Expand `ItemDetailViewModelTests.swift` - Comprehensive file filtering, URL encoding (already 881 lines)
+- [x] Expand `SearchViewModelTests.swift` - Pagination, filter switching (already 808 lines)
+- [x] Expand `FavoritesViewModelTests.swift` - Media type filtering (already 806 lines)
+- [x] Expand `CollectionViewModelTests.swift` (+7 tests) - Sort edge cases with nil values
+
+*Part 4: Utility and Infrastructure*
+
+- [x] Expand `ImageCacheManagerTests.swift` (+10 tests) - Memory pressure, concurrent access, edge cases
+- [x] Expand `PlaybackProgressManagerTests.swift` - Pruning, validation (already 1030 lines comprehensive)
+- [x] Expand `APIManagerTests.swift` (+25 tests) - URL construction, error parsing, request parameters
+
+*Part 5: Extracted Helper Functions with Tests*
+
+- [x] `ItemDetailHelpers.swift` - Subtitle parsing, date formatting, URL building, playable file detection
+- [x] `MediaCardHelpers.swift` - Media type handling, accessibility labels, progress formatting, grid layout
+- [x] `SearchHelpers.swift` - Content filters, search state, query builder, pagination state
+- [x] `ItemDetailHelpersTests.swift` (~50 tests) - Comprehensive coverage of all helpers
+- [x] `MediaCardHelpersTests.swift` (~40 tests) - Media type, accessibility, progress tests
+- [x] `SearchHelpersTests.swift` (~40 tests) - Filter, state, query builder, pagination tests
+
+*Files Created:*
+
+```
+Internet ArchiveTests/Features/YearBrowseViewTests.swift ✓
+Internet ArchiveTests/Features/VideoHomeViewTests.swift ✓
+Internet ArchiveTests/Features/MusicHomeViewTests.swift ✓
+Internet ArchiveTests/Features/FavoritesViewTests.swift ✓
+Internet ArchiveTests/Features/VideoPlayerViewTests.swift ✓
+Internet ArchiveTests/Features/NowPlayingViewTests.swift ✓
+Internet Archive/Utilities/ItemDetailHelpers.swift ✓
+Internet Archive/Utilities/MediaCardHelpers.swift ✓
+Internet Archive/Utilities/SearchHelpers.swift ✓
+Internet ArchiveTests/Utilities/ItemDetailHelpersTests.swift ✓
+Internet ArchiveTests/Utilities/MediaCardHelpersTests.swift ✓
+Internet ArchiveTests/Utilities/SearchHelpersTests.swift ✓
+```
+
+*Files Expanded:*
+
+```
+Internet ArchiveTests/ViewModels/CollectionViewModelTests.swift ✓
+Internet ArchiveTests/UI/ImageCacheManagerTests.swift ✓
+Internet ArchiveTests/Utilities/APIManagerTests.swift ✓
+```
+
+*Total New Tests:* ~180+
+*Projected Coverage:* 55%+
+
+#### Files Created (Phase 1)
+
+```
+Internet Archive/App/
+├── InternetArchiveApp.swift    ✅ @main entry point with WindowGroup
+├── ContentView.swift           ✅ 5-tab TabView navigation
+└── AppState.swift              ✅ ObservableObject for auth state
+
+Internet Archive/Features/
+├── Videos/
+│   └── VideoHomeView.swift     ✅ Placeholder with skeleton grid
+├── Music/
+│   └── MusicHomeView.swift     ✅ Placeholder with skeleton grid
+├── Search/
+│   └── SearchView.swift        ✅ Placeholder with .searchable modifier
+├── Favorites/
+│   ├── FavoritesView.swift     ✅ Full implementation with 3 sections
+│   └── PeopleDetailView.swift  ✅ Creator content browsing view
+└── Account/
+    └── AccountView.swift       ✅ Full auth with LoginFormView + RegisterFormView
+```
+
+#### Files Modified (Phase 1)
+
+```
+Internet Archive/Info.plist     ✅ Removed UIMainStoryboardFile key
+Internet Archive/AppDelegate.swift ✅ Removed @main attribute (kept for reference)
+```
+
+#### Files Created (Phase 2)
+
+```
+Internet Archive/App/Components/
+├── MediaItemCard.swift         ✅ Grid card with async thumbnail, progress bar
+├── ContinueWatchingCard.swift  ✅ Card + Section for continue watching/listening
+├── StateViews.swift            ✅ EmptyContentView + ErrorContentView (SwiftUI)
+├── SkeletonLoadingView.swift   ✅ Shimmer animation + skeleton cards/grids
+└── Styles/
+    └── TVCardButtonStyle.swift ✅ Focus effects (scale, shadow, animation)
+
+Internet Archive/App/Components/SectionHeader.swift ✅ Enhanced with optional "See All" button
+```
+
+#### Files Modified (Phase 3)
+
+```
+Internet Archive/Features/Videos/VideoHomeView.swift  ✅ Full implementation with:
+  - LazyVGrid layout for featured videos
+  - ContinueWatchingSection integration
+  - Year browser sheet with sidebar navigation
+  - VideoViewModel integration for API data
+  - Loading/error state handling
+
+Internet Archive/Features/Music/MusicHomeView.swift   ✅ Full implementation with:
+  - LazyVGrid layout for featured music
+  - ContinueListeningSection integration
+  - Year browser sheet with sidebar navigation
+  - MusicViewModel integration for API data
+  - Loading/error state handling
+
+Internet Archive/Models/SearchModels.swift            ✅ Added Hashable conformance for navigation
+```
+
+#### New Views Created (Phase 3)
+
+```
+VideoHomeView components:
+├── ItemDetailPlaceholderView    - Placeholder for Phase 4 item detail
+└── YearBrowserView              - Year-based browsing with sidebar + grid
+
+MusicHomeView components:
+└── MusicItemDetailPlaceholderView - Placeholder for Phase 4 item detail
+```
+
+#### New Views Created (Phase 4)
+
+```
+Internet Archive/Features/ItemDetail/
+├── ItemDetailView.swift      - Main item detail modal with metadata, thumbnail, controls
+├── PlaybackButtons.swift     - Play/Resume/Start Over buttons with tvOS focus styles
+├── DescriptionView.swift     - HTML rendering via HTMLToAttributedString → AttributedString
+└── FavoriteButton.swift      - Animated heart button with haptic-like visual feedback
+```
+
+Key implementation details:
+
+- `ItemDetailView` uses HStack layout with thumbnail on left, metadata/controls on right
+- `PlaybackButtons` adapts based on saved `PlaybackProgress` (shows Resume + Start Over if progress exists)
+- `DescriptionView` converts HTML via `HTMLToAttributedString.shared` and SwiftUI `AttributedString`
+- `FavoriteButton` uses spring animation for bounce effect on toggle
+- Navigation integrated via `.navigationDestination(item:)` in VideoHomeView and MusicHomeView
+- Player presentation uses `.fullScreenCover` with actual player views
+
+#### Files Created (Phase 5)
+
+```
+Internet Archive/Features/Player/
+├── VideoPlayerView.swift     ✅ UIViewControllerRepresentable wrapping VideoPlayerViewController
+└── NowPlayingView.swift      ✅ UIViewControllerRepresentable wrapping NowPlayingViewController
+```
+
+Key implementation details:
+
+- `VideoPlayerView` wraps existing `VideoPlayerViewController` with full subtitle support
+- `NowPlayingView` wraps existing `NowPlayingViewController` with album art, track list, controls
+- Both views support resume playback via `fromMetadata()` convenience initializers
+- `ItemDetailView` updated to present real players based on media type (video vs audio)
+- Progress tracking integrated via `PlaybackProgressManager` (video: per-file, audio: album-level)
+- Error handling via `PlayerLoadingView` and `PlayerErrorView` fallback views
+
+#### Files Modified (Phase 6)
+
+```
+Internet Archive/Features/Search/SearchView.swift     ✅ Full implementation with:
+  - .searchable modifier for tvOS keyboard input
+  - Segmented filter picker (All/Video/Music)
+  - Dual-section results (Videos row + Music row)
+  - Debounced search (500ms delay)
+  - Parallel API calls for video/music results
+  - Pagination via .onAppear triggers
+  - Loading, error, empty, and no-results states
+  - Navigation to ItemDetailView
+```
+
+Key implementation details:
+
+- Uses `APIManager.networkService.search()` with mediatype filters
+- Results sorted by downloads (most popular first)
+- Pagination triggers when user scrolls near end (3 items from last)
+- SectionHeader extended with count display
+- Horizontal scroll rows with tvOS focus effects
+
+#### Files Created (Phase 7)
+
+```
+Internet Archive/Features/Shared/YearBrowseView.swift  ✅ Full implementation with:
+  - Split-view layout with year sidebar + items grid
+  - Year list with item counts, sorted descending
+  - Items grid using MediaThumbnailView cards
+  - Reuses existing YearsViewModel for data management
+  - Navigation to ItemDetailView
+  - Loading, error, and empty states
+```
+
+Key implementation details:
+
+- `YearBrowseView` provides tvOS-optimized split layout with sidebar navigation
+- Uses existing `YearsViewModel` with `DefaultCollectionService` for API calls
+- Groups items by year client-side using `groupByYear()` method
+- Year selection updates grid content with smooth scrolling
+- Integrated via `YearBrowseDestination` hashable struct for navigation
+- "Browse by Year" button added to `CollectionBrowserView` header
+- Navigation destinations added to VideoHomeView and MusicHomeView
+
+#### Files Created/Modified (Phase 8)
+
+```
+Internet Archive/Features/Account/AccountView.swift  ✅ Full implementation with:
+  - AccountView main screen with authenticated/unauthenticated states
+  - LoginFormView with email/password fields, validation, error handling
+  - RegisterFormView with email/username/password, validation feedback
+  - Task lifecycle management (onDisappear cleanup)
+  - Full accessibility support (VoiceOver labels, hints, announcements)
+
+Internet Archive/Features/Favorites/FavoritesView.swift  ✅ Full implementation with:
+  - Three sections: Favorite Videos, Favorite Music, Followed Creators
+  - MediaGridSection shared component for DRY grid layouts
+  - PersonCard component for creator display
+  - PersonNavigation model for navigation data
+  - Task lifecycle management
+
+Internet Archive/Features/Favorites/PeopleDetailView.swift  ✅ New file with:
+  - Creator header with avatar and item count
+  - Videos section for creator's video favorites
+  - Music section for creator's music favorites
+  - Uses shared MediaGridSection component
+  - Loading, error, empty states
+
+Internet Archive/Utilities/ValidationHelper.swift  ✅ New utility with:
+  - Centralized isValidEmail() regex validation
+  - Password validation with minimumPasswordLength constant
+  - validatePassword() with error message tuple return
+
+Internet Archive/App/Components/MediaItemCard.swift  ✅ Extended with:
+  - MediaType.gridColumns computed property for consistent grid layouts
+  - MediaGridSection reusable SwiftUI component
+```
+
+Key implementation details:
+
+- DRY principle: Extracted duplicate `gridColumns()` method into `MediaItemCard.MediaType.gridColumns`
+- Created `MediaGridSection` shared component used by both FavoritesView and PeopleDetailView
+- Single source of truth for validation via `ValidationHelper`
+- All async tasks use `@State private var task: Task<Void, Never>?` pattern with `onDisappear` cleanup
+- Comprehensive test coverage: 26 new tests across MediaItemCardTests, MediaGridSectionTests, ValidationHelperTests
 
 #### Deliverable
 

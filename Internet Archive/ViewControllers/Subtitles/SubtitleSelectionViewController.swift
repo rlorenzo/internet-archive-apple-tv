@@ -255,6 +255,11 @@ final class SubtitleTrackCell: UITableViewCell {
         contentView.addSubview(subtitleLabel)
         contentView.addSubview(checkmarkImageView)
 
+        // Ensure child elements don't interfere with cell accessibility
+        titleLabel.isAccessibilityElement = false
+        subtitleLabel.isAccessibilityElement = false
+        checkmarkImageView.isAccessibilityElement = false
+
         NSLayoutConstraint.activate([
             titleLabel.leadingAnchor.constraint(equalTo: contentView.leadingAnchor, constant: 30),
             titleLabel.centerYAnchor.constraint(equalTo: contentView.centerYAnchor, constant: -8),
@@ -275,7 +280,7 @@ final class SubtitleTrackCell: UITableViewCell {
         subtitleLabel.isHidden = subtitle == nil
         checkmarkImageView.isHidden = !isSelected
 
-        // Accessibility
+        // Accessibility - treat cell as single accessible element
         isAccessibilityElement = true
         accessibilityLabel = title
         accessibilityValue = isSelected ? "Selected" : nil

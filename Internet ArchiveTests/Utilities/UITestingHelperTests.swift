@@ -5,177 +5,181 @@
 //  Tests for UITestingHelper mock data generation
 //
 
-import XCTest
+import Testing
 @testable import Internet_Archive
 
+@Suite("UITestingHelper Tests")
 @MainActor
-final class UITestingHelperTests: XCTestCase {
-
-    var helper: UITestingHelper!
-
-    override func setUp() {
-        super.setUp()
-        helper = UITestingHelper.shared
-    }
-
-    override func tearDown() {
-        helper = nil
-        super.tearDown()
-    }
+struct UITestingHelperTests {
 
     // MARK: - Singleton Tests
 
-    func testSharedInstance() {
+    @Test func sharedInstance() {
         let instance1 = UITestingHelper.shared
         let instance2 = UITestingHelper.shared
-        XCTAssertTrue(instance1 === instance2)
+        #expect(instance1 === instance2)
     }
 
     // MARK: - Mock Search Response Tests
 
-    func testMockSearchResponse_hasCorrectNumberOfDocs() {
+    @Test func mockSearchResponseHasCorrectNumberOfDocs() {
+        let helper = UITestingHelper.shared
         let response = helper.mockSearchResponse
 
-        XCTAssertNotNil(response.response)
-        XCTAssertEqual(response.response.docs.count, 20)
-        XCTAssertEqual(response.response.numFound, 20)
+        #expect(response.response != nil)
+        #expect(response.response.docs.count == 20)
+        #expect(response.response.numFound == 20)
     }
 
-    func testMockSearchResponse_docsHaveCorrectStructure() {
+    @Test func mockSearchResponseDocsHaveCorrectStructure() {
+        let helper = UITestingHelper.shared
         let response = helper.mockSearchResponse
         let docs = response.response.docs
 
         for (index, doc) in docs.enumerated() {
-            XCTAssertEqual(doc.identifier, "mock_item_\(index)")
-            XCTAssertEqual(doc.title, "Mock Item \(index)")
-            XCTAssertEqual(doc.year, "2025")
-            XCTAssertNotNil(doc.mediatype)
+            #expect(doc.identifier == "mock_item_\(index)")
+            #expect(doc.title == "Mock Item \(index)")
+            #expect(doc.year == "2025")
+            #expect(doc.mediatype != nil)
         }
     }
 
-    func testMockSearchResponse_alternatesMediaTypes() {
+    @Test func mockSearchResponseAlternatesMediaTypes() {
+        let helper = UITestingHelper.shared
         let response = helper.mockSearchResponse
         let docs = response.response.docs
 
         for (index, doc) in docs.enumerated() {
             if index % 2 == 0 {
-                XCTAssertEqual(doc.mediatype, "movies")
+                #expect(doc.mediatype == "movies")
             } else {
-                XCTAssertEqual(doc.mediatype, "audio")
+                #expect(doc.mediatype == "audio")
             }
         }
     }
 
     // MARK: - Mock Collection Response Tests
 
-    func testMockCollectionResponse_returnsCorrectCollection() {
+    @Test func mockCollectionResponseReturnsCorrectCollection() {
+        let helper = UITestingHelper.shared
         let result = helper.mockCollectionResponse(collection: "etree")
 
-        XCTAssertEqual(result.collection, "etree")
-        XCTAssertEqual(result.results.count, 15)
+        #expect(result.collection == "etree")
+        #expect(result.results.count == 15)
     }
 
-    func testMockCollectionResponse_docsHaveCorrectIdentifiers() {
+    @Test func mockCollectionResponseDocsHaveCorrectIdentifiers() {
+        let helper = UITestingHelper.shared
         let result = helper.mockCollectionResponse(collection: "movies")
 
         for (index, doc) in result.results.enumerated() {
-            XCTAssertEqual(doc.identifier, "movies_item_\(index)")
+            #expect(doc.identifier == "movies_item_\(index)")
         }
     }
 
-    func testMockCollectionResponse_etreeMediaType() {
+    @Test func mockCollectionResponseEtreeMediaType() {
+        let helper = UITestingHelper.shared
         let result = helper.mockCollectionResponse(collection: "etree")
 
         for doc in result.results {
-            XCTAssertEqual(doc.mediatype, "etree")
+            #expect(doc.mediatype == "etree")
         }
     }
 
-    func testMockCollectionResponse_moviesMediaType() {
+    @Test func mockCollectionResponseMoviesMediaType() {
+        let helper = UITestingHelper.shared
         let result = helper.mockCollectionResponse(collection: "movies")
 
         for doc in result.results {
-            XCTAssertEqual(doc.mediatype, "movies")
+            #expect(doc.mediatype == "movies")
         }
     }
 
     // MARK: - Mock Metadata Response Tests
 
-    func testMockMetadataResponse_hasCorrectIdentifier() {
+    @Test func mockMetadataResponseHasCorrectIdentifier() {
+        let helper = UITestingHelper.shared
         let response = helper.mockMetadataResponse(identifier: "test_video_123")
 
-        XCTAssertEqual(response.metadata?.identifier, "test_video_123")
-        XCTAssertEqual(response.metadata?.title, "Mock Item: test_video_123")
+        #expect(response.metadata?.identifier == "test_video_123")
+        #expect(response.metadata?.title == "Mock Item: test_video_123")
     }
 
-    func testMockMetadataResponse_hasFiles() {
+    @Test func mockMetadataResponseHasFiles() {
+        let helper = UITestingHelper.shared
         let response = helper.mockMetadataResponse(identifier: "test_item")
 
-        XCTAssertNotNil(response.files)
-        XCTAssertEqual(response.files?.count, 2)
+        #expect(response.files != nil)
+        #expect(response.files?.count == 2)
     }
 
-    func testMockMetadataResponse_filesHaveCorrectFormats() {
+    @Test func mockMetadataResponseFilesHaveCorrectFormats() {
+        let helper = UITestingHelper.shared
         let response = helper.mockMetadataResponse(identifier: "test_item")
         let files = response.files ?? []
 
         let formats = files.compactMap { $0.format }
-        XCTAssertTrue(formats.contains("MPEG4"))
-        XCTAssertTrue(formats.contains("MP3"))
+        #expect(formats.contains("MPEG4"))
+        #expect(formats.contains("MP3"))
     }
 
-    func testMockMetadataResponse_metadataProperties() {
+    @Test func mockMetadataResponseMetadataProperties() {
+        let helper = UITestingHelper.shared
         let response = helper.mockMetadataResponse(identifier: "test_item")
 
-        XCTAssertEqual(response.metadata?.mediatype, "movies")
-        XCTAssertEqual(response.metadata?.creator, "Test Creator")
-        XCTAssertEqual(response.metadata?.year, "2025")
-        XCTAssertEqual(response.metadata?.date, "2025-01-15")
+        #expect(response.metadata?.mediatype == "movies")
+        #expect(response.metadata?.creator == "Test Creator")
+        #expect(response.metadata?.year == "2025")
+        #expect(response.metadata?.date == "2025-01-15")
     }
 
     // MARK: - Mock Favorites Response Tests
 
-    func testMockFavoritesResponse_hasMembers() {
+    @Test func mockFavoritesResponseHasMembers() {
+        let helper = UITestingHelper.shared
         let response = helper.mockFavoritesResponse(username: "testuser")
 
-        XCTAssertNotNil(response.members)
-        XCTAssertEqual(response.members?.count, 10)
+        #expect(response.members != nil)
+        #expect(response.members?.count == 10)
     }
 
-    func testMockFavoritesResponse_membersHaveCorrectIdentifiers() {
+    @Test func mockFavoritesResponseMembersHaveCorrectIdentifiers() {
+        let helper = UITestingHelper.shared
         let response = helper.mockFavoritesResponse(username: "testuser")
         let members = response.members ?? []
 
         for (index, member) in members.enumerated() {
-            XCTAssertEqual(member.identifier, "favorite_\(index)")
+            #expect(member.identifier == "favorite_\(index)")
         }
     }
 
-    func testMockFavoritesResponse_alternatesMediaTypes() {
+    @Test func mockFavoritesResponseAlternatesMediaTypes() {
+        let helper = UITestingHelper.shared
         let response = helper.mockFavoritesResponse(username: "testuser")
         let members = response.members ?? []
 
         for (index, member) in members.enumerated() {
             if index % 2 == 0 {
-                XCTAssertEqual(member.mediatype, "movies")
+                #expect(member.mediatype == "movies")
             } else {
-                XCTAssertEqual(member.mediatype, "audio")
+                #expect(member.mediatype == "audio")
             }
         }
     }
 
     // MARK: - UI Testing Mode Tests
 
-    func testIsUITesting_whenNotTesting() {
+    @Test func isUITestingWhenNotTesting() {
+        let helper = UITestingHelper.shared
         // In unit test context, this should return false
-        // (unless we're actually running UI tests)
         // Just verify it doesn't crash and returns a boolean
         let result = helper.isUITesting
-        XCTAssertNotNil(result)
+        #expect(result != nil)
     }
 
-    func testUseMockData_returnsBool() {
+    @Test func useMockDataReturnsBool() {
+        let helper = UITestingHelper.shared
         let result = helper.useMockData
-        XCTAssertNotNil(result)
+        #expect(result != nil)
     }
 }

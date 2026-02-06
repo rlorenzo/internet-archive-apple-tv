@@ -5,7 +5,7 @@
 //  Unit tests for LoginViewModel
 //
 
-import XCTest
+import Testing
 @testable import Internet_Archive
 
 // MARK: - Mock Auth Service
@@ -63,145 +63,141 @@ final class MockAuthService: AuthServiceProtocol, @unchecked Sendable {
 
 // MARK: - LoginViewModel Tests
 
+@Suite("LoginViewModel Tests", .serialized)
 @MainActor
-final class LoginViewModelTests: XCTestCase {
+struct LoginViewModelTests {
 
-    var viewModel: LoginViewModel!
-    var mockService: MockAuthService!
+    var viewModel: LoginViewModel
+    var mockService: MockAuthService
 
-    override func setUp() {
-        super.setUp()
-        mockService = MockAuthService()
-        viewModel = LoginViewModel(authService: mockService)
-
+    init() {
+        let service = MockAuthService()
+        mockService = service
+        viewModel = LoginViewModel(authService: service)
         // Clean up any stored data
         Global.saveUserData(userData: [:])
         _ = KeychainManager.shared.clearUserCredentials()
     }
 
-    override func tearDown() {
-        // Clean up
-        Global.saveUserData(userData: [:])
-        _ = KeychainManager.shared.clearUserCredentials()
-
-        viewModel = nil
-        mockService = nil
-        super.tearDown()
-    }
-
     // MARK: - Initial State Tests
 
-    func testInitialState() {
-        XCTAssertFalse(viewModel.state.isLoading)
-        XCTAssertFalse(viewModel.state.isLoggedIn)
-        XCTAssertNil(viewModel.state.errorMessage)
-        XCTAssertEqual(viewModel.state.email, "")
+    @Test func initialState() {
+        #expect(!viewModel.state.isLoading)
+        #expect(!viewModel.state.isLoggedIn)
+        #expect(viewModel.state.errorMessage == nil)
+        #expect(viewModel.state.email == "")
     }
 
     // MARK: - Validation Tests
 
-    func testValidateInputs_validCredentials() {
+    @Test func validateInputsValidCredentials() {
         let result = viewModel.validateInputs(email: "test@example.com", password: "password123")
 
-        XCTAssertTrue(result.isValid)
-        XCTAssertNil(result.emailError)
-        XCTAssertNil(result.passwordError)
+        #expect(result.isValid)
+        #expect(result.emailError == nil)
+        #expect(result.passwordError == nil)
     }
 
-    func testValidateInputs_emptyEmail() {
+    @Test func validateInputsEmptyEmail() {
         let result = viewModel.validateInputs(email: "", password: "password123")
 
-        XCTAssertFalse(result.isValid)
-        XCTAssertNotNil(result.emailError)
-        XCTAssertTrue(result.emailError?.contains("required") ?? false)
+        #expect(!result.isValid)
+        #expect(result.emailError != nil)
+        #expect(result.emailError?.contains("required") ?? false)
     }
 
-    func testValidateInputs_invalidEmail() {
+    @Test func validateInputsInvalidEmail() {
         let result = viewModel.validateInputs(email: "notanemail", password: "password123")
 
-        XCTAssertFalse(result.isValid)
-        XCTAssertNotNil(result.emailError)
-        XCTAssertTrue(result.emailError?.contains("valid email") ?? false)
+        #expect(!result.isValid)
+        #expect(result.emailError != nil)
+        #expect(result.emailError?.contains("valid email") ?? false)
     }
 
-    func testValidateInputs_emptyPassword() {
+    @Test func validateInputsEmptyPassword() {
         let result = viewModel.validateInputs(email: "test@example.com", password: "")
 
-        XCTAssertFalse(result.isValid)
-        XCTAssertNotNil(result.passwordError)
-        XCTAssertTrue(result.passwordError?.contains("required") ?? false)
+        #expect(!result.isValid)
+        #expect(result.passwordError != nil)
+        #expect(result.passwordError?.contains("required") ?? false)
     }
 
-    func testValidateInputs_shortPassword() {
+    @Test func validateInputsShortPassword() {
         let result = viewModel.validateInputs(email: "test@example.com", password: "ab")
 
-        XCTAssertFalse(result.isValid)
-        XCTAssertNotNil(result.passwordError)
-        XCTAssertTrue(result.passwordError?.contains("short") ?? false)
+        #expect(!result.isValid)
+        #expect(result.passwordError != nil)
+        #expect(result.passwordError?.contains("short") ?? false)
     }
 
-    func testValidateInputs_bothInvalid() {
+    @Test func validateInputsBothInvalid() {
         let result = viewModel.validateInputs(email: "", password: "")
 
-        XCTAssertFalse(result.isValid)
-        XCTAssertNotNil(result.emailError)
-        XCTAssertNotNil(result.passwordError)
+        #expect(!result.isValid)
+        #expect(result.emailError != nil)
+        #expect(result.passwordError != nil)
     }
 
     // MARK: - Login Tests
 
-    func testLogin_withValidCredentials_callsService() async {
+    @Test func loginWithValidCredentialsCallsService() async {
         mockService.mockLoginResponse = TestFixtures.successfulAuthResponse
 
         _ = await viewModel.login(email: "test@example.com", password: "password123")
 
-        XCTAssertTrue(mockService.loginCalled)
-        XCTAssertEqual(mockService.lastEmail, "test@example.com")
-        XCTAssertEqual(mockService.lastPassword, "password123")
+        #expect(mockService.loginCalled)
+        #expect(mockService.lastEmail == "test@example.com")
+        #expect(mockService.lastPassword == "password123")
+        // Cleanup
+        Global.saveUserData(userData: [:])
+        _ = KeychainManager.shared.clearUserCredentials()
     }
 
-    func testLogin_withSuccessfulResponse_updatesState() async {
+    @Test func loginWithSuccessfulResponseUpdatesState() async {
         mockService.mockLoginResponse = TestFixtures.successfulAuthResponse
 
         let success = await viewModel.login(email: "test@example.com", password: "password123")
 
-        XCTAssertTrue(success)
-        XCTAssertTrue(viewModel.state.isLoggedIn)
-        XCTAssertEqual(viewModel.state.email, "test@example.com")
-        XCTAssertFalse(viewModel.state.isLoading)
+        #expect(success)
+        #expect(viewModel.state.isLoggedIn)
+        #expect(viewModel.state.email == "test@example.com")
+        #expect(!viewModel.state.isLoading)
+        // Cleanup
+        Global.saveUserData(userData: [:])
+        _ = KeychainManager.shared.clearUserCredentials()
     }
 
-    func testLogin_withFailedResponse_setsError() async {
+    @Test func loginWithFailedResponseSetsError() async {
         mockService.mockLoginResponse = TestFixtures.failedAuthResponse
 
         let success = await viewModel.login(email: "test@example.com", password: "wrongpassword")
 
-        XCTAssertFalse(success)
-        XCTAssertFalse(viewModel.state.isLoggedIn)
-        XCTAssertNotNil(viewModel.state.errorMessage)
+        #expect(!success)
+        #expect(!viewModel.state.isLoggedIn)
+        #expect(viewModel.state.errorMessage != nil)
     }
 
-    func testLogin_withInvalidEmail_doesNotCallService() async {
+    @Test func loginWithInvalidEmailDoesNotCallService() async {
         let success = await viewModel.login(email: "invalid", password: "password123")
 
-        XCTAssertFalse(success)
-        XCTAssertFalse(mockService.loginCalled)
-        XCTAssertNotNil(viewModel.state.errorMessage)
+        #expect(!success)
+        #expect(!mockService.loginCalled)
+        #expect(viewModel.state.errorMessage != nil)
     }
 
-    func testLogin_withNetworkError_setsErrorMessage() async {
+    @Test func loginWithNetworkErrorSetsErrorMessage() async {
         mockService.errorToThrow = NetworkError.timeout
 
         let success = await viewModel.login(email: "test@example.com", password: "password123")
 
-        XCTAssertFalse(success)
-        XCTAssertNotNil(viewModel.state.errorMessage)
-        XCTAssertFalse(viewModel.state.isLoading)
+        #expect(!success)
+        #expect(viewModel.state.errorMessage != nil)
+        #expect(!viewModel.state.isLoading)
     }
 
     // MARK: - Logout Tests
 
-    func testLogout_clearsState() async {
+    @Test func logoutClearsState() async {
         // First login
         mockService.mockLoginResponse = TestFixtures.successfulAuthResponse
         _ = await viewModel.login(email: "test@example.com", password: "password123")
@@ -209,33 +205,38 @@ final class LoginViewModelTests: XCTestCase {
         // Then logout
         viewModel.logout()
 
-        XCTAssertFalse(viewModel.state.isLoggedIn)
-        XCTAssertEqual(viewModel.state.email, "")
-        XCTAssertFalse(Global.isLoggedIn())
+        #expect(!viewModel.state.isLoggedIn)
+        #expect(viewModel.state.email == "")
+        #expect(!Global.isLoggedIn())
+        // Cleanup
+        Global.saveUserData(userData: [:])
+        _ = KeychainManager.shared.clearUserCredentials()
     }
 
     // MARK: - Check Login Status Tests
 
-    func testCheckLoginStatus_whenLoggedIn() {
+    @Test func checkLoginStatusWhenLoggedIn() {
         Global.saveUserData(userData: ["logged-in": true, "email": "test@example.com"])
 
         viewModel.checkLoginStatus()
 
-        XCTAssertTrue(viewModel.state.isLoggedIn)
-        XCTAssertEqual(viewModel.state.email, "test@example.com")
+        #expect(viewModel.state.isLoggedIn)
+        #expect(viewModel.state.email == "test@example.com")
+        // Cleanup
+        Global.saveUserData(userData: [:])
     }
 
-    func testCheckLoginStatus_whenNotLoggedIn() {
+    @Test func checkLoginStatusWhenNotLoggedIn() {
         Global.saveUserData(userData: [:])
 
         viewModel.checkLoginStatus()
 
-        XCTAssertFalse(viewModel.state.isLoggedIn)
+        #expect(!viewModel.state.isLoggedIn)
     }
 
     // MARK: - Fetch Account Info Tests
 
-    func testFetchAccountInfo_callsService() async throws {
+    @Test func fetchAccountInfoCallsService() async throws {
         mockService.mockAccountInfoResponse = AccountInfoResponse(
             success: true,
             values: AccountInfoResponse.AccountValues(
@@ -247,54 +248,53 @@ final class LoginViewModelTests: XCTestCase {
 
         let response = try await viewModel.fetchAccountInfo(email: "test@example.com")
 
-        XCTAssertTrue(mockService.getAccountInfoCalled)
-        XCTAssertEqual(mockService.lastEmail, "test@example.com")
-        XCTAssertEqual(response.values?.screenname, "TestUser")
+        #expect(mockService.getAccountInfoCalled)
+        #expect(mockService.lastEmail == "test@example.com")
+        #expect(response.values?.screenname == "TestUser")
     }
 
-    func testFetchAccountInfo_withError_throws() async {
+    @Test func fetchAccountInfoWithErrorThrows() async {
         mockService.errorToThrow = NetworkError.invalidResponse
 
-        do {
+        await #expect(throws: NetworkError.self) {
             _ = try await viewModel.fetchAccountInfo(email: "test@example.com")
-            XCTFail("Expected error to be thrown")
-        } catch {
-            XCTAssertTrue(error is NetworkError)
         }
     }
 }
 
 // MARK: - LoginViewState Tests
 
-final class LoginViewStateTests: XCTestCase {
+@Suite("LoginViewState Tests")
+struct LoginViewStateTests {
 
-    func testInitialState() {
+    @Test func initialState() {
         let state = LoginViewState.initial
 
-        XCTAssertFalse(state.isLoading)
-        XCTAssertFalse(state.isLoggedIn)
-        XCTAssertNil(state.errorMessage)
-        XCTAssertEqual(state.email, "")
-        XCTAssertNil(state.username)
+        #expect(!state.isLoading)
+        #expect(!state.isLoggedIn)
+        #expect(state.errorMessage == nil)
+        #expect(state.email == "")
+        #expect(state.username == nil)
     }
 }
 
 // MARK: - LoginValidation Tests
 
-final class LoginValidationTests: XCTestCase {
+@Suite("LoginValidation Tests")
+struct LoginValidationTests {
 
-    func testValidState() {
+    @Test func validState() {
         let validation = LoginValidation.valid
 
-        XCTAssertTrue(validation.isValid)
-        XCTAssertNil(validation.emailError)
-        XCTAssertNil(validation.passwordError)
+        #expect(validation.isValid)
+        #expect(validation.emailError == nil)
+        #expect(validation.passwordError == nil)
     }
 
-    func testEquatable() {
+    @Test func equatable() {
         let v1 = LoginValidation(isValid: true, emailError: nil, passwordError: nil)
         let v2 = LoginValidation.valid
 
-        XCTAssertEqual(v1, v2)
+        #expect(v1 == v2)
     }
 }

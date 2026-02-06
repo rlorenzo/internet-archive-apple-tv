@@ -60,6 +60,9 @@ final class VideoPlayerViewController: AVPlayerViewController {
     /// Reference to player for cleanup in deinit (nonisolated access)
     nonisolated(unsafe) private var playerForCleanup: AVPlayer?
 
+    /// Callback invoked when the player is dismissed
+    var onDismiss: (() -> Void)?
+
     /// Subtitle overlay view
     private lazy var subtitleOverlay: SubtitleOverlayView = {
         let overlay = SubtitleOverlayView()
@@ -123,6 +126,10 @@ final class VideoPlayerViewController: AVPlayerViewController {
                 loadPreferredSubtitles()
                 needsControlSetup = false
             }
+            // Handle resume - viewDidLoad couldn't do this because player wasn't set yet
+            if let resumeTime = resumeFromTime, resumeTime > 0 {
+                seekToResumePosition(resumeTime)
+            }
         }
     }
 
@@ -169,6 +176,11 @@ final class VideoPlayerViewController: AVPlayerViewController {
         // Save progress when leaving the player
         saveCurrentProgress()
         stopProgressTracking()
+
+        // Notify caller that player is being dismissed
+        if isBeingDismissed || isMovingFromParent {
+            onDismiss?()
+        }
     }
 
     // MARK: - Setup
@@ -369,9 +381,39 @@ final class VideoPlayerViewController: AVPlayerViewController {
     }
 
     /// Seek to the resume position
+    /// Waits for the player item to be ready before seeking
     private func seekToResumePosition(_ time: Double) {
-        guard let player = player else { return }
+        guard let player = player, let playerItem = player.currentItem else {
+            return
+        }
 
+        // If player item is already ready, seek immediately
+        if playerItem.status == .readyToPlay {
+            performSeek(to: time)
+        } else {
+            // Wait for the player item to become ready
+            Task { [weak self] in
+                guard self != nil else { return }
+                // Poll for ready state (with timeout)
+                var attempts = 0
+                while playerItem.status != .readyToPlay && attempts < 50 {
+                    try? await Task.sleep(nanoseconds: 100_000_000) // 0.1 seconds
+                    attempts += 1
+                    // Check if self was deallocated during sleep
+                    guard self != nil else { return }
+                }
+
+                guard playerItem.status == .readyToPlay else { return }
+                await MainActor.run { [weak self] in
+                    self?.performSeek(to: time)
+                }
+            }
+        }
+    }
+
+    /// Perform the actual seek operation
+    private func performSeek(to time: Double) {
+        guard let player = player else { return }
         let targetTime = CMTime(seconds: time, preferredTimescale: 600)
         player.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
     }
