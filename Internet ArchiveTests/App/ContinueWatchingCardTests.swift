@@ -2,19 +2,22 @@
 //  ContinueWatchingCardTests.swift
 //  Internet ArchiveTests
 //
-//  Unit tests for ContinueWatchingCard and ContinueWatchingSection SwiftUI components
+//  Tests for ContinueWatchingCard, ContinueWatchingSection, and ContinueWatchingHelpers
+//  Migrated to Swift Testing for Sprint 2
 //
 
-import XCTest
+import Testing
 import SwiftUI
 @testable import Internet_Archive
 
+// MARK: - ContinueWatchingCard Tests
+
+@Suite("ContinueWatchingCard Tests")
 @MainActor
-final class ContinueWatchingCardTests: XCTestCase {
+struct ContinueWatchingCardTests {
 
     // MARK: - Test Helpers
 
-    /// Creates a video progress for testing
     private func createVideoProgress(
         identifier: String = "test-video",
         currentTime: TimeInterval = 2700,
@@ -33,7 +36,6 @@ final class ContinueWatchingCardTests: XCTestCase {
         )
     }
 
-    /// Creates an audio progress for testing
     private func createAudioProgress(
         identifier: String = "test-audio",
         currentTime: TimeInterval = 45,
@@ -55,21 +57,10 @@ final class ContinueWatchingCardTests: XCTestCase {
         )
     }
 
-    /// Creates multiple progress items for section testing
-    private func createMultipleProgressItems() -> [PlaybackProgress] {
-        [
-            createVideoProgress(identifier: "video-1", currentTime: 1000, duration: 5000),
-            createVideoProgress(identifier: "video-2", currentTime: 2000, duration: 6000),
-            createAudioProgress(identifier: "audio-1", currentTime: 30, duration: 200),
-            createVideoProgress(identifier: "video-3", currentTime: 4800, duration: 5000), // Near complete
-        ]
-    }
+    // MARK: - Initialization
 
-    // MARK: - ContinueWatchingCard Tests
-
-    // MARK: Initialization
-
-    func testContinueWatchingCard_initWithVideoProgress() {
+    @Test("Card initializes with video progress and callback works")
+    func initWithVideoProgress() {
         var tapped = false
         let progress = createVideoProgress()
 
@@ -77,12 +68,13 @@ final class ContinueWatchingCardTests: XCTestCase {
             tapped = true
         }
 
-        XCTAssertNotNil(card)
+        #expect(card.progress.itemIdentifier == "test-video")
         card.onTap()
-        XCTAssertTrue(tapped)
+        #expect(tapped)
     }
 
-    func testContinueWatchingCard_initWithAudioProgress() {
+    @Test("Card initializes with audio progress and callback works")
+    func initWithAudioProgress() {
         var tapped = false
         let progress = createAudioProgress()
 
@@ -90,67 +82,60 @@ final class ContinueWatchingCardTests: XCTestCase {
             tapped = true
         }
 
-        XCTAssertNotNil(card)
+        #expect(card.progress.isAudio)
         card.onTap()
-        XCTAssertTrue(tapped)
+        #expect(tapped)
     }
 
-    // MARK: Progress Property Tests
+    // MARK: - Progress Properties
 
-    func testContinueWatchingCard_progressStored() {
+    @Test("Card stores progress correctly")
+    func progressStored() {
         let progress = createVideoProgress(identifier: "my-movie")
-
         let card = ContinueWatchingCard(progress: progress) {}
-
-        XCTAssertEqual(card.progress.itemIdentifier, "my-movie")
+        #expect(card.progress.itemIdentifier == "my-movie")
     }
 
-    func testContinueWatchingCard_videoProgressIsVideo() {
+    @Test("Card with video progress stores video media type")
+    func videoProgressMediaType() {
         let progress = createVideoProgress()
-
         let card = ContinueWatchingCard(progress: progress) {}
-
-        XCTAssertTrue(card.progress.isVideo)
-        XCTAssertFalse(card.progress.isAudio)
+        #expect(card.progress.mediaType == "movies")
     }
 
-    func testContinueWatchingCard_audioProgressIsAudio() {
+    @Test("Card with audio progress stores audio media type")
+    func audioProgressMediaType() {
         let progress = createAudioProgress()
-
         let card = ContinueWatchingCard(progress: progress) {}
-
-        XCTAssertTrue(card.progress.isAudio)
-        XCTAssertFalse(card.progress.isVideo)
+        #expect(card.progress.mediaType == "etree")
     }
 
-    // MARK: Tap Callback Tests
+    // MARK: - Tap Callback
 
-    func testContinueWatchingCard_onTapCalled() {
+    @Test("onTap callback fires multiple times")
+    func onTapCalledMultipleTimes() {
         var tapCount = 0
         let progress = createVideoProgress()
-
-        let card = ContinueWatchingCard(progress: progress) {
-            tapCount += 1
-        }
+        let card = ContinueWatchingCard(progress: progress) { tapCount += 1 }
 
         card.onTap()
         card.onTap()
         card.onTap()
 
-        XCTAssertEqual(tapCount, 3)
+        #expect(tapCount == 3)
     }
 
-    // MARK: Title Tests
+    // MARK: - Title
 
-    func testContinueWatchingCard_titleFromProgress() {
+    @Test("Card stores title from progress")
+    func titleFromProgress() {
         let progress = createVideoProgress(title: "My Movie Title")
-
         let card = ContinueWatchingCard(progress: progress) {}
-
-        XCTAssertEqual(card.progress.title, "My Movie Title")
+        #expect(card.progress.title == "My Movie Title")
     }
 
-    func testContinueWatchingCard_nilTitleFallsBackToIdentifier() {
+    @Test("Nil title falls back to identifier")
+    func nilTitleFallsBackToIdentifier() {
         let progress = PlaybackProgress(
             itemIdentifier: "fallback-identifier",
             filename: "file.mp4",
@@ -161,53 +146,137 @@ final class ContinueWatchingCardTests: XCTestCase {
             mediaType: "movies",
             imageURL: nil
         )
-
         let card = ContinueWatchingCard(progress: progress) {}
-
-        XCTAssertNil(card.progress.title)
-        XCTAssertEqual(card.progress.itemIdentifier, "fallback-identifier")
+        #expect(card.progress.title == nil)
+        #expect(card.progress.itemIdentifier == "fallback-identifier")
     }
 
-    // MARK: Progress Percentage Tests
+    // MARK: - Progress Percentage (parameterized)
 
-    func testContinueWatchingCard_progressPercentageHalfway() {
-        let progress = createVideoProgress(currentTime: 3600, duration: 7200)
-
+    @Test("Progress percentage calculated correctly",
+          arguments: [
+            (2700.0, 7200.0, 0.375),
+            (3600.0, 7200.0, 0.5),
+            (1800.0, 7200.0, 0.25),
+            (0.0, 7200.0, 0.0),
+            (7200.0, 7200.0, 1.0),
+            (5.0, 10.0, 0.5),
+            (43200.0, 86400.0, 0.5)
+          ])
+    func progressPercentage(currentTime: Double, duration: Double, expected: Double) {
+        let progress = createVideoProgress(currentTime: currentTime, duration: duration)
         let card = ContinueWatchingCard(progress: progress) {}
-
-        XCTAssertEqual(card.progress.progressPercentage, 0.5, accuracy: 0.01)
+        #expect(abs(card.progress.progressPercentage - expected) < 0.01)
     }
 
-    func testContinueWatchingCard_progressPercentageQuarter() {
-        let progress = createVideoProgress(currentTime: 1800, duration: 7200)
+    // MARK: - Time Remaining
 
+    @Test("Formatted time remaining contains 'remaining' for video")
+    func formattedTimeRemainingVideo() {
+        let progress = createVideoProgress(currentTime: 2700, duration: 7200)
         let card = ContinueWatchingCard(progress: progress) {}
-
-        XCTAssertEqual(card.progress.progressPercentage, 0.25, accuracy: 0.01)
+        let formatted = card.progress.formattedTimeRemaining
+        #expect(!formatted.isEmpty)
+        #expect(formatted.contains("remaining"))
     }
 
-    func testContinueWatchingCard_progressPercentageZero() {
-        let progress = createVideoProgress(currentTime: 0, duration: 7200)
-
+    @Test("Formatted time remaining contains 'remaining' for audio")
+    func formattedTimeRemainingAudio() {
+        let progress = createAudioProgress(currentTime: 50, duration: 200)
         let card = ContinueWatchingCard(progress: progress) {}
-
-        XCTAssertEqual(card.progress.progressPercentage, 0, accuracy: 0.01)
+        let formatted = card.progress.formattedTimeRemaining
+        #expect(!formatted.isEmpty)
+        #expect(formatted.contains("remaining"))
     }
 
-    func testContinueWatchingCard_progressPercentageFull() {
-        let progress = createVideoProgress(currentTime: 7200, duration: 7200)
+    // MARK: - Edge Cases
 
+    @Test("Very long title preserved")
+    func veryLongTitle() {
+        let longTitle = String(repeating: "Very Long Movie Title ", count: 10)
+        let progress = createVideoProgress(title: longTitle)
         let card = ContinueWatchingCard(progress: progress) {}
-
-        XCTAssertEqual(card.progress.progressPercentage, 1.0, accuracy: 0.01)
+        #expect(card.progress.title == longTitle)
     }
 
-    // MARK: - ContinueWatchingSection Tests
+    @Test("Special characters in title preserved")
+    func specialCharactersInTitle() {
+        let progress = createVideoProgress(title: "Movie: Part II (2024) - Director's Cut™")
+        let card = ContinueWatchingCard(progress: progress) {}
+        #expect(card.progress.title == "Movie: Part II (2024) - Director's Cut™")
+    }
 
-    // MARK: Initialization
+    @Test("Empty title stored correctly")
+    func emptyTitle() {
+        let progress = createVideoProgress(title: "")
+        let card = ContinueWatchingCard(progress: progress) {}
+        #expect(card.progress.title == "")
+    }
+}
 
-    func testContinueWatchingSection_initWithItems() {
-        let items = createMultipleProgressItems()
+// MARK: - ContinueWatchingSection Tests
+
+@Suite("ContinueWatchingSection Tests")
+@MainActor
+struct ContinueWatchingSectionTests {
+
+    // MARK: - Test Helpers
+
+    private func createVideoProgress(
+        identifier: String = "test-video",
+        currentTime: TimeInterval = 2700,
+        duration: TimeInterval = 7200,
+        lastWatchedDate: Date = Date(),
+        title: String? = "Test Movie"
+    ) -> PlaybackProgress {
+        PlaybackProgress(
+            itemIdentifier: identifier,
+            filename: "movie.mp4",
+            currentTime: currentTime,
+            duration: duration,
+            lastWatchedDate: lastWatchedDate,
+            title: title,
+            mediaType: "movies",
+            imageURL: nil
+        )
+    }
+
+    private func createAudioProgress(
+        identifier: String = "test-audio",
+        currentTime: TimeInterval = 45,
+        duration: TimeInterval = 100,
+        lastWatchedDate: Date = Date(),
+        title: String? = "Live Concert"
+    ) -> PlaybackProgress {
+        PlaybackProgress(
+            itemIdentifier: identifier,
+            filename: "album",
+            currentTime: currentTime,
+            duration: duration,
+            lastWatchedDate: lastWatchedDate,
+            title: title,
+            mediaType: "etree",
+            imageURL: nil,
+            trackIndex: 3,
+            trackFilename: "track04.mp3",
+            trackCurrentTime: 180
+        )
+    }
+
+    private func createMultipleItems() -> [PlaybackProgress] {
+        [
+            createVideoProgress(identifier: "video-1", currentTime: 1000, duration: 5000),
+            createVideoProgress(identifier: "video-2", currentTime: 2000, duration: 6000),
+            createAudioProgress(identifier: "audio-1", currentTime: 30, duration: 200),
+            createVideoProgress(identifier: "video-3", currentTime: 4800, duration: 5000)
+        ]
+    }
+
+    // MARK: - Initialization
+
+    @Test("Section initializes with items and callback works")
+    func initWithItems() {
+        let items = createMultipleItems()
         var tappedItem: PlaybackProgress?
 
         let section = ContinueWatchingSection(
@@ -216,87 +285,57 @@ final class ContinueWatchingCardTests: XCTestCase {
             onItemTap: { tappedItem = $0 }
         )
 
-        XCTAssertNotNil(section)
         section.onItemTap(items[0])
-        XCTAssertEqual(tappedItem?.itemIdentifier, items[0].itemIdentifier)
+        #expect(tappedItem?.itemIdentifier == items[0].itemIdentifier)
     }
 
-    func testContinueWatchingSection_initWithVideoFilter() {
-        let items = createMultipleProgressItems()
-
+    @Test("Section initializes with video filter")
+    func initWithVideoFilter() {
         let section = ContinueWatchingSection(
-            items: items,
+            items: createMultipleItems(),
             mediaType: .video,
             onItemTap: { _ in }
         )
-
-        XCTAssertNotNil(section)
+        #expect(section.mediaType != nil)
     }
 
-    func testContinueWatchingSection_initWithAudioFilter() {
-        let items = createMultipleProgressItems()
-
+    @Test("Section initializes with audio filter")
+    func initWithAudioFilter() {
         let section = ContinueWatchingSection(
-            items: items,
+            items: createMultipleItems(),
             mediaType: .audio,
             onItemTap: { _ in }
         )
-
-        XCTAssertNotNil(section)
+        #expect(section.mediaType != nil)
     }
 
-    func testContinueWatchingSection_initWithEmptyItems() {
+    @Test("Section initializes with empty items")
+    func initWithEmptyItems() {
         let section = ContinueWatchingSection(
             items: [],
             mediaType: nil,
             onItemTap: { _ in }
         )
-
-        XCTAssertNotNil(section)
+        #expect(section.items.isEmpty)
     }
 
-    // MARK: Media Filter Tests
+    // MARK: - Media Filter
 
-    func testContinueWatchingSection_mediaFilterNil() {
-        let items = createMultipleProgressItems()
-
+    @Test("Nil media type passes through")
+    func mediaFilterNil() {
         let section = ContinueWatchingSection(
-            items: items,
+            items: createMultipleItems(),
             mediaType: nil,
             onItemTap: { _ in }
         )
-
-        XCTAssertNil(section.mediaType)
+        #expect(section.mediaType == nil)
     }
 
-    func testContinueWatchingSection_mediaFilterVideo() {
-        let items = createMultipleProgressItems()
+    // MARK: - Item Tap Callback
 
-        let section = ContinueWatchingSection(
-            items: items,
-            mediaType: .video,
-            onItemTap: { _ in }
-        )
-
-        XCTAssertNotNil(section.mediaType)
-    }
-
-    func testContinueWatchingSection_mediaFilterAudio() {
-        let items = createMultipleProgressItems()
-
-        let section = ContinueWatchingSection(
-            items: items,
-            mediaType: .audio,
-            onItemTap: { _ in }
-        )
-
-        XCTAssertNotNil(section.mediaType)
-    }
-
-    // MARK: Item Tap Callback Tests
-
-    func testContinueWatchingSection_onItemTapCalledWithCorrectItem() {
-        let items = createMultipleProgressItems()
+    @Test("onItemTap called with correct items")
+    func onItemTapCalledWithCorrectItem() {
+        let items = createMultipleItems()
         var tappedIdentifiers: [String] = []
 
         let section = ContinueWatchingSection(
@@ -307,134 +346,53 @@ final class ContinueWatchingCardTests: XCTestCase {
 
         section.onItemTap(items[0])
         section.onItemTap(items[1])
-        section.onItemTap(items[0])
 
-        XCTAssertEqual(tappedIdentifiers.count, 3)
-        XCTAssertEqual(tappedIdentifiers[0], items[0].itemIdentifier)
-        XCTAssertEqual(tappedIdentifiers[1], items[1].itemIdentifier)
+        #expect(tappedIdentifiers.count == 2)
+        #expect(tappedIdentifiers[0] == items[0].itemIdentifier)
+        #expect(tappedIdentifiers[1] == items[1].itemIdentifier)
     }
 
-    // MARK: Items Storage Tests
+    // MARK: - Items Storage
 
-    func testContinueWatchingSection_itemsStored() {
-        let items = createMultipleProgressItems()
-
+    @Test("Section stores all items")
+    func itemsStored() {
+        let items = createMultipleItems()
         let section = ContinueWatchingSection(
             items: items,
             mediaType: nil,
             onItemTap: { _ in }
         )
-
-        XCTAssertEqual(section.items.count, items.count)
+        #expect(section.items.count == items.count)
     }
 
-    // MARK: - Edge Cases
-
-    func testContinueWatchingCard_veryLongTitle() {
-        let longTitle = String(repeating: "Very Long Movie Title ", count: 10)
-        let progress = createVideoProgress(title: longTitle)
-
-        let card = ContinueWatchingCard(progress: progress) {}
-
-        XCTAssertEqual(card.progress.title, longTitle)
+    @Test("Section handles single item")
+    func singleItem() {
+        let section = ContinueWatchingSection(
+            items: [createVideoProgress()],
+            mediaType: nil,
+            onItemTap: { _ in }
+        )
+        #expect(section.items.count == 1)
     }
 
-    func testContinueWatchingCard_specialCharactersInTitle() {
-        let progress = createVideoProgress(title: "Movie: Part II (2024) - Director's Cut™")
-
-        let card = ContinueWatchingCard(progress: progress) {}
-
-        XCTAssertEqual(card.progress.title, "Movie: Part II (2024) - Director's Cut™")
-    }
-
-    func testContinueWatchingCard_emptyTitle() {
-        let progress = createVideoProgress(title: "")
-
-        let card = ContinueWatchingCard(progress: progress) {}
-
-        XCTAssertEqual(card.progress.title, "")
-    }
-
-    func testContinueWatchingCard_veryLongDuration() {
-        // 24 hour video
-        let progress = createVideoProgress(currentTime: 43200, duration: 86400)
-
-        let card = ContinueWatchingCard(progress: progress) {}
-
-        XCTAssertEqual(card.progress.progressPercentage, 0.5, accuracy: 0.01)
-    }
-
-    func testContinueWatchingCard_veryShortDuration() {
-        let progress = createVideoProgress(currentTime: 5, duration: 10)
-
-        let card = ContinueWatchingCard(progress: progress) {}
-
-        XCTAssertEqual(card.progress.progressPercentage, 0.5, accuracy: 0.01)
-    }
-
-    func testContinueWatchingSection_singleItem() {
-        let items = [createVideoProgress()]
-
+    @Test("Section handles many items")
+    func manyItems() {
+        let items = (0..<50).map { createVideoProgress(identifier: "video-\($0)") }
         let section = ContinueWatchingSection(
             items: items,
             mediaType: nil,
             onItemTap: { _ in }
         )
-
-        XCTAssertEqual(section.items.count, 1)
+        #expect(section.items.count == 50)
     }
 
-    func testContinueWatchingSection_manyItems() {
-        var items: [PlaybackProgress] = []
-        for idx in 0..<50 {
-            items.append(createVideoProgress(identifier: "video-\(idx)"))
-        }
-
-        let section = ContinueWatchingSection(
-            items: items,
-            mediaType: nil,
-            onItemTap: { _ in }
-        )
-
-        XCTAssertEqual(section.items.count, 50)
-    }
-
-    // MARK: - MediaFilter Enum Tests
-
-    func testMediaFilter_videoCase() {
-        let filter = ContinueWatchingSection.MediaFilter.video
-        XCTAssertEqual(filter, .video)
-    }
-
-    func testMediaFilter_audioCase() {
-        let filter = ContinueWatchingSection.MediaFilter.audio
-        XCTAssertEqual(filter, .audio)
-    }
-
-    // MARK: - Time Remaining Tests
-
-    func testContinueWatchingCard_formattedTimeRemaining() {
-        let progress = createVideoProgress(currentTime: 2700, duration: 7200)
-
-        let card = ContinueWatchingCard(progress: progress) {}
-
-        // Should have time remaining formatted
-        XCTAssertFalse(card.progress.formattedTimeRemaining.isEmpty)
-    }
-
-    func testContinueWatchingCard_audioFormattedTimeRemaining() {
-        let progress = createAudioProgress(currentTime: 50, duration: 200)
-
-        let card = ContinueWatchingCard(progress: progress) {}
-
-        XCTAssertFalse(card.progress.formattedTimeRemaining.isEmpty)
-    }
 }
 
 // MARK: - ContinueWatchingHelpers Tests
 
+@Suite("ContinueWatchingHelpers Tests")
 @MainActor
-final class ContinueWatchingHelpersTests: XCTestCase {
+struct ContinueWatchingHelpersTests {
 
     // MARK: - Test Helpers
 
@@ -487,7 +445,7 @@ final class ContinueWatchingHelpersTests: XCTestCase {
             return PlaybackProgress(
                 itemIdentifier: identifier,
                 filename: "movie.mp4",
-                currentTime: 9800, // 98% complete
+                currentTime: 9800,
                 duration: 10000,
                 lastWatchedDate: Date(),
                 title: "Completed Movie",
@@ -510,164 +468,143 @@ final class ContinueWatchingHelpersTests: XCTestCase {
 
     // MARK: - Filter Tests
 
-    func testFilterProgressItems_excludesCompletedItems() {
+    @Test("Excludes completed items (>95%)")
+    func filterExcludesCompleted() {
         let items = [
             createVideoProgress(identifier: "active", currentTime: 500, duration: 1000),
             createCompletedProgress(identifier: "completed")
         ]
-
         let filtered = ContinueWatchingHelpers.filterProgressItems(items, mediaType: nil)
-
-        XCTAssertEqual(filtered.count, 1)
-        XCTAssertEqual(filtered.first?.itemIdentifier, "active")
+        #expect(filtered.count == 1)
+        #expect(filtered.first?.itemIdentifier == "active")
     }
 
-    func testFilterProgressItems_filtersVideoOnly() {
+    @Test("Filters video only")
+    func filterVideoOnly() {
         let items = [
             createVideoProgress(identifier: "video-1"),
             createAudioProgress(identifier: "audio-1"),
             createVideoProgress(identifier: "video-2")
         ]
-
         let filtered = ContinueWatchingHelpers.filterProgressItems(items, mediaType: .video)
-
-        XCTAssertEqual(filtered.count, 2)
-        XCTAssertTrue(filtered.allSatisfy { $0.isVideo })
+        #expect(filtered.count == 2)
+        #expect(filtered.allSatisfy { $0.isVideo })
     }
 
-    func testFilterProgressItems_filtersAudioOnly() {
+    @Test("Filters audio only")
+    func filterAudioOnly() {
         let items = [
             createVideoProgress(identifier: "video-1"),
             createAudioProgress(identifier: "audio-1"),
             createAudioProgress(identifier: "audio-2")
         ]
-
         let filtered = ContinueWatchingHelpers.filterProgressItems(items, mediaType: .audio)
-
-        XCTAssertEqual(filtered.count, 2)
-        XCTAssertTrue(filtered.allSatisfy { $0.isAudio })
+        #expect(filtered.count == 2)
+        #expect(filtered.allSatisfy { $0.isAudio })
     }
 
-    func testFilterProgressItems_nilMediaTypeShowsAll() {
+    @Test("Nil media type shows all non-completed")
+    func filterNilShowsAll() {
         let items = [
             createVideoProgress(identifier: "video-1"),
             createAudioProgress(identifier: "audio-1")
         ]
-
         let filtered = ContinueWatchingHelpers.filterProgressItems(items, mediaType: nil)
-
-        XCTAssertEqual(filtered.count, 2)
+        #expect(filtered.count == 2)
     }
 
-    func testFilterProgressItems_sortsByMostRecent() {
-        let old = Date().addingTimeInterval(-3600) // 1 hour ago
+    @Test("Sorts by most recent first")
+    func filterSortsByMostRecent() {
+        let old = Date().addingTimeInterval(-3600)
         let recent = Date()
-
         let items = [
             createVideoProgress(identifier: "old", lastWatchedDate: old),
             createVideoProgress(identifier: "recent", lastWatchedDate: recent)
         ]
-
         let filtered = ContinueWatchingHelpers.filterProgressItems(items, mediaType: nil)
-
-        XCTAssertEqual(filtered.first?.itemIdentifier, "recent")
-        XCTAssertEqual(filtered.last?.itemIdentifier, "old")
+        #expect(filtered.first?.itemIdentifier == "recent")
+        #expect(filtered.last?.itemIdentifier == "old")
     }
 
-    func testFilterProgressItems_emptyInput() {
+    @Test("Empty input returns empty")
+    func filterEmptyInput() {
         let filtered = ContinueWatchingHelpers.filterProgressItems([], mediaType: nil)
-        XCTAssertTrue(filtered.isEmpty)
+        #expect(filtered.isEmpty)
     }
 
-    func testFilterProgressItems_allCompleted() {
+    @Test("All completed returns empty")
+    func filterAllCompleted() {
         let items = [
             createCompletedProgress(identifier: "completed-1"),
             createCompletedProgress(identifier: "completed-2")
         ]
-
         let filtered = ContinueWatchingHelpers.filterProgressItems(items, mediaType: nil)
-
-        XCTAssertTrue(filtered.isEmpty)
+        #expect(filtered.isEmpty)
     }
 
-    func testFilterProgressItems_combinedFiltering() {
+    @Test("Combined filtering and sorting")
+    func filterCombined() {
         let old = Date().addingTimeInterval(-3600)
         let recent = Date()
-
         let items = [
             createVideoProgress(identifier: "old-video", lastWatchedDate: old),
             createAudioProgress(identifier: "audio"),
             createVideoProgress(identifier: "recent-video", lastWatchedDate: recent),
             createCompletedProgress(identifier: "completed-video", isVideo: true)
         ]
-
         let filtered = ContinueWatchingHelpers.filterProgressItems(items, mediaType: .video)
-
-        XCTAssertEqual(filtered.count, 2)
-        XCTAssertEqual(filtered[0].itemIdentifier, "recent-video")
-        XCTAssertEqual(filtered[1].itemIdentifier, "old-video")
+        #expect(filtered.count == 2)
+        #expect(filtered[0].itemIdentifier == "recent-video")
+        #expect(filtered[1].itemIdentifier == "old-video")
     }
 
     // MARK: - Card Width Tests
 
-    func testCardWidth_video() {
-        let width = ContinueWatchingHelpers.cardWidth(for: .video)
-        XCTAssertEqual(width, 350)
-    }
-
-    func testCardWidth_audio() {
-        let width = ContinueWatchingHelpers.cardWidth(for: .audio)
-        XCTAssertEqual(width, 200)
-    }
-
-    func testCardWidth_nilUsesVideoWidth() {
-        let width = ContinueWatchingHelpers.cardWidth(for: nil)
-        XCTAssertEqual(width, 350)
+    @Test("Card width for media types",
+          arguments: [
+            (ContinueWatchingSection.MediaFilter?.some(.video), CGFloat(350)),
+            (ContinueWatchingSection.MediaFilter?.some(.audio), CGFloat(200)),
+            (ContinueWatchingSection.MediaFilter?.none, CGFloat(350))
+          ])
+    func cardWidth(mediaType: ContinueWatchingSection.MediaFilter?, expected: CGFloat) {
+        #expect(ContinueWatchingHelpers.cardWidth(for: mediaType) == expected)
     }
 
     // MARK: - Aspect Ratio Tests
 
-    func testAspectRatio_video() {
+    @Test("Video aspect ratio is 16:9")
+    func aspectRatioVideo() {
         let ratio = ContinueWatchingHelpers.aspectRatio(isVideo: true)
-        XCTAssertEqual(ratio, 16.0 / 9.0, accuracy: 0.001)
+        #expect(abs(ratio - 16.0 / 9.0) < 0.001)
     }
 
-    func testAspectRatio_audio() {
-        let ratio = ContinueWatchingHelpers.aspectRatio(isVideo: false)
-        XCTAssertEqual(ratio, 1.0)
+    @Test("Audio aspect ratio is 1:1")
+    func aspectRatioAudio() {
+        #expect(ContinueWatchingHelpers.aspectRatio(isVideo: false) == 1.0)
     }
 
     // MARK: - Accessibility Label Tests
 
-    func testAccessibilityLabel_video() {
-        let progress = createVideoProgress(
-            currentTime: 3600,
-            duration: 7200,
-            title: "Test Movie"
-        )
-
+    @Test("Accessibility label for video includes all components")
+    func accessibilityLabelVideo() {
+        let progress = createVideoProgress(currentTime: 3600, duration: 7200, title: "Test Movie")
         let label = ContinueWatchingHelpers.accessibilityLabel(for: progress)
-
-        XCTAssertTrue(label.contains("Test Movie"))
-        XCTAssertTrue(label.contains("Video"))
-        XCTAssertTrue(label.contains("50% complete"))
+        #expect(label.contains("Test Movie"))
+        #expect(label.contains("Video"))
+        #expect(label.contains("50% complete"))
     }
 
-    func testAccessibilityLabel_audio() {
-        let progress = createAudioProgress(
-            currentTime: 25,
-            duration: 100,
-            title: "Concert"
-        )
-
+    @Test("Accessibility label for audio includes music")
+    func accessibilityLabelAudio() {
+        let progress = createAudioProgress(currentTime: 25, duration: 100, title: "Concert")
         let label = ContinueWatchingHelpers.accessibilityLabel(for: progress)
-
-        XCTAssertTrue(label.contains("Concert"))
-        XCTAssertTrue(label.contains("Music"))
-        XCTAssertTrue(label.contains("25% complete"))
+        #expect(label.contains("Concert"))
+        #expect(label.contains("Music"))
+        #expect(label.contains("25% complete"))
     }
 
-    func testAccessibilityLabel_nilTitleUsesIdentifier() {
+    @Test("Accessibility label with nil title uses identifier")
+    func accessibilityLabelNilTitle() {
         let progress = PlaybackProgress(
             itemIdentifier: "my-identifier",
             filename: "file.mp4",
@@ -678,43 +615,42 @@ final class ContinueWatchingHelpersTests: XCTestCase {
             mediaType: "movies",
             imageURL: nil
         )
-
         let label = ContinueWatchingHelpers.accessibilityLabel(for: progress)
-
-        XCTAssertTrue(label.contains("my-identifier"))
+        #expect(label.contains("my-identifier"))
     }
 
     // MARK: - Section Accessibility Label Tests
 
-    func testSectionAccessibilityLabel_video() {
-        let label = ContinueWatchingHelpers.sectionAccessibilityLabel(mediaType: .video, itemCount: 5)
-        XCTAssertEqual(label, "Continue watching section with 5 items")
-    }
-
-    func testSectionAccessibilityLabel_audio() {
-        let label = ContinueWatchingHelpers.sectionAccessibilityLabel(mediaType: .audio, itemCount: 3)
-        XCTAssertEqual(label, "Continue listening section with 3 items")
-    }
-
-    func testSectionAccessibilityLabel_nil() {
-        let label = ContinueWatchingHelpers.sectionAccessibilityLabel(mediaType: nil, itemCount: 10)
-        XCTAssertEqual(label, "Continue playing section with 10 items")
-    }
-
-    func testSectionAccessibilityLabel_zeroItems() {
-        let label = ContinueWatchingHelpers.sectionAccessibilityLabel(mediaType: .video, itemCount: 0)
-        XCTAssertEqual(label, "Continue watching section with 0 items")
+    @Test("Section accessibility labels",
+          arguments: [
+            (ContinueWatchingSection.MediaFilter?.some(.video), 5, "Continue watching section with 5 items"),
+            (ContinueWatchingSection.MediaFilter?.some(.audio), 3, "Continue listening section with 3 items"),
+            (ContinueWatchingSection.MediaFilter?.none, 10, "Continue playing section with 10 items"),
+            (ContinueWatchingSection.MediaFilter?.some(.video), 0, "Continue watching section with 0 items")
+          ])
+    func sectionAccessibilityLabel(
+        mediaType: ContinueWatchingSection.MediaFilter?,
+        itemCount: Int,
+        expected: String
+    ) {
+        let label = ContinueWatchingHelpers.sectionAccessibilityLabel(
+            mediaType: mediaType,
+            itemCount: itemCount
+        )
+        #expect(label == expected)
     }
 
     // MARK: - Thumbnail URL Tests
 
-    func testThumbnailURL_validIdentifier() {
+    @Test("Thumbnail URL generated correctly")
+    func thumbnailURLValid() {
         let url = ContinueWatchingHelpers.thumbnailURL(for: "my-movie-id")
-        XCTAssertEqual(url?.absoluteString, "https://archive.org/services/img/my-movie-id")
+        #expect(url?.absoluteString == "https://archive.org/services/img/my-movie-id")
     }
 
-    func testThumbnailURL_identifierWithSpecialCharacters() {
+    @Test("Thumbnail URL with special characters")
+    func thumbnailURLSpecialChars() {
         let url = ContinueWatchingHelpers.thumbnailURL(for: "movie-2024_version")
-        XCTAssertEqual(url?.absoluteString, "https://archive.org/services/img/movie-2024_version")
+        #expect(url?.absoluteString == "https://archive.org/services/img/movie-2024_version")
     }
 }

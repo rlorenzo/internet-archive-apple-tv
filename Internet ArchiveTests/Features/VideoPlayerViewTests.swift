@@ -3,181 +3,181 @@
 //  Internet ArchiveTests
 //
 //  Tests for VideoPlayerView - video format selection, URL building, coordinator
+//  Migrated to Swift Testing for Sprint 2
 //
 
-import XCTest
+import Testing
+import Foundation
 @testable import Internet_Archive
 
-// MARK: - VideoPlayerView Tests
+// MARK: - VideoPlayerView findPlayableVideo Tests
 
-final class VideoPlayerViewTests: XCTestCase {
+@Suite("VideoPlayerView findPlayableVideo Tests")
+@MainActor
+struct VideoPlayerViewFindPlayableVideoTests {
 
-    // MARK: - findPlayableVideo Tests
-
-    func testFindPlayableVideo_prefersH264Format() {
+    @Test("Prefers H.264 format over lower-priority")
+    func prefersH264Format() {
         let files = [
             FileInfo(name: "video.ogv", source: "original", format: "Ogg Video"),
             FileInfo(name: "video.mp4", source: "original", format: "h.264"),
             FileInfo(name: "video.webm", source: "original", format: "WebM")
         ]
-
         let result = VideoPlayerView.findPlayableVideo(in: files)
-
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.name, "video.mp4")
+        #expect(result?.name == "video.mp4")
     }
 
-    func testFindPlayableVideo_prefersMp4Extension() {
+    @Test("Prefers MP4 extension")
+    func prefersMp4Extension() {
         let files = [
             FileInfo(name: "video.webm", source: "original", format: "WebM"),
             FileInfo(name: "movie.mp4", source: "original", format: "MPEG4")
         ]
-
         let result = VideoPlayerView.findPlayableVideo(in: files)
-
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.name, "movie.mp4")
+        #expect(result?.name == "movie.mp4")
     }
 
-    func testFindPlayableVideo_prefersMovExtension() {
+    @Test("Prefers MOV extension")
+    func prefersMovExtension() {
         let files = [
             FileInfo(name: "video.ogv", source: "original", format: "Ogg Video"),
             FileInfo(name: "clip.mov", source: "original", format: "mov")
         ]
-
         let result = VideoPlayerView.findPlayableVideo(in: files)
-
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.name, "clip.mov")
+        #expect(result?.name == "clip.mov")
     }
 
-    func testFindPlayableVideo_prefersM4vExtension() {
+    @Test("Prefers M4V extension")
+    func prefersM4vExtension() {
         let files = [
             FileInfo(name: "video.webm", source: "original", format: "WebM"),
             FileInfo(name: "movie.m4v", source: "original", format: "m4v")
         ]
-
         let result = VideoPlayerView.findPlayableVideo(in: files)
-
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.name, "movie.m4v")
+        #expect(result?.name == "movie.m4v")
     }
 
-    func testFindPlayableVideo_fallsBackToOgv() {
+    @Test("Falls back to OGV when no H.264")
+    func fallsBackToOgv() {
         let files = [
             FileInfo(name: "video.ogv", source: "original", format: "Ogg Video"),
             FileInfo(name: "thumbnail.jpg", source: "derivative", format: "JPEG")
         ]
-
         let result = VideoPlayerView.findPlayableVideo(in: files)
-
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.name, "video.ogv")
+        #expect(result?.name == "video.ogv")
     }
 
-    func testFindPlayableVideo_fallsBackToWebm() {
+    @Test("Falls back to WebM")
+    func fallsBackToWebm() {
         let files = [
             FileInfo(name: "video.webm", source: "original", format: "WebM"),
             FileInfo(name: "meta.xml", source: "original", format: "Metadata")
         ]
-
         let result = VideoPlayerView.findPlayableVideo(in: files)
-
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.name, "video.webm")
+        #expect(result?.name == "video.webm")
     }
 
-    func testFindPlayableVideo_fallsBackToGenericVideoFormat() {
+    @Test("Falls back to generic video format")
+    func fallsBackToGenericVideoFormat() {
         let files = [
             FileInfo(name: "clip.avi", source: "original", format: "AVI Video"),
             FileInfo(name: "thumbnail.jpg", source: "derivative", format: "JPEG")
         ]
-
         let result = VideoPlayerView.findPlayableVideo(in: files)
-
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.name, "clip.avi")
+        #expect(result?.name == "clip.avi")
     }
 
-    func testFindPlayableVideo_noVideoFiles_returnsNil() {
+    @Test("Returns nil when no video files")
+    func noVideoFilesReturnsNil() {
         let files = [
             FileInfo(name: "track.mp3", source: "original", format: "MP3"),
             FileInfo(name: "thumbnail.jpg", source: "derivative", format: "JPEG"),
             FileInfo(name: "meta.xml", source: "original", format: "Metadata")
         ]
-
-        let result = VideoPlayerView.findPlayableVideo(in: files)
-
-        XCTAssertNil(result)
+        #expect(VideoPlayerView.findPlayableVideo(in: files) == nil)
     }
 
-    func testFindPlayableVideo_emptyFiles_returnsNil() {
-        let result = VideoPlayerView.findPlayableVideo(in: [])
-
-        XCTAssertNil(result)
+    @Test("Returns nil for empty files")
+    func emptyFilesReturnsNil() {
+        #expect(VideoPlayerView.findPlayableVideo(in: []) == nil)
     }
 
-    func testFindPlayableVideo_caseInsensitiveFormat() {
+    @Test("Case insensitive format matching")
+    func caseInsensitiveFormat() {
         let files = [
             FileInfo(name: "VIDEO.MP4", source: "original", format: "H.264")
         ]
-
         let result = VideoPlayerView.findPlayableVideo(in: files)
-
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.name, "VIDEO.MP4")
+        #expect(result?.name == "VIDEO.MP4")
     }
 
-    func testFindPlayableVideo_priorityOrder() {
-        // Tests that H.264/MP4 is chosen over OGV/WebM
+    @Test("Priority order: H.264/MP4 over OGV/WebM")
+    func priorityOrder() {
         let files = [
             FileInfo(name: "first.ogv", source: "original", format: "ogv"),
             FileInfo(name: "second.webm", source: "original", format: "webm"),
             FileInfo(name: "third.mp4", source: "original", format: "mp4")
         ]
-
         let result = VideoPlayerView.findPlayableVideo(in: files)
+        #expect(result?.name == "third.mp4")
+    }
 
-        XCTAssertNotNil(result)
-        XCTAssertEqual(result?.name, "third.mp4")
+    @Test("Multiple MP4 files returns first match")
+    func multipleMp4ReturnsFirst() {
+        let files = [
+            FileInfo(name: "low-quality.mp4", source: "derivative", format: "h.264"),
+            FileInfo(name: "high-quality.mp4", source: "original", format: "h.264")
+        ]
+        let result = VideoPlayerView.findPlayableVideo(in: files)
+        #expect(result?.name == "low-quality.mp4")
+    }
+
+    @Test("Ignores non-video files entirely")
+    func ignoresNonVideoFiles() {
+        let files = [
+            FileInfo(name: "doc.pdf", source: "original", format: "PDF"),
+            FileInfo(name: "data.json", source: "original", format: "JSON"),
+            FileInfo(name: "image.png", source: "original", format: "PNG")
+        ]
+        #expect(VideoPlayerView.findPlayableVideo(in: files) == nil)
     }
 }
 
 // MARK: - VideoPlayerView Coordinator Tests
 
-final class VideoPlayerViewCoordinatorTests: XCTestCase {
+@Suite("VideoPlayerView Coordinator Tests")
+struct VideoPlayerViewCoordinatorTests {
 
-    func testCoordinator_initWithOnDismiss() {
+    @Test("Coordinator init with onDismiss callback")
+    func initWithOnDismiss() {
         var dismissCalled = false
         let coordinator = VideoPlayerView.Coordinator(onDismiss: { dismissCalled = true })
-
-        XCTAssertNotNil(coordinator.onDismiss)
         coordinator.onDismiss?()
-        XCTAssertTrue(dismissCalled)
+        #expect(dismissCalled)
     }
 
-    func testCoordinator_initWithNilOnDismiss() {
+    @Test("Coordinator init with nil onDismiss")
+    func initWithNilOnDismiss() {
         let coordinator = VideoPlayerView.Coordinator(onDismiss: nil)
-
-        XCTAssertNil(coordinator.onDismiss)
+        #expect(coordinator.onDismiss == nil)
     }
 
-    func testCoordinator_viewControllerInitiallyNil() {
+    @Test("Coordinator viewController initially nil")
+    func viewControllerInitiallyNil() {
         let coordinator = VideoPlayerView.Coordinator(onDismiss: nil)
-
-        XCTAssertNil(coordinator.viewController)
+        #expect(coordinator.viewController == nil)
     }
 }
 
 // MARK: - VideoPlayerView Initialization Tests
 
-final class VideoPlayerViewInitializationTests: XCTestCase {
+@Suite("VideoPlayerView Initialization Tests")
+@MainActor
+struct VideoPlayerViewInitializationTests {
 
-    func testInit_setsAllProperties() {
-        guard let videoURL = URL(string: "https://archive.org/download/test/video.mp4") else {
-            XCTFail("Failed to create URL")
-            return
-        }
+    @Test("Sets all properties correctly")
+    func setsAllProperties() throws {
+        let videoURL = try #require(URL(string: "https://archive.org/download/test/video.mp4"))
 
         let view = VideoPlayerView(
             videoURL: videoURL,
@@ -190,39 +190,33 @@ final class VideoPlayerViewInitializationTests: XCTestCase {
             onDismiss: nil
         )
 
-        XCTAssertEqual(view.videoURL, videoURL)
-        XCTAssertTrue(view.subtitleTracks.isEmpty)
-        XCTAssertEqual(view.identifier, "test-id")
-        XCTAssertEqual(view.filename, "video.mp4")
-        XCTAssertEqual(view.title, "Test Video")
-        XCTAssertEqual(view.thumbnailURL, "https://archive.org/services/img/test-id")
-        XCTAssertEqual(view.resumeTime, 120.0)
+        #expect(view.videoURL == videoURL)
+        #expect(view.subtitleTracks.isEmpty)
+        #expect(view.identifier == "test-id")
+        #expect(view.filename == "video.mp4")
+        #expect(view.title == "Test Video")
+        #expect(view.thumbnailURL == "https://archive.org/services/img/test-id")
+        #expect(view.resumeTime == 120.0)
     }
 
-    func testInit_withDefaultValues() {
-        guard let videoURL = URL(string: "https://archive.org/download/test/video.mp4") else {
-            XCTFail("Failed to create URL")
-            return
-        }
-
+    @Test("Default values are nil")
+    func defaultValues() throws {
+        let videoURL = try #require(URL(string: "https://archive.org/download/test/video.mp4"))
         let view = VideoPlayerView(videoURL: videoURL)
 
-        XCTAssertEqual(view.videoURL, videoURL)
-        XCTAssertTrue(view.subtitleTracks.isEmpty)
-        XCTAssertNil(view.identifier)
-        XCTAssertNil(view.filename)
-        XCTAssertNil(view.title)
-        XCTAssertNil(view.thumbnailURL)
-        XCTAssertNil(view.resumeTime)
-        XCTAssertNil(view.onDismiss)
+        #expect(view.videoURL == videoURL)
+        #expect(view.subtitleTracks.isEmpty)
+        #expect(view.identifier == nil)
+        #expect(view.filename == nil)
+        #expect(view.title == nil)
+        #expect(view.thumbnailURL == nil)
+        #expect(view.resumeTime == nil)
+        #expect(view.onDismiss == nil)
     }
 
-    func testInit_withSubtitleTracks() {
-        guard let videoURL = URL(string: "https://archive.org/download/test/video.mp4") else {
-            XCTFail("Failed to create URL")
-            return
-        }
-
+    @Test("Subtitle tracks stored correctly")
+    func subtitleTracksStored() throws {
+        let videoURL = try #require(URL(string: "https://archive.org/download/test/video.mp4"))
         let tracks = [
             SubtitleTrack(
                 filename: "english.vtt",
@@ -241,9 +235,23 @@ final class VideoPlayerViewInitializationTests: XCTestCase {
                 url: URL(string: "https://example.com/es.vtt")!
             )
         ]
-
         let view = VideoPlayerView(videoURL: videoURL, subtitleTracks: tracks)
+        #expect(view.subtitleTracks.count == 2)
+    }
 
-        XCTAssertEqual(view.subtitleTracks.count, 2)
+    @Test("onDismiss callback stored and callable")
+    func onDismissCallback() throws {
+        let videoURL = try #require(URL(string: "https://archive.org/download/test/video.mp4"))
+        var dismissed = false
+        let view = VideoPlayerView(videoURL: videoURL, onDismiss: { dismissed = true })
+        view.onDismiss?()
+        #expect(dismissed)
+    }
+
+    @Test("Zero resume time is stored")
+    func zeroResumeTime() throws {
+        let videoURL = try #require(URL(string: "https://archive.org/download/test/video.mp4"))
+        let view = VideoPlayerView(videoURL: videoURL, resumeTime: 0.0)
+        #expect(view.resumeTime == 0.0)
     }
 }
