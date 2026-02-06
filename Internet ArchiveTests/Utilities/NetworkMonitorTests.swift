@@ -5,158 +5,159 @@
 //  Unit tests for NetworkMonitor
 //
 
-import XCTest
+import Testing
 import Combine
 @testable import Internet_Archive
 
+@Suite("NetworkMonitor Tests")
 @MainActor
-final class NetworkMonitorTests: XCTestCase {
+struct NetworkMonitorTests {
 
     // MARK: - Singleton Tests
 
-    func testSharedInstance() {
+    @Test func sharedInstance() {
         let instance1 = NetworkMonitor.shared
         let instance2 = NetworkMonitor.shared
-        XCTAssertTrue(instance1 === instance2)
+        #expect(instance1 === instance2)
     }
 
     // MARK: - Connection Type Tests
 
-    func testConnectionType_wifi() {
+    @Test func connectionTypeWifi() {
         let type = NetworkMonitor.ConnectionType.wifi
-        XCTAssertNotNil(type)
+        #expect(type != nil)
     }
 
-    func testConnectionType_cellular() {
+    @Test func connectionTypeCellular() {
         let type = NetworkMonitor.ConnectionType.cellular
-        XCTAssertNotNil(type)
+        #expect(type != nil)
     }
 
-    func testConnectionType_wired() {
+    @Test func connectionTypeWired() {
         let type = NetworkMonitor.ConnectionType.wired
-        XCTAssertNotNil(type)
+        #expect(type != nil)
     }
 
-    func testConnectionType_unknown() {
+    @Test func connectionTypeUnknown() {
         let type = NetworkMonitor.ConnectionType.unknown
-        XCTAssertNotNil(type)
+        #expect(type != nil)
     }
 
-    func testConnectionType_allCases() {
+    @Test func connectionTypeAllCases() {
         let allTypes: [NetworkMonitor.ConnectionType] = [.wifi, .cellular, .wired, .unknown]
-        XCTAssertEqual(allTypes.count, 4)
+        #expect(allTypes.count == 4)
     }
 
     // MARK: - Published Properties Tests
 
-    func testIsConnected_defaultValue() {
+    @Test func isConnectedDefaultValue() {
         let monitor = NetworkMonitor.shared
         // In simulator, we typically have connection
-        XCTAssertNotNil(monitor.isConnected)
+        #expect(monitor.isConnected != nil)
     }
 
-    func testConnectionType_hasValue() {
+    @Test func connectionTypeHasValue() {
         let monitor = NetworkMonitor.shared
-        XCTAssertNotNil(monitor.connectionType)
+        #expect(monitor.connectionType != nil)
     }
 
     // MARK: - High Quality Connection Tests
 
-    func testHasHighQualityConnection_property() {
+    @Test func hasHighQualityConnectionProperty() {
         let monitor = NetworkMonitor.shared
         // Just verify the property exists and returns a Bool
         _ = monitor.hasHighQualityConnection
-        XCTAssertNotNil(monitor)
+        #expect(monitor != nil)
     }
 
     // MARK: - Check Connection Tests
 
-    func testCheckConnection_whenConnected_doesNotThrow() throws {
+    @Test func checkConnectionWhenConnectedDoesNotThrow() throws {
         let monitor = NetworkMonitor.shared
-
-        try XCTSkipUnless(monitor.isConnected, "Requires active network connection")
-        XCTAssertNoThrow(try monitor.checkConnection())
+        // Skip if not connected (simulator dependent)
+        guard monitor.isConnected else { return }
+        try monitor.checkConnection()
     }
 
-    func testCheckConnection_throwsWhenOffline() throws {
+    @Test func checkConnectionThrowsWhenOffline() throws {
         let monitor = NetworkMonitor.shared
-        try XCTSkipUnless(!monitor.isConnected, "Requires offline state to validate error path")
-        XCTAssertThrowsError(try monitor.checkConnection()) { error in
-            guard case .noConnection = error as? NetworkError else {
-                XCTFail("Expected noConnection error, got \(error)")
-                return
+        guard !monitor.isConnected else { return }
+        #expect {
+            try monitor.checkConnection()
+        } throws: { error in
+            guard let networkError = error as? NetworkError,
+                  case .noConnection = networkError else {
+                return false
             }
+            return true
         }
     }
 
     // MARK: - Monitoring Tests
 
-    func testStopMonitoring_doesNotCrash() {
+    @Test func stopMonitoringDoesNotCrash() {
         let monitor = NetworkMonitor.shared
         // Should not crash
         monitor.stopMonitoring()
-        addTeardownBlock {
-            monitor.startMonitoring()
-        }
-        XCTAssertNotNil(monitor)
+        // Restart monitoring after test
+        monitor.startMonitoring()
+        #expect(monitor != nil)
     }
 
-    func testStartMonitoring_doesNotCrash() {
+    @Test func startMonitoringDoesNotCrash() {
         let monitor = NetworkMonitor.shared
         monitor.startMonitoring()
-        XCTAssertNotNil(monitor)
+        #expect(monitor != nil)
     }
 
     // MARK: - ObservableObject Conformance Tests
 
-    func testMonitor_isObservableObject() {
+    @Test func monitorIsObservableObject() {
         let monitor = NetworkMonitor.shared
         // Verify it conforms to ObservableObject by accessing objectWillChange
         _ = monitor.objectWillChange
-        XCTAssertNotNil(monitor)
+        #expect(monitor != nil)
     }
 }
 
 // MARK: - ConnectionType Hashable Tests
 
-final class ConnectionTypeTests: XCTestCase {
+@Suite("ConnectionType Tests")
+@MainActor
+struct ConnectionTypeTests {
 
-    @MainActor
-    func testConnectionType_equality() {
+    @Test func connectionTypeEquality() {
         let type1 = NetworkMonitor.ConnectionType.wifi
         let type2 = NetworkMonitor.ConnectionType.wifi
-        XCTAssertEqual(type1, type2)
+        #expect(type1 == type2)
     }
 
-    @MainActor
-    func testConnectionType_inequality() {
+    @Test func connectionTypeInequality() {
         let type1 = NetworkMonitor.ConnectionType.wifi
         let type2 = NetworkMonitor.ConnectionType.cellular
-        XCTAssertNotEqual(type1, type2)
+        #expect(type1 != type2)
     }
 
-    @MainActor
-    func testConnectionType_inSet() {
+    @Test func connectionTypeInSet() {
         var types: Set<NetworkMonitor.ConnectionType> = []
         types.insert(.wifi)
         types.insert(.cellular)
         types.insert(.wifi) // Duplicate
 
-        XCTAssertEqual(types.count, 2)
-        XCTAssertTrue(types.contains(.wifi))
-        XCTAssertTrue(types.contains(.cellular))
+        #expect(types.count == 2)
+        #expect(types.contains(.wifi))
+        #expect(types.contains(.cellular))
     }
 
-    @MainActor
-    func testConnectionType_asDictionaryKey() {
+    @Test func connectionTypeAsDictionaryKey() {
         var dict: [NetworkMonitor.ConnectionType: String] = [:]
         dict[.wifi] = "Wi-Fi"
         dict[.cellular] = "Cellular"
         dict[.wired] = "Ethernet"
         dict[.unknown] = "Unknown"
 
-        XCTAssertEqual(dict.count, 4)
-        XCTAssertEqual(dict[.wifi], "Wi-Fi")
+        #expect(dict.count == 4)
+        #expect(dict[.wifi] == "Wi-Fi")
     }
 }
 
@@ -164,167 +165,162 @@ final class ConnectionTypeTests: XCTestCase {
 
 /// Tests for MockNetworkMonitor using deterministic simulation.
 /// These tests verify both the mock implementation and the protocol contract.
+@Suite("MockNetworkMonitor Tests")
 @MainActor
-final class MockNetworkMonitorTests: XCTestCase {
+struct MockNetworkMonitorTests {
 
-    // MARK: - Setup
+    var mockMonitor: MockNetworkMonitor
 
-    var mockMonitor: MockNetworkMonitor!
-
-    override func setUp() async throws {
-        try await super.setUp()
+    init() {
         mockMonitor = MockNetworkMonitor()
-    }
-
-    override func tearDown() async throws {
-        mockMonitor = nil
-        try await super.tearDown()
     }
 
     // MARK: - Default State Tests
 
-    func testDefaultState_isConnected() {
-        XCTAssertTrue(mockMonitor.isConnected)
+    @Test func defaultStateIsConnected() {
+        #expect(mockMonitor.isConnected)
     }
 
-    func testDefaultState_connectionTypeIsWifi() {
-        XCTAssertEqual(mockMonitor.connectionType, .wifi)
+    @Test func defaultStateConnectionTypeIsWifi() {
+        #expect(mockMonitor.connectionType == .wifi)
     }
 
-    func testDefaultState_hasHighQualityConnection() {
-        XCTAssertTrue(mockMonitor.hasHighQualityConnection)
+    @Test func defaultStateHasHighQualityConnection() {
+        #expect(mockMonitor.hasHighQualityConnection)
     }
 
-    func testDefaultState_checkConnectionDoesNotThrow() {
-        XCTAssertNoThrow(try mockMonitor.checkConnection())
+    @Test func defaultStateCheckConnectionDoesNotThrow() throws {
+        try mockMonitor.checkConnection()
     }
 
     // MARK: - Simulation Tests
 
-    func testSimulateConnected() {
+    @Test func simulateConnected() {
         mockMonitor.simulateDisconnected()  // First disconnect
         mockMonitor.simulateConnected()     // Then reconnect
 
-        XCTAssertTrue(mockMonitor.isConnected)
-        XCTAssertEqual(mockMonitor.connectionType, .wifi)
+        #expect(mockMonitor.isConnected)
+        #expect(mockMonitor.connectionType == .wifi)
     }
 
-    func testSimulateCellular() {
+    @Test func simulateCellular() {
         mockMonitor.simulateCellular()
 
-        XCTAssertTrue(mockMonitor.isConnected)
-        XCTAssertEqual(mockMonitor.connectionType, .cellular)
-        XCTAssertFalse(mockMonitor.hasHighQualityConnection)
+        #expect(mockMonitor.isConnected)
+        #expect(mockMonitor.connectionType == .cellular)
+        #expect(!mockMonitor.hasHighQualityConnection)
     }
 
-    func testSimulateWired() {
+    @Test func simulateWired() {
         mockMonitor.simulateWired()
 
-        XCTAssertTrue(mockMonitor.isConnected)
-        XCTAssertEqual(mockMonitor.connectionType, .wired)
-        XCTAssertTrue(mockMonitor.hasHighQualityConnection)
+        #expect(mockMonitor.isConnected)
+        #expect(mockMonitor.connectionType == .wired)
+        #expect(mockMonitor.hasHighQualityConnection)
     }
 
-    func testSimulateDisconnected() {
+    @Test func simulateDisconnected() {
         mockMonitor.simulateDisconnected()
 
-        XCTAssertFalse(mockMonitor.isConnected)
-        XCTAssertEqual(mockMonitor.connectionType, .unknown)
-        XCTAssertFalse(mockMonitor.hasHighQualityConnection)
+        #expect(!mockMonitor.isConnected)
+        #expect(mockMonitor.connectionType == .unknown)
+        #expect(!mockMonitor.hasHighQualityConnection)
     }
 
     // MARK: - checkConnection Tests
 
-    func testCheckConnection_whenConnected_doesNotThrow() throws {
+    @Test func checkConnectionWhenConnectedDoesNotThrow() throws {
         mockMonitor.simulateConnected()
-
-        XCTAssertNoThrow(try mockMonitor.checkConnection())
+        try mockMonitor.checkConnection()
     }
 
-    func testCheckConnection_whenDisconnected_throwsNoConnection() {
+    @Test func checkConnectionWhenDisconnectedThrowsNoConnection() {
         mockMonitor.simulateDisconnected()
 
-        XCTAssertThrowsError(try mockMonitor.checkConnection()) { error in
-            guard case .noConnection = error as? NetworkError else {
-                XCTFail("Expected noConnection error, got \(error)")
-                return
+        #expect {
+            try mockMonitor.checkConnection()
+        } throws: { error in
+            guard let networkError = error as? NetworkError,
+                  case .noConnection = networkError else {
+                return false
             }
+            return true
         }
     }
 
-    func testCheckConnection_incrementsCallCount() throws {
-        XCTAssertEqual(mockMonitor.checkConnectionCallCount, 0)
+    @Test func checkConnectionIncrementsCallCount() throws {
+        #expect(mockMonitor.checkConnectionCallCount == 0)
 
         try mockMonitor.checkConnection()
-        XCTAssertEqual(mockMonitor.checkConnectionCallCount, 1)
+        #expect(mockMonitor.checkConnectionCallCount == 1)
 
         try mockMonitor.checkConnection()
-        XCTAssertEqual(mockMonitor.checkConnectionCallCount, 2)
+        #expect(mockMonitor.checkConnectionCallCount == 2)
     }
 
-    func testCheckConnection_incrementsCallCountEvenWhenThrowing() {
+    @Test func checkConnectionIncrementsCallCountEvenWhenThrowing() {
         mockMonitor.simulateDisconnected()
-        XCTAssertEqual(mockMonitor.checkConnectionCallCount, 0)
+        #expect(mockMonitor.checkConnectionCallCount == 0)
 
         _ = try? mockMonitor.checkConnection()
-        XCTAssertEqual(mockMonitor.checkConnectionCallCount, 1)
+        #expect(mockMonitor.checkConnectionCallCount == 1)
     }
 
     // MARK: - Reset Tests
 
-    func testReset_restoresDefaultState() {
+    @Test func resetRestoresDefaultState() {
         mockMonitor.simulateDisconnected()
         _ = try? mockMonitor.checkConnection()
 
         mockMonitor.reset()
 
-        XCTAssertTrue(mockMonitor.isConnected)
-        XCTAssertEqual(mockMonitor.connectionType, .wifi)
-        XCTAssertEqual(mockMonitor.checkConnectionCallCount, 0)
+        #expect(mockMonitor.isConnected)
+        #expect(mockMonitor.connectionType == .wifi)
+        #expect(mockMonitor.checkConnectionCallCount == 0)
     }
 
     // MARK: - Protocol Conformance Tests
 
-    func testConformsToNetworkMonitorProtocol() {
+    @Test func conformsToNetworkMonitorProtocol() {
         let protocolInstance: any NetworkMonitorProtocol = mockMonitor
-        XCTAssertNotNil(protocolInstance)
+        #expect(protocolInstance != nil)
     }
 
-    func testProtocolProperties_areAccessible() {
+    @Test func protocolPropertiesAreAccessible() {
         let protocolInstance: any NetworkMonitorProtocol = mockMonitor
 
-        XCTAssertTrue(protocolInstance.isConnected)
-        XCTAssertEqual(protocolInstance.connectionType, .wifi)
-        XCTAssertTrue(protocolInstance.hasHighQualityConnection)
+        #expect(protocolInstance.isConnected)
+        #expect(protocolInstance.connectionType == .wifi)
+        #expect(protocolInstance.hasHighQualityConnection)
     }
 
     // MARK: - High Quality Connection Tests
 
-    func testHasHighQualityConnection_wifiIsHighQuality() {
+    @Test func hasHighQualityConnectionWifiIsHighQuality() {
         mockMonitor.isConnected = true
         mockMonitor.connectionType = .wifi
 
-        XCTAssertTrue(mockMonitor.hasHighQualityConnection)
+        #expect(mockMonitor.hasHighQualityConnection)
     }
 
-    func testHasHighQualityConnection_wiredIsHighQuality() {
+    @Test func hasHighQualityConnectionWiredIsHighQuality() {
         mockMonitor.isConnected = true
         mockMonitor.connectionType = .wired
 
-        XCTAssertTrue(mockMonitor.hasHighQualityConnection)
+        #expect(mockMonitor.hasHighQualityConnection)
     }
 
-    func testHasHighQualityConnection_cellularIsNotHighQuality() {
+    @Test func hasHighQualityConnectionCellularIsNotHighQuality() {
         mockMonitor.isConnected = true
         mockMonitor.connectionType = .cellular
 
-        XCTAssertFalse(mockMonitor.hasHighQualityConnection)
+        #expect(!mockMonitor.hasHighQualityConnection)
     }
 
-    func testHasHighQualityConnection_disconnectedIsNotHighQuality() {
+    @Test func hasHighQualityConnectionDisconnectedIsNotHighQuality() {
         mockMonitor.isConnected = false
         mockMonitor.connectionType = .wifi  // Even with wifi type
 
-        XCTAssertFalse(mockMonitor.hasHighQualityConnection)
+        #expect(!mockMonitor.hasHighQualityConnection)
     }
 }

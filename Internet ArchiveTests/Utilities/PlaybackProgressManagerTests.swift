@@ -5,34 +5,24 @@
 //  Tests for PlaybackProgressManager functionality
 //
 
-import XCTest
+import Testing
+import Foundation
 @testable import Internet_Archive
 
+@Suite("PlaybackProgressManager Tests", .serialized)
 @MainActor
-final class PlaybackProgressManagerTests: XCTestCase {
+struct PlaybackProgressManagerTests {
 
-    nonisolated(unsafe) var manager: PlaybackProgressManager!
+    var manager: PlaybackProgressManager
 
-    override func setUp() {
-        super.setUp()
-        let newManager = MainActor.assumeIsolated {
-            let mgr = PlaybackProgressManager.shared
-            mgr.resetForTesting()
-            return mgr
-        }
-        manager = newManager
-    }
-
-    override func tearDown() {
-        MainActor.assumeIsolated {
-            PlaybackProgressManager.shared.resetForTesting()
-        }
-        super.tearDown()
+    init() {
+        manager = PlaybackProgressManager.shared
+        manager.resetForTesting()
     }
 
     // MARK: - Save and Retrieve Tests
 
-    func testSaveAndRetrieveProgress() {
+    @Test func saveAndRetrieveProgress() {
         let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
@@ -44,11 +34,11 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.saveProgress(progress)
 
         let retrieved = manager.getProgress(for: "test-item", filename: "video.mp4")
-        XCTAssertNotNil(retrieved)
-        XCTAssertEqual(retrieved?.currentTime, 100)
+        #expect(retrieved != nil)
+        #expect(retrieved?.currentTime == 100)
     }
 
-    func testGetProgressByIdentifierOnly() {
+    @Test func getProgressByIdentifierOnly() {
         let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
@@ -60,11 +50,11 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.saveProgress(progress)
 
         let retrieved = manager.getProgress(for: "test-item")
-        XCTAssertNotNil(retrieved)
-        XCTAssertEqual(retrieved?.filename, "video.mp4")
+        #expect(retrieved != nil)
+        #expect(retrieved?.filename == "video.mp4")
     }
 
-    func testGetProgressReturnsMostRecentForItem() {
+    @Test func getProgressReturnsMostRecentForItem() {
         let progress1 = PlaybackProgress(
             itemIdentifier: "test-item",
             filename: "video1.mp4",
@@ -91,10 +81,10 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.saveProgress(progress2)
 
         let retrieved = manager.getProgress(for: "test-item")
-        XCTAssertEqual(retrieved?.filename, "video2.mp4")
+        #expect(retrieved?.filename == "video2.mp4")
     }
 
-    func testSaveProgressUpdatesExisting() {
+    @Test func saveProgressUpdatesExisting() {
         let progress1 = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
@@ -119,11 +109,11 @@ final class PlaybackProgressManagerTests: XCTestCase {
         let matchingItems = allProgress.filter {
             $0.itemIdentifier == "test-item" && $0.filename == "video.mp4"
         }
-        XCTAssertEqual(matchingItems.count, 1)
-        XCTAssertEqual(matchingItems.first?.currentTime, 200)
+        #expect(matchingItems.count == 1)
+        #expect(matchingItems.first?.currentTime == 200)
     }
 
-    func testSaveProgressRemovesCompleteItems() {
+    @Test func saveProgressRemovesCompleteItems() {
         let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
@@ -135,10 +125,10 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.saveProgress(progress)
 
         let retrieved = manager.getProgress(for: "test-item", filename: "video.mp4")
-        XCTAssertNil(retrieved, "Complete items should not be saved")
+        #expect(retrieved == nil, "Complete items should not be saved")
     }
 
-    func testSaveProgressWithIsComplete_removesExistingEntry() {
+    @Test func saveProgressWithIsCompleteRemovesExistingEntry() {
         // First save an incomplete progress
         let incompleteProgress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
@@ -151,7 +141,7 @@ final class PlaybackProgressManagerTests: XCTestCase {
 
         // Verify it was saved
         let savedProgress = manager.getProgress(for: "test-item", filename: "video.mp4")
-        XCTAssertNotNil(savedProgress, "Incomplete progress should be saved")
+        #expect(savedProgress != nil, "Incomplete progress should be saved")
 
         // Now save the same item as complete (>95%)
         let completeProgress = PlaybackProgress.video(MediaProgressInfo(
@@ -165,15 +155,15 @@ final class PlaybackProgressManagerTests: XCTestCase {
 
         // Verify the entry is removed, not just not re-added
         let retrieved = manager.getProgress(for: "test-item", filename: "video.mp4")
-        XCTAssertNil(retrieved, "Complete progress should remove existing entry")
+        #expect(retrieved == nil, "Complete progress should remove existing entry")
 
         // Verify it doesn't appear in continue watching
         let continueWatching = manager.getContinueWatchingItems()
-        XCTAssertFalse(continueWatching.contains { $0.itemIdentifier == "test-item" },
-                       "Completed item should not appear in continue watching")
+        #expect(!continueWatching.contains { $0.itemIdentifier == "test-item" },
+                "Completed item should not appear in continue watching")
     }
 
-    func testRemoveProgressByIdentifierAndFilename() {
+    @Test func removeProgressByIdentifierAndFilename() {
         let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
@@ -186,10 +176,10 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.removeProgress(for: "test-item", filename: "video.mp4")
 
         let retrieved = manager.getProgress(for: "test-item", filename: "video.mp4")
-        XCTAssertNil(retrieved)
+        #expect(retrieved == nil)
     }
 
-    func testRemoveProgressByIdentifier() {
+    @Test func removeProgressByIdentifier() {
         let progress1 = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video1.mp4",
@@ -210,13 +200,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.saveProgress(progress2)
         manager.removeProgress(for: "test-item")
 
-        XCTAssertNil(manager.getProgress(for: "test-item", filename: "video1.mp4"))
-        XCTAssertNil(manager.getProgress(for: "test-item", filename: "video2.mp4"))
+        #expect(manager.getProgress(for: "test-item", filename: "video1.mp4") == nil)
+        #expect(manager.getProgress(for: "test-item", filename: "video2.mp4") == nil)
     }
 
     // MARK: - Continue Watching/Listening Tests
 
-    func testGetContinueWatchingItemsOnlyReturnsVideos() {
+    @Test func getContinueWatchingItemsOnlyReturnsVideos() {
         let video = PlaybackProgress.video(MediaProgressInfo(
             identifier: "video-item",
             filename: "video.mp4",
@@ -237,11 +227,11 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.saveProgress(audio)
 
         let continueWatching = manager.getContinueWatchingItems()
-        XCTAssertEqual(continueWatching.count, 1)
-        XCTAssertEqual(continueWatching.first?.itemIdentifier, "video-item")
+        #expect(continueWatching.count == 1)
+        #expect(continueWatching.first?.itemIdentifier == "video-item")
     }
 
-    func testGetContinueListeningItemsOnlyReturnsAudio() {
+    @Test func getContinueListeningItemsOnlyReturnsAudio() {
         let video = PlaybackProgress.video(MediaProgressInfo(
             identifier: "video-item",
             filename: "video.mp4",
@@ -262,11 +252,11 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.saveProgress(audio)
 
         let continueListening = manager.getContinueListeningItems()
-        XCTAssertEqual(continueListening.count, 1)
-        XCTAssertEqual(continueListening.first?.itemIdentifier, "audio-item")
+        #expect(continueListening.count == 1)
+        #expect(continueListening.first?.itemIdentifier == "audio-item")
     }
 
-    func testContinueWatchingExcludesCompleteItems() {
+    @Test func continueWatchingExcludesCompleteItems() {
         let incomplete = PlaybackProgress.video(MediaProgressInfo(
             identifier: "incomplete-video",
             filename: "video.mp4",
@@ -279,10 +269,10 @@ final class PlaybackProgressManagerTests: XCTestCase {
 
         // Complete item won't be saved anyway due to saveProgress logic
         let continueWatching = manager.getContinueWatchingItems()
-        XCTAssertEqual(continueWatching.count, 1)
+        #expect(continueWatching.count == 1)
     }
 
-    func testContinueWatchingOrderedByMostRecent() {
+    @Test func continueWatchingOrderedByMostRecent() {
         let older = PlaybackProgress(
             itemIdentifier: "older-video",
             filename: "video.mp4",
@@ -309,12 +299,12 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.saveProgress(newer)
 
         let continueWatching = manager.getContinueWatchingItems()
-        XCTAssertEqual(continueWatching.count, 2)
-        XCTAssertEqual(continueWatching[0].itemIdentifier, "newer-video")
-        XCTAssertEqual(continueWatching[1].itemIdentifier, "older-video")
+        #expect(continueWatching.count == 2)
+        #expect(continueWatching[0].itemIdentifier == "newer-video")
+        #expect(continueWatching[1].itemIdentifier == "older-video")
     }
 
-    func testContinueWatchingRespectsLimit() {
+    @Test func continueWatchingRespectsLimit() {
         for index in 0..<10 {
             let progress = PlaybackProgress.video(MediaProgressInfo(
                 identifier: "video-\(index)",
@@ -327,10 +317,10 @@ final class PlaybackProgressManagerTests: XCTestCase {
         }
 
         let continueWatching = manager.getContinueWatchingItems(limit: 5)
-        XCTAssertEqual(continueWatching.count, 5)
+        #expect(continueWatching.count == 5)
     }
 
-    func testContinueWatchingDefaultLimitIs20AndSortedByDate() {
+    @Test func continueWatchingDefaultLimitIs20AndSortedByDate() {
         // Seed 25 items with descending lastWatchedDate (index 24 is most recent)
         for index in 0..<25 {
             let progress = PlaybackProgress(
@@ -350,25 +340,20 @@ final class PlaybackProgressManagerTests: XCTestCase {
         let continueWatching = manager.getContinueWatchingItems()
 
         // Should return exactly 20 items (default limit)
-        XCTAssertEqual(continueWatching.count, 20)
+        #expect(continueWatching.count == 20)
 
         // Should be sorted by most recent first (highest index first)
-        // Most recent item (index 24) should be first
-        XCTAssertEqual(continueWatching[0].itemIdentifier, "video-24")
-        // Oldest returned item should be index 5 (25 - 20 = 5)
-        XCTAssertEqual(continueWatching[19].itemIdentifier, "video-5")
+        #expect(continueWatching[0].itemIdentifier == "video-24")
+        #expect(continueWatching[19].itemIdentifier == "video-5")
 
         // Verify items are in descending order by date
         for idx in 0..<(continueWatching.count - 1) {
-            XCTAssertGreaterThanOrEqual(
-                continueWatching[idx].lastWatchedDate,
-                continueWatching[idx + 1].lastWatchedDate,
-                "Items should be sorted by lastWatchedDate descending"
-            )
+            #expect(continueWatching[idx].lastWatchedDate >= continueWatching[idx + 1].lastWatchedDate,
+                    "Items should be sorted by lastWatchedDate descending")
         }
     }
 
-    func testContinueListeningDefaultLimitIs20AndSortedByDate() {
+    @Test func continueListeningDefaultLimitIs20AndSortedByDate() {
         // Seed 25 audio items with descending lastWatchedDate
         for index in 0..<25 {
             let progress = PlaybackProgress(
@@ -388,15 +373,14 @@ final class PlaybackProgressManagerTests: XCTestCase {
         let continueListening = manager.getContinueListeningItems()
 
         // Should return exactly 20 items
-        XCTAssertEqual(continueListening.count, 20)
+        #expect(continueListening.count == 20)
 
         // Most recent (index 24) should be first
-        XCTAssertEqual(continueListening[0].itemIdentifier, "audio-24")
-        // Oldest returned item should be index 5
-        XCTAssertEqual(continueListening[19].itemIdentifier, "audio-5")
+        #expect(continueListening[0].itemIdentifier == "audio-24")
+        #expect(continueListening[19].itemIdentifier == "audio-5")
     }
 
-    func testContinueListeningRespectsLimit() {
+    @Test func continueListeningRespectsLimit() {
         for index in 0..<10 {
             let progress = PlaybackProgress.audio(MediaProgressInfo(
                 identifier: "audio-\(index)",
@@ -409,12 +393,12 @@ final class PlaybackProgressManagerTests: XCTestCase {
         }
 
         let continueListening = manager.getContinueListeningItems(limit: 5)
-        XCTAssertEqual(continueListening.count, 5)
+        #expect(continueListening.count == 5)
     }
 
     // MARK: - Has Resumable Progress Tests
 
-    func testHasResumableProgressTrue() {
+    @Test func hasResumableProgressTrue() {
         let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
@@ -425,10 +409,10 @@ final class PlaybackProgressManagerTests: XCTestCase {
 
         manager.saveProgress(progress)
 
-        XCTAssertTrue(manager.hasResumableProgress(for: "test-item"))
+        #expect(manager.hasResumableProgress(for: "test-item"))
     }
 
-    func testHasResumableProgressFalseUnder10Seconds() {
+    @Test func hasResumableProgressFalseUnder10Seconds() {
         let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
@@ -439,14 +423,14 @@ final class PlaybackProgressManagerTests: XCTestCase {
 
         manager.saveProgress(progress)
 
-        XCTAssertFalse(manager.hasResumableProgress(for: "test-item"))
+        #expect(!manager.hasResumableProgress(for: "test-item"))
     }
 
-    func testHasResumableProgressFalseWhenNoProgress() {
-        XCTAssertFalse(manager.hasResumableProgress(for: "nonexistent-item"))
+    @Test func hasResumableProgressFalseWhenNoProgress() {
+        #expect(!manager.hasResumableProgress(for: "nonexistent-item"))
     }
 
-    func testHasResumableProgressAudioWithTrackTime() {
+    @Test func hasResumableProgressAudioWithTrackTime() {
         // Audio album: currentTime is album percentage (low), trackCurrentTime is actual seconds (high)
         let progress = PlaybackProgress(
             itemIdentifier: "album-123",
@@ -465,10 +449,10 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.saveProgress(progress)
 
         // Should return true because trackCurrentTime > 10
-        XCTAssertTrue(manager.hasResumableProgress(for: "album-123"))
+        #expect(manager.hasResumableProgress(for: "album-123"))
     }
 
-    func testHasResumableProgressAudioWithLowTrackTime() {
+    @Test func hasResumableProgressAudioWithLowTrackTime() {
         // Audio album: both album percentage and track time are low
         let progress = PlaybackProgress(
             itemIdentifier: "album-456",
@@ -487,13 +471,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.saveProgress(progress)
 
         // Should return false because trackCurrentTime <= 10
-        XCTAssertFalse(manager.hasResumableProgress(for: "album-456"))
+        #expect(!manager.hasResumableProgress(for: "album-456"))
     }
 
     // MARK: - Progress Count Tests
 
-    func testProgressCount() {
-        XCTAssertEqual(manager.progressCount, 0)
+    @Test func progressCount() {
+        #expect(manager.progressCount == 0)
 
         let progress1 = PlaybackProgress.video(MediaProgressInfo(
             identifier: "video-1",
@@ -512,15 +496,15 @@ final class PlaybackProgressManagerTests: XCTestCase {
         ))
 
         manager.saveProgress(progress1)
-        XCTAssertEqual(manager.progressCount, 1)
+        #expect(manager.progressCount == 1)
 
         manager.saveProgress(progress2)
-        XCTAssertEqual(manager.progressCount, 2)
+        #expect(manager.progressCount == 2)
     }
 
     // MARK: - Clear All Tests
 
-    func testClearAllProgress() {
+    @Test func clearAllProgress() {
         let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "test-item",
             filename: "video.mp4",
@@ -530,30 +514,15 @@ final class PlaybackProgressManagerTests: XCTestCase {
         ))
 
         manager.saveProgress(progress)
-        XCTAssertEqual(manager.progressCount, 1)
+        #expect(manager.progressCount == 1)
 
         manager.clearAllProgress()
-        XCTAssertEqual(manager.progressCount, 0)
+        #expect(manager.progressCount == 0)
     }
 
     // MARK: - Pruning Tests
 
-    func testPruningRemovesOldEntries() {
-        // Create an entry that's 31 days old
-        let oldDate = Calendar.current.date(byAdding: .day, value: -31, to: Date()) ?? Date()
-        // Note: This variable documents what an old progress entry would look like,
-        // but can't be used since saveProgress() always updates the lastWatchedDate
-        _ = PlaybackProgress(
-            itemIdentifier: "old-item",
-            filename: "video.mp4",
-            currentTime: 100,
-            duration: 3600,
-            lastWatchedDate: oldDate,
-            title: "Old Video",
-            mediaType: "movies",
-            imageURL: nil
-        )
-
+    @Test func pruningRemovesOldEntries() {
         let recentProgress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "recent-item",
             filename: "video.mp4",
@@ -562,16 +531,12 @@ final class PlaybackProgressManagerTests: XCTestCase {
             title: "Recent Video"
         ))
 
-        // Add old progress directly (bypassing date update)
-        // Since saveProgress always creates new date, we need to test via internal state
-        // For this test, we'll verify the pruning happens by adding many items
-
         manager.saveProgress(recentProgress)
         // Old entries would be pruned on next save
-        XCTAssertNotNil(manager.getProgress(for: "recent-item"))
+        #expect(manager.getProgress(for: "recent-item") != nil)
     }
 
-    func testPruningLimitsTo50Items() {
+    @Test func pruningLimitsTo50Items() {
         // Add 55 items
         for index in 0..<55 {
             let progress = PlaybackProgress(
@@ -588,10 +553,10 @@ final class PlaybackProgressManagerTests: XCTestCase {
         }
 
         // Should be capped at 50
-        XCTAssertLessThanOrEqual(manager.progressCount, 50)
+        #expect(manager.progressCount <= 50)
     }
 
-    func testPruning_removesOldestItemsFirst() {
+    @Test func pruningRemovesOldestItemsFirst() {
         // Add exactly 50 items with sequential timestamps
         for index in 0..<50 {
             let progress = PlaybackProgress(
@@ -607,7 +572,7 @@ final class PlaybackProgressManagerTests: XCTestCase {
             manager.saveProgress(progress)
         }
 
-        XCTAssertEqual(manager.progressCount, 50)
+        #expect(manager.progressCount == 50)
 
         // Add 5 more items (these should cause oldest 5 to be removed)
         for index in 50..<55 {
@@ -625,14 +590,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
         }
 
         // Should still be capped at 50
-        XCTAssertLessThanOrEqual(manager.progressCount, 50)
+        #expect(manager.progressCount <= 50)
 
-        // The oldest items (0-4) should have been removed
-        // Note: Pruning behavior may keep most recent, so check that newest exists
-        XCTAssertNotNil(manager.getProgress(for: "video-54"))
+        // The newest item should exist
+        #expect(manager.getProgress(for: "video-54") != nil)
     }
 
-    func testPruning_preservesOrderByDate() {
+    @Test func pruningPreservesOrderByDate() {
         // Add items with specific ordering
         for index in 0..<25 {
             let progress = PlaybackProgress(
@@ -651,18 +615,15 @@ final class PlaybackProgressManagerTests: XCTestCase {
         let continueWatching = manager.getContinueWatchingItems()
 
         // Items should be sorted by most recent first
-        XCTAssertEqual(continueWatching.first?.itemIdentifier, "video-24")
+        #expect(continueWatching.first?.itemIdentifier == "video-24")
 
         // Verify descending order
         for idx in 0..<(continueWatching.count - 1) {
-            XCTAssertGreaterThanOrEqual(
-                continueWatching[idx].lastWatchedDate,
-                continueWatching[idx + 1].lastWatchedDate
-            )
+            #expect(continueWatching[idx].lastWatchedDate >= continueWatching[idx + 1].lastWatchedDate)
         }
     }
 
-    func testPruning_doesNotAffectDifferentMediaTypes() {
+    @Test func pruningDoesNotAffectDifferentMediaTypes() {
         // Add 30 videos
         for index in 0..<30 {
             let progress = PlaybackProgress(
@@ -698,13 +659,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
         let audio = manager.getContinueListeningItems()
 
         // Both should have items (may be pruned based on combined count)
-        XCTAssertTrue(videos.count > 0 || audio.count > 0)
-        XCTAssertLessThanOrEqual(manager.progressCount, 50)
+        #expect(videos.count > 0 || audio.count > 0)
+        #expect(manager.progressCount <= 50)
     }
 
     // MARK: - Persistence Tests
 
-    func testProgressPersistsAcrossManagerAccess() {
+    @Test func progressPersistsAcrossManagerAccess() {
         let progress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "persist-test",
             filename: "video.mp4",
@@ -717,26 +678,26 @@ final class PlaybackProgressManagerTests: XCTestCase {
 
         // Access the shared instance again (simulating app restart)
         let retrieved = PlaybackProgressManager.shared.getProgress(for: "persist-test", filename: "video.mp4")
-        XCTAssertNotNil(retrieved)
-        XCTAssertEqual(retrieved?.currentTime, 100)
+        #expect(retrieved != nil)
+        #expect(retrieved?.currentTime == 100)
     }
 
     // MARK: - Edge Cases
 
-    func testGetProgressReturnsNilForNonexistent() {
+    @Test func getProgressReturnsNilForNonexistent() {
         let result = manager.getProgress(for: "nonexistent", filename: "video.mp4")
-        XCTAssertNil(result)
+        #expect(result == nil)
     }
 
-    func testRemoveProgressDoesNothingForNonexistent() {
+    @Test func removeProgressDoesNothingForNonexistent() {
         // Should not crash
         manager.removeProgress(for: "nonexistent", filename: "video.mp4")
         manager.removeProgress(for: "nonexistent")
 
-        XCTAssertEqual(manager.progressCount, 0)
+        #expect(manager.progressCount == 0)
     }
 
-    func testSaveProgressWithSameIdentifierDifferentFilenames() {
+    @Test func saveProgressWithSameIdentifierDifferentFilenames() {
         let progress1 = PlaybackProgress.video(MediaProgressInfo(
             identifier: "same-item",
             filename: "video1.mp4",
@@ -756,14 +717,14 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.saveProgress(progress1)
         manager.saveProgress(progress2)
 
-        XCTAssertEqual(manager.progressCount, 2)
-        XCTAssertNotNil(manager.getProgress(for: "same-item", filename: "video1.mp4"))
-        XCTAssertNotNil(manager.getProgress(for: "same-item", filename: "video2.mp4"))
+        #expect(manager.progressCount == 2)
+        #expect(manager.getProgress(for: "same-item", filename: "video1.mp4") != nil)
+        #expect(manager.getProgress(for: "same-item", filename: "video2.mp4") != nil)
     }
 
     // MARK: - isValid Filtering Tests
 
-    func testGetContinueWatchingItemsFiltersOutInvalidIdentifiers() {
+    @Test func getContinueWatchingItemsFiltersOutInvalidIdentifiers() {
         // Valid progress entry
         let validProgress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "valid-video-123",
@@ -790,14 +751,14 @@ final class PlaybackProgressManagerTests: XCTestCase {
 
         let continueWatching = manager.getContinueWatchingItems()
         // Should only contain the valid item (invalid filtered by isValid check)
-        XCTAssertEqual(continueWatching.count, 1)
-        XCTAssertEqual(continueWatching.first?.itemIdentifier, "valid-video-123")
+        #expect(continueWatching.count == 1)
+        #expect(continueWatching.first?.itemIdentifier == "valid-video-123")
 
         // Verify the invalid item fails isValid check
-        XCTAssertFalse(invalidProgress.isValid)
+        #expect(!invalidProgress.isValid)
     }
 
-    func testGetContinueWatchingItemsFiltersOutNilTitles() {
+    @Test func getContinueWatchingItemsFiltersOutNilTitles() {
         // Valid progress entry
         let validProgress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "valid-video",
@@ -823,15 +784,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.saveProgress(invalidProgress)
 
         let continueWatching = manager.getContinueWatchingItems()
-        // Should only contain the valid item (invalid filtered by isValid check)
-        XCTAssertEqual(continueWatching.count, 1)
-        XCTAssertEqual(continueWatching.first?.itemIdentifier, "valid-video")
+        #expect(continueWatching.count == 1)
+        #expect(continueWatching.first?.itemIdentifier == "valid-video")
 
-        // Verify the invalid item fails isValid check
-        XCTAssertFalse(invalidProgress.isValid)
+        #expect(!invalidProgress.isValid)
     }
 
-    func testGetContinueListeningItemsFiltersOutInvalidEntries() {
+    @Test func getContinueListeningItemsFiltersOutInvalidEntries() {
         // Valid audio progress entry
         let validAudio = PlaybackProgress.audio(MediaProgressInfo(
             identifier: "valid-album-123",
@@ -863,15 +822,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.saveProgress(invalidAudio)
 
         let continueListening = manager.getContinueListeningItems()
-        // Should only contain the valid item (invalid filtered by isValid check)
-        XCTAssertEqual(continueListening.count, 1)
-        XCTAssertEqual(continueListening.first?.itemIdentifier, "valid-album-123")
+        #expect(continueListening.count == 1)
+        #expect(continueListening.first?.itemIdentifier == "valid-album-123")
 
-        // Verify the invalid item fails isValid check
-        XCTAssertFalse(invalidAudio.isValid)
+        #expect(!invalidAudio.isValid)
     }
 
-    func testGetContinueListeningItemsFiltersOutMultipleInvalidTypes() {
+    @Test func getContinueListeningItemsFiltersOutMultipleInvalidTypes() {
         // Valid audio entries
         let validAudio1 = PlaybackProgress.audio(MediaProgressInfo(
             identifier: "valid-album-1",
@@ -947,21 +904,20 @@ final class PlaybackProgressManagerTests: XCTestCase {
         let continueListening = manager.getContinueListeningItems()
 
         // Should only contain the 2 valid items
-        XCTAssertEqual(continueListening.count, 2)
+        #expect(continueListening.count == 2)
 
         let identifiers = continueListening.map { $0.itemIdentifier }
-        XCTAssertTrue(identifiers.contains("valid-album-1"))
-        XCTAssertTrue(identifiers.contains("valid-album-2"))
+        #expect(identifiers.contains("valid-album-1"))
+        #expect(identifiers.contains("valid-album-2"))
 
         // Verify all invalid items fail isValid check
-        XCTAssertFalse(invalidEmptyId.isValid)
-        XCTAssertFalse(invalidNilTitle.isValid)
-        XCTAssertFalse(invalidWhitespaceTitle.isValid)
-        XCTAssertFalse(invalidSpacesInId.isValid)
+        #expect(!invalidEmptyId.isValid)
+        #expect(!invalidNilTitle.isValid)
+        #expect(!invalidWhitespaceTitle.isValid)
+        #expect(!invalidSpacesInId.isValid)
     }
 
-    func testGetContinueWatchingItemsFiltersOutWhitespaceOnlyTitles() {
-        // Valid progress entry
+    @Test func getContinueWatchingItemsFiltersOutWhitespaceOnlyTitles() {
         let validProgress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "valid-video",
             filename: "video.mp4",
@@ -970,7 +926,6 @@ final class PlaybackProgressManagerTests: XCTestCase {
             title: "Valid Video Title"
         ))
 
-        // Invalid progress with whitespace-only title
         let invalidProgress = PlaybackProgress(
             itemIdentifier: "whitespace-title",
             filename: "video.mp4",
@@ -986,16 +941,13 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.saveProgress(invalidProgress)
 
         let continueWatching = manager.getContinueWatchingItems()
-        // Should only contain the valid item (invalid filtered by isValid check)
-        XCTAssertEqual(continueWatching.count, 1)
-        XCTAssertEqual(continueWatching.first?.itemIdentifier, "valid-video")
+        #expect(continueWatching.count == 1)
+        #expect(continueWatching.first?.itemIdentifier == "valid-video")
 
-        // Verify the invalid item fails isValid check
-        XCTAssertFalse(invalidProgress.isValid)
+        #expect(!invalidProgress.isValid)
     }
 
-    func testGetContinueWatchingItemsFiltersOutInvalidIdentifierPatterns() {
-        // Valid progress entry
+    @Test func getContinueWatchingItemsFiltersOutInvalidIdentifierPatterns() {
         let validProgress = PlaybackProgress.video(MediaProgressInfo(
             identifier: "valid-item-123",
             filename: "video.mp4",
@@ -1004,7 +956,6 @@ final class PlaybackProgressManagerTests: XCTestCase {
             title: "Valid Video"
         ))
 
-        // Invalid progress with spaces in identifier
         let invalidProgress = PlaybackProgress(
             itemIdentifier: "invalid item with spaces",
             filename: "video.mp4",
@@ -1020,11 +971,9 @@ final class PlaybackProgressManagerTests: XCTestCase {
         manager.saveProgress(invalidProgress)
 
         let continueWatching = manager.getContinueWatchingItems()
-        // Should only contain the valid item (invalid filtered by isValid check)
-        XCTAssertEqual(continueWatching.count, 1)
-        XCTAssertEqual(continueWatching.first?.itemIdentifier, "valid-item-123")
+        #expect(continueWatching.count == 1)
+        #expect(continueWatching.first?.itemIdentifier == "valid-item-123")
 
-        // Verify the invalid item fails isValid check
-        XCTAssertFalse(invalidProgress.isValid)
+        #expect(!invalidProgress.isValid)
     }
 }

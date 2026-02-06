@@ -5,153 +5,154 @@
 //  Direct unit tests for ContentFilterModels
 //
 
-import XCTest
+import Testing
 @testable import Internet_Archive
 
-final class ContentFilterModelsTests: XCTestCase {
+@Suite("ContentFilterModels Tests")
+struct ContentFilterModelsTests {
 
     // MARK: - ContentFilterReason Tests
 
-    func testContentFilterReason_blockedCollection_description() {
+    @Test func contentFilterReasonBlockedCollectionDescription() {
         let reason = ContentFilterReason.blockedCollection("adult-content")
-        XCTAssertEqual(reason.description, "Blocked collection: adult-content")
+        #expect(reason.description == "Blocked collection: adult-content")
     }
 
-    func testContentFilterReason_blockedKeyword_description() {
+    @Test func contentFilterReasonBlockedKeywordDescription() {
         let reason = ContentFilterReason.blockedKeyword("explicit")
-        XCTAssertEqual(reason.description, "Contains blocked keyword: explicit")
+        #expect(reason.description == "Contains blocked keyword: explicit")
     }
 
-    func testContentFilterReason_restrictedLicense_description() {
+    @Test func contentFilterReasonRestrictedLicenseDescription() {
         let reason = ContentFilterReason.restrictedLicense("All Rights Reserved")
-        XCTAssertEqual(reason.description, "Restricted license: All Rights Reserved")
+        #expect(reason.description == "Restricted license: All Rights Reserved")
     }
 
-    func testContentFilterReason_noLicense_description() {
+    @Test func contentFilterReasonNoLicenseDescription() {
         let reason = ContentFilterReason.noLicense
-        XCTAssertEqual(reason.description, "No open license specified")
+        #expect(reason.description == "No open license specified")
     }
 
     // MARK: - ContentFilterResult Tests
 
-    func testContentFilterResult_allowed() {
+    @Test func contentFilterResultAllowed() {
         let result = ContentFilterResult.allowed
-        XCTAssertFalse(result.isFiltered)
-        XCTAssertNil(result.reason)
+        #expect(!result.isFiltered)
+        #expect(result.reason == nil)
     }
 
-    func testContentFilterResult_filtered_withBlockedCollection() {
+    @Test func contentFilterResultFilteredWithBlockedCollection() {
         let result = ContentFilterResult.filtered(reason: .blockedCollection("test"))
-        XCTAssertTrue(result.isFiltered)
+        #expect(result.isFiltered)
         if case .blockedCollection(let collection) = result.reason {
-            XCTAssertEqual(collection, "test")
+            #expect(collection == "test")
         } else {
-            XCTFail("Expected blockedCollection reason")
+            Issue.record("Expected blockedCollection reason")
         }
     }
 
-    func testContentFilterResult_filtered_withBlockedKeyword() {
+    @Test func contentFilterResultFilteredWithBlockedKeyword() {
         let result = ContentFilterResult.filtered(reason: .blockedKeyword("keyword"))
-        XCTAssertTrue(result.isFiltered)
+        #expect(result.isFiltered)
         if case .blockedKeyword(let keyword) = result.reason {
-            XCTAssertEqual(keyword, "keyword")
+            #expect(keyword == "keyword")
         } else {
-            XCTFail("Expected blockedKeyword reason")
+            Issue.record("Expected blockedKeyword reason")
         }
     }
 
-    func testContentFilterResult_filtered_withRestrictedLicense() {
+    @Test func contentFilterResultFilteredWithRestrictedLicense() {
         let result = ContentFilterResult.filtered(reason: .restrictedLicense("restricted"))
-        XCTAssertTrue(result.isFiltered)
+        #expect(result.isFiltered)
         if case .restrictedLicense(let license) = result.reason {
-            XCTAssertEqual(license, "restricted")
+            #expect(license == "restricted")
         } else {
-            XCTFail("Expected restrictedLicense reason")
+            Issue.record("Expected restrictedLicense reason")
         }
     }
 
-    func testContentFilterResult_filtered_withNoLicense() {
+    @Test func contentFilterResultFilteredWithNoLicense() {
         let result = ContentFilterResult.filtered(reason: .noLicense)
-        XCTAssertTrue(result.isFiltered)
+        #expect(result.isFiltered)
         if case .noLicense = result.reason {
             // Success
         } else {
-            XCTFail("Expected noLicense reason")
+            Issue.record("Expected noLicense reason")
         }
     }
 
     // MARK: - ContentFilterPreferences Tests
 
-    func testContentFilterPreferences_default() {
+    @Test func contentFilterPreferencesDefault() {
         let preferences = ContentFilterPreferences.default
-        XCTAssertFalse(preferences.requireOpenLicense, "Default should not require open license")
+        #expect(!preferences.requireOpenLicense, "Default should not require open license")
     }
 
-    func testContentFilterPreferences_customInitialization() {
+    @Test func contentFilterPreferencesCustomInitialization() {
         let preferences = ContentFilterPreferences(requireOpenLicense: true)
-        XCTAssertTrue(preferences.requireOpenLicense)
+        #expect(preferences.requireOpenLicense)
     }
 
     // MARK: - ContentFilterStats Tests
 
-    func testContentFilterStats_empty() {
+    @Test func contentFilterStatsEmpty() {
         let stats = ContentFilterStats.empty
-        XCTAssertEqual(stats.totalItemsChecked, 0)
-        XCTAssertEqual(stats.totalItemsFiltered, 0)
-        XCTAssertTrue(stats.filterReasons.isEmpty)
+        #expect(stats.totalItemsChecked == 0)
+        #expect(stats.totalItemsFiltered == 0)
+        #expect(stats.filterReasons.isEmpty)
     }
 
-    func testContentFilterStats_filterPercentage_zeroItems() {
+    @Test func contentFilterStatsFilterPercentageZeroItems() {
         let stats = ContentFilterStats.empty
-        XCTAssertEqual(stats.filterPercentage, 0, "Should return 0 when no items checked")
+        #expect(stats.filterPercentage == 0, "Should return 0 when no items checked")
     }
 
-    func testContentFilterStats_filterPercentage_halfFiltered() {
+    @Test func contentFilterStatsFilterPercentageHalfFiltered() {
         let stats = ContentFilterStats(
             totalItemsChecked: 10,
             totalItemsFiltered: 5,
             filterReasons: [:]
         )
-        XCTAssertEqual(stats.filterPercentage, 50.0, accuracy: 0.001)
+        #expect(abs(stats.filterPercentage - 50.0) < 0.001)
     }
 
-    func testContentFilterStats_filterPercentage_allFiltered() {
+    @Test func contentFilterStatsFilterPercentageAllFiltered() {
         let stats = ContentFilterStats(
             totalItemsChecked: 10,
             totalItemsFiltered: 10,
             filterReasons: [:]
         )
-        XCTAssertEqual(stats.filterPercentage, 100.0, accuracy: 0.001)
+        #expect(abs(stats.filterPercentage - 100.0) < 0.001)
     }
 
-    func testContentFilterStats_filterPercentage_noneFiltered() {
+    @Test func contentFilterStatsFilterPercentageNoneFiltered() {
         let stats = ContentFilterStats(
             totalItemsChecked: 10,
             totalItemsFiltered: 0,
             filterReasons: [:]
         )
-        XCTAssertEqual(stats.filterPercentage, 0.0, accuracy: 0.001)
+        #expect(abs(stats.filterPercentage - 0.0) < 0.001)
     }
 
-    func testContentFilterStats_filterPercentage_fractional() {
+    @Test func contentFilterStatsFilterPercentageFractional() {
         let stats = ContentFilterStats(
             totalItemsChecked: 3,
             totalItemsFiltered: 1,
             filterReasons: [:]
         )
-        XCTAssertEqual(stats.filterPercentage, 33.333, accuracy: 0.01)
+        #expect(abs(stats.filterPercentage - 33.333) < 0.01)
     }
 
-    func testContentFilterStats_withReasons() {
+    @Test func contentFilterStatsWithReasons() {
         let stats = ContentFilterStats(
             totalItemsChecked: 100,
             totalItemsFiltered: 25,
             filterReasons: ["blockedCollection": 15, "blockedKeyword": 10]
         )
-        XCTAssertEqual(stats.totalItemsChecked, 100)
-        XCTAssertEqual(stats.totalItemsFiltered, 25)
-        XCTAssertEqual(stats.filterReasons["blockedCollection"], 15)
-        XCTAssertEqual(stats.filterReasons["blockedKeyword"], 10)
-        XCTAssertEqual(stats.filterPercentage, 25.0, accuracy: 0.001)
+        #expect(stats.totalItemsChecked == 100)
+        #expect(stats.totalItemsFiltered == 25)
+        #expect(stats.filterReasons["blockedCollection"] == 15)
+        #expect(stats.filterReasons["blockedKeyword"] == 10)
+        #expect(abs(stats.filterPercentage - 25.0) < 0.001)
     }
 }

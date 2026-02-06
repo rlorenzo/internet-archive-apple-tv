@@ -5,11 +5,12 @@
 //  Tests for AppState authentication state management
 //
 
-import XCTest
+import Testing
 @testable import Internet_Archive
 
+@Suite("AppState Tests")
 @MainActor
-final class AppStateTests: XCTestCase {
+struct AppStateTests {
 
     // MARK: - Test Constants
 
@@ -23,40 +24,22 @@ final class AppStateTests: XCTestCase {
     private let refreshEmail = "refresh@example.com"
     private let refreshUsername = "RefreshUser"
 
-    nonisolated(unsafe) var sut: AppState!
-
-    override func setUp() {
-        super.setUp()
-        let newSut = MainActor.assumeIsolated {
-            // Clear any existing keychain data before each test
-            _ = KeychainManager.shared.clearUserCredentials()
-            return AppState()
-        }
-        sut = newSut
-    }
-
-    override func tearDown() {
-        MainActor.assumeIsolated {
-            // Clean up keychain after each test
-            _ = KeychainManager.shared.clearUserCredentials()
-        }
-        sut = nil
-        super.tearDown()
-    }
-
     // MARK: - Initial State Tests
 
-    func testInitialState_WhenNotLoggedIn_IsUnauthenticated() {
+    @Test func initialStateWhenNotLoggedInIsUnauthenticated() {
         // Given: Fresh AppState with no keychain credentials
+        _ = KeychainManager.shared.clearUserCredentials()
+        let sut = AppState()
 
         // Then: Should be unauthenticated
-        XCTAssertFalse(sut.isAuthenticated)
-        XCTAssertNil(sut.username)
-        XCTAssertNil(sut.userEmail)
+        #expect(!sut.isAuthenticated)
+        #expect(sut.username == nil)
+        #expect(sut.userEmail == nil)
     }
 
-    func testInitialState_WhenLoggedIn_IsAuthenticated() {
+    @Test func initialStateWhenLoggedInIsAuthenticated() {
         // Given: Keychain has saved credentials
+        _ = KeychainManager.shared.clearUserCredentials()
         _ = KeychainManager.shared.saveUserCredentials(
             email: testEmail,
             password: testCredential,
@@ -67,66 +50,80 @@ final class AppStateTests: XCTestCase {
         let appState = AppState()
 
         // Then: Should be authenticated with correct values
-        XCTAssertTrue(appState.isAuthenticated)
-        XCTAssertEqual(appState.username, testUsername)
-        XCTAssertEqual(appState.userEmail, testEmail)
+        #expect(appState.isAuthenticated)
+        #expect(appState.username == testUsername)
+        #expect(appState.userEmail == testEmail)
+
+        // Cleanup
+        _ = KeychainManager.shared.clearUserCredentials()
     }
 
     // MARK: - setLoggedIn Tests
 
-    func testSetLoggedIn_UpdatesAllProperties() {
+    @Test func setLoggedInUpdatesAllProperties() {
         // Given: Unauthenticated state
-        XCTAssertFalse(sut.isAuthenticated)
+        _ = KeychainManager.shared.clearUserCredentials()
+        let sut = AppState()
+        #expect(!sut.isAuthenticated)
 
         // When: Setting logged in
         sut.setLoggedIn(email: altEmail, username: altUsername)
 
         // Then: All properties should be updated
-        XCTAssertTrue(sut.isAuthenticated)
-        XCTAssertEqual(sut.username, altUsername)
-        XCTAssertEqual(sut.userEmail, altEmail)
+        #expect(sut.isAuthenticated)
+        #expect(sut.username == altUsername)
+        #expect(sut.userEmail == altEmail)
+
+        // Cleanup
+        _ = KeychainManager.shared.clearUserCredentials()
     }
 
     // MARK: - logout Tests
 
-    func testLogout_ClearsAllProperties() {
+    @Test func logoutClearsAllProperties() {
         // Given: Authenticated state
+        _ = KeychainManager.shared.clearUserCredentials()
+        let sut = AppState()
         sut.setLoggedIn(email: altEmail, username: altUsername)
-        XCTAssertTrue(sut.isAuthenticated)
+        #expect(sut.isAuthenticated)
 
         // When: Logging out
         sut.logout()
 
         // Then: All properties should be cleared
-        XCTAssertFalse(sut.isAuthenticated)
-        XCTAssertNil(sut.username)
-        XCTAssertNil(sut.userEmail)
+        #expect(!sut.isAuthenticated)
+        #expect(sut.username == nil)
+        #expect(sut.userEmail == nil)
     }
 
-    func testLogout_ClearsKeychainCredentials() {
+    @Test func logoutClearsKeychainCredentials() {
         // Given: Saved keychain credentials
+        _ = KeychainManager.shared.clearUserCredentials()
         _ = KeychainManager.shared.saveUserCredentials(
             email: testEmail,
             password: testCredential,
             username: testUsername
         )
+        let sut = AppState()
         sut.refreshAuthState()
-        XCTAssertTrue(sut.isAuthenticated)
+        #expect(sut.isAuthenticated)
 
         // When: Logging out
         sut.logout()
 
         // Then: Keychain should be cleared
-        XCTAssertFalse(KeychainManager.shared.isLoggedIn)
-        XCTAssertNil(KeychainManager.shared.username)
-        XCTAssertNil(KeychainManager.shared.userEmail)
+        #expect(!KeychainManager.shared.isLoggedIn)
+        #expect(KeychainManager.shared.username == nil)
+        #expect(KeychainManager.shared.userEmail == nil)
     }
 
     // MARK: - refreshAuthState Tests
 
-    func testRefreshAuthState_UpdatesFromKeychain() {
+    @Test func refreshAuthStateUpdatesFromKeychain() {
         // Given: AppState is unauthenticated
-        XCTAssertFalse(sut.isAuthenticated)
+        _ = KeychainManager.shared.clearUserCredentials()
+        let sut = AppState()
+        #expect(!sut.isAuthenticated)
 
         // When: Credentials are saved to keychain and state is refreshed
         _ = KeychainManager.shared.saveUserCredentials(
@@ -137,28 +134,33 @@ final class AppStateTests: XCTestCase {
         sut.refreshAuthState()
 
         // Then: AppState should reflect keychain state
-        XCTAssertTrue(sut.isAuthenticated)
-        XCTAssertEqual(sut.username, refreshUsername)
-        XCTAssertEqual(sut.userEmail, refreshEmail)
+        #expect(sut.isAuthenticated)
+        #expect(sut.username == refreshUsername)
+        #expect(sut.userEmail == refreshEmail)
+
+        // Cleanup
+        _ = KeychainManager.shared.clearUserCredentials()
     }
 
-    func testRefreshAuthState_WhenKeychainCleared_BecomesUnauthenticated() {
+    @Test func refreshAuthStateWhenKeychainClearedBecomesUnauthenticated() {
         // Given: Authenticated state from keychain
+        _ = KeychainManager.shared.clearUserCredentials()
         _ = KeychainManager.shared.saveUserCredentials(
             email: testEmail,
             password: testCredential,
             username: testUsername
         )
+        let sut = AppState()
         sut.refreshAuthState()
-        XCTAssertTrue(sut.isAuthenticated)
+        #expect(sut.isAuthenticated)
 
         // When: Keychain is cleared externally and state is refreshed
         _ = KeychainManager.shared.clearUserCredentials()
         sut.refreshAuthState()
 
         // Then: AppState should be unauthenticated
-        XCTAssertFalse(sut.isAuthenticated)
-        XCTAssertNil(sut.username)
-        XCTAssertNil(sut.userEmail)
+        #expect(!sut.isAuthenticated)
+        #expect(sut.username == nil)
+        #expect(sut.userEmail == nil)
     }
 }

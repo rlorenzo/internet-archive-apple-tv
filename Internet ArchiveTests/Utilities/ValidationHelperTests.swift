@@ -5,70 +5,71 @@
 //  Unit tests for ValidationHelper
 //
 
-import XCTest
+import Testing
 @testable import Internet_Archive
 
-final class ValidationHelperTests: XCTestCase {
+@Suite("ValidationHelper Tests")
+struct ValidationHelperTests {
 
     // MARK: - Email Validation Tests
 
-    func testIsValidEmail_validEmail() {
-        XCTAssertTrue(ValidationHelper.isValidEmail("user@example.com"))
-        XCTAssertTrue(ValidationHelper.isValidEmail("user.name@example.com"))
-        XCTAssertTrue(ValidationHelper.isValidEmail("user+tag@example.com"))
-        XCTAssertTrue(ValidationHelper.isValidEmail("user_name@example.co.uk"))
-        XCTAssertTrue(ValidationHelper.isValidEmail("user123@example.org"))
+    @Test func isValidEmailValidEmail() {
+        #expect(ValidationHelper.isValidEmail("user@example.com"))
+        #expect(ValidationHelper.isValidEmail("user.name@example.com"))
+        #expect(ValidationHelper.isValidEmail("user+tag@example.com"))
+        #expect(ValidationHelper.isValidEmail("user_name@example.co.uk"))
+        #expect(ValidationHelper.isValidEmail("user123@example.org"))
     }
 
-    func testIsValidEmail_invalidEmail() {
-        XCTAssertFalse(ValidationHelper.isValidEmail(""))
-        XCTAssertFalse(ValidationHelper.isValidEmail("invalid"))
-        XCTAssertFalse(ValidationHelper.isValidEmail("invalid@"))
-        XCTAssertFalse(ValidationHelper.isValidEmail("@example.com"))
-        XCTAssertFalse(ValidationHelper.isValidEmail("user@"))
-        XCTAssertFalse(ValidationHelper.isValidEmail("user@.com"))
-        XCTAssertFalse(ValidationHelper.isValidEmail("user example.com"))
+    @Test func isValidEmailInvalidEmail() {
+        #expect(!ValidationHelper.isValidEmail(""))
+        #expect(!ValidationHelper.isValidEmail("invalid"))
+        #expect(!ValidationHelper.isValidEmail("invalid@"))
+        #expect(!ValidationHelper.isValidEmail("@example.com"))
+        #expect(!ValidationHelper.isValidEmail("user@"))
+        #expect(!ValidationHelper.isValidEmail("user@.com"))
+        #expect(!ValidationHelper.isValidEmail("user example.com"))
     }
 
-    func testIsValidEmail_edgeCases() {
+    @Test func isValidEmailEdgeCases() {
         // Valid edge cases
-        XCTAssertTrue(ValidationHelper.isValidEmail("a@b.co"))
-        XCTAssertTrue(ValidationHelper.isValidEmail("user%name@example.com"))
-        XCTAssertTrue(ValidationHelper.isValidEmail("user-name@example.com"))
+        #expect(ValidationHelper.isValidEmail("a@b.co"))
+        #expect(ValidationHelper.isValidEmail("user%name@example.com"))
+        #expect(ValidationHelper.isValidEmail("user-name@example.com"))
 
         // Invalid edge cases
-        XCTAssertFalse(ValidationHelper.isValidEmail("user@example"))  // No TLD
-        XCTAssertFalse(ValidationHelper.isValidEmail("user@."))
+        #expect(!ValidationHelper.isValidEmail("user@example"))  // No TLD
+        #expect(!ValidationHelper.isValidEmail("user@."))
     }
 
     // MARK: - Password Validation Tests
 
-    func testIsValidPassword_validPassword() {
-        XCTAssertTrue(ValidationHelper.isValidPassword("abc"))  // Minimum length
-        XCTAssertTrue(ValidationHelper.isValidPassword("password123"))
-        XCTAssertTrue(ValidationHelper.isValidPassword("a very long password with spaces"))
+    @Test func isValidPasswordValidPassword() {
+        #expect(ValidationHelper.isValidPassword("abc"))  // Minimum length
+        #expect(ValidationHelper.isValidPassword("password123"))
+        #expect(ValidationHelper.isValidPassword("a very long password with spaces"))
     }
 
-    func testIsValidPassword_invalidPassword() {
-        XCTAssertFalse(ValidationHelper.isValidPassword(""))
-        XCTAssertFalse(ValidationHelper.isValidPassword("ab"))  // Too short
-        XCTAssertFalse(ValidationHelper.isValidPassword("a"))
+    @Test func isValidPasswordInvalidPassword() {
+        #expect(!ValidationHelper.isValidPassword(""))
+        #expect(!ValidationHelper.isValidPassword("ab"))  // Too short
+        #expect(!ValidationHelper.isValidPassword("a"))
     }
 
-    func testValidatePassword_returnsCorrectMessage() {
+    @Test func validatePasswordReturnsCorrectMessage() {
         // Valid password
         let validResult = ValidationHelper.validatePassword("password")
-        XCTAssertTrue(validResult.isValid)
-        XCTAssertNil(validResult.message)
+        #expect(validResult.isValid)
+        #expect(validResult.message == nil)
 
         // Invalid password
         let invalidResult = ValidationHelper.validatePassword("ab")
-        XCTAssertFalse(invalidResult.isValid)
-        XCTAssertNotNil(invalidResult.message)
-        XCTAssertTrue(invalidResult.message?.contains("3") ?? false)
+        #expect(!invalidResult.isValid)
+        #expect(invalidResult.message != nil)
+        #expect(invalidResult.message?.contains("3") ?? false)
     }
 
-    func testMinimumPasswordLength_constant() {
-        XCTAssertEqual(ValidationHelper.minimumPasswordLength, 3)
+    @Test func minimumPasswordLengthConstant() {
+        #expect(ValidationHelper.minimumPasswordLength == 3)
     }
 }

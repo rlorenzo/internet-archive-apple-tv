@@ -5,14 +5,16 @@
 //  Unit tests for metadata data models
 //
 
-import XCTest
+import Testing
+import Foundation
 @testable import Internet_Archive
 
-final class MetadataModelsTests: XCTestCase {
+@Suite("MetadataModels Tests")
+struct MetadataModelsTests {
 
     // MARK: - ItemMetadataResponse Tests
 
-    func testItemMetadataResponseDecoding() throws {
+    @Test func itemMetadataResponseDecoding() throws {
         let json = """
         {
             "created": 1704067200,
@@ -39,23 +41,23 @@ final class MetadataModelsTests: XCTestCase {
         }
         """
 
-        let data = json.data(using: .utf8)!
+        let data = try #require(json.data(using: .utf8))
         let response = try JSONDecoder().decode(ItemMetadataResponse.self, from: data)
 
-        XCTAssertEqual(response.created, 1704067200)
-        XCTAssertEqual(response.d1, "ia123456.us.archive.org")
-        XCTAssertEqual(response.d2, "ia234567.us.archive.org")
-        XCTAssertEqual(response.dir, "/1/items/test_item")
-        XCTAssertEqual(response.filesCount, 5)
-        XCTAssertEqual(response.itemSize, 1000000)
-        XCTAssertEqual(response.server, "ia123456.us.archive.org")
-        XCTAssertEqual(response.uniq, 12345)
-        XCTAssertEqual(response.workableServers?.count, 2)
-        XCTAssertEqual(response.metadata?.identifier, "test_item")
-        XCTAssertEqual(response.files?.count, 1)
+        #expect(response.created == 1704067200)
+        #expect(response.d1 == "ia123456.us.archive.org")
+        #expect(response.d2 == "ia234567.us.archive.org")
+        #expect(response.dir == "/1/items/test_item")
+        #expect(response.filesCount == 5)
+        #expect(response.itemSize == 1000000)
+        #expect(response.server == "ia123456.us.archive.org")
+        #expect(response.uniq == 12345)
+        #expect(response.workableServers?.count == 2)
+        #expect(response.metadata?.identifier == "test_item")
+        #expect(response.files?.count == 1)
     }
 
-    func testItemMetadataResponseMemberwiseInit() {
+    @Test func itemMetadataResponseMemberwiseInit() {
         let response = ItemMetadataResponse(
             created: 1234567890,
             d1: "server1.archive.org",
@@ -64,15 +66,15 @@ final class MetadataModelsTests: XCTestCase {
             server: "server1.archive.org"
         )
 
-        XCTAssertEqual(response.created, 1234567890)
-        XCTAssertEqual(response.d1, "server1.archive.org")
-        XCTAssertEqual(response.files?.count, 1)
-        XCTAssertEqual(response.filesCount, 1)
+        #expect(response.created == 1234567890)
+        #expect(response.d1 == "server1.archive.org")
+        #expect(response.files?.count == 1)
+        #expect(response.filesCount == 1)
     }
 
     // MARK: - ItemMetadata Tests
 
-    func testItemMetadataDecoding() throws {
+    @Test func itemMetadataDecoding() throws {
         let json = """
         {
             "identifier": "test_item_001",
@@ -88,20 +90,20 @@ final class MetadataModelsTests: XCTestCase {
         }
         """
 
-        let data = json.data(using: .utf8)!
+        let data = try #require(json.data(using: .utf8))
         let metadata = try JSONDecoder().decode(ItemMetadata.self, from: data)
 
-        XCTAssertEqual(metadata.identifier, "test_item_001")
-        XCTAssertEqual(metadata.title, "Test Movie")
-        XCTAssertEqual(metadata.mediatype, "movies")
-        XCTAssertEqual(metadata.creator, "Test Director")
-        XCTAssertEqual(metadata.description, "A great movie")
-        XCTAssertEqual(metadata.date, "2025-01-01")
-        XCTAssertEqual(metadata.year, "2025")
-        XCTAssertEqual(metadata.uploader, "test_uploader")
+        #expect(metadata.identifier == "test_item_001")
+        #expect(metadata.title == "Test Movie")
+        #expect(metadata.mediatype == "movies")
+        #expect(metadata.creator == "Test Director")
+        #expect(metadata.description == "A great movie")
+        #expect(metadata.date == "2025-01-01")
+        #expect(metadata.year == "2025")
+        #expect(metadata.uploader == "test_uploader")
     }
 
-    func testItemMetadataMemberwiseInit() {
+    @Test func itemMetadataMemberwiseInit() {
         let metadata = ItemMetadata(
             identifier: "test",
             title: "Test Title",
@@ -109,17 +111,17 @@ final class MetadataModelsTests: XCTestCase {
             creator: "Test Creator"
         )
 
-        XCTAssertEqual(metadata.identifier, "test")
-        XCTAssertEqual(metadata.title, "Test Title")
-        XCTAssertEqual(metadata.mediatype, "audio")
-        XCTAssertEqual(metadata.creator, "Test Creator")
-        XCTAssertNil(metadata.subject)
-        XCTAssertNil(metadata.collection)
+        #expect(metadata.identifier == "test")
+        #expect(metadata.title == "Test Title")
+        #expect(metadata.mediatype == "audio")
+        #expect(metadata.creator == "Test Creator")
+        #expect(metadata.subject == nil)
+        #expect(metadata.collection == nil)
     }
 
     // MARK: - SubjectValue Tests
 
-    func testSubjectValueAsString() throws {
+    @Test func subjectValueAsString() throws {
         let json = """
         {
             "identifier": "test",
@@ -127,13 +129,13 @@ final class MetadataModelsTests: XCTestCase {
         }
         """
 
-        let data = json.data(using: .utf8)!
+        let data = try #require(json.data(using: .utf8))
         let metadata = try JSONDecoder().decode(ItemMetadata.self, from: data)
 
-        XCTAssertEqual(metadata.subject?.asArray, ["single_subject"])
+        #expect(metadata.subject?.asArray == ["single_subject"])
     }
 
-    func testSubjectValueAsArray() throws {
+    @Test func subjectValueAsArray() throws {
         let json = """
         {
             "identifier": "test",
@@ -141,23 +143,23 @@ final class MetadataModelsTests: XCTestCase {
         }
         """
 
-        let data = json.data(using: .utf8)!
+        let data = try #require(json.data(using: .utf8))
         let metadata = try JSONDecoder().decode(ItemMetadata.self, from: data)
 
-        XCTAssertEqual(metadata.subject?.asArray, ["subject1", "subject2", "subject3"])
+        #expect(metadata.subject?.asArray == ["subject1", "subject2", "subject3"])
     }
 
-    func testSubjectValueAsArrayComputed_fromString() {
+    @Test func subjectValueAsArrayComputedFromString() {
         let subjectValue = ItemMetadata.SubjectValue.string("test_subject")
-        XCTAssertEqual(subjectValue.asArray, ["test_subject"])
+        #expect(subjectValue.asArray == ["test_subject"])
     }
 
-    func testSubjectValueAsArrayComputed_fromArray() {
+    @Test func subjectValueAsArrayComputedFromArray() {
         let subjectValue = ItemMetadata.SubjectValue.array(["a", "b", "c"])
-        XCTAssertEqual(subjectValue.asArray, ["a", "b", "c"])
+        #expect(subjectValue.asArray == ["a", "b", "c"])
     }
 
-    func testSubjectValueEncoding() throws {
+    @Test func subjectValueEncoding() throws {
         let metadata = ItemMetadata(
             identifier: "test",
             subject: .array(["tag1", "tag2"])
@@ -167,12 +169,12 @@ final class MetadataModelsTests: XCTestCase {
         let data = try encoder.encode(metadata)
         let decoded = try JSONDecoder().decode(ItemMetadata.self, from: data)
 
-        XCTAssertEqual(decoded.subject?.asArray, ["tag1", "tag2"])
+        #expect(decoded.subject?.asArray == ["tag1", "tag2"])
     }
 
     // MARK: - CollectionValue Tests
 
-    func testCollectionValueAsString() throws {
+    @Test func collectionValueAsString() throws {
         let json = """
         {
             "identifier": "test",
@@ -180,13 +182,13 @@ final class MetadataModelsTests: XCTestCase {
         }
         """
 
-        let data = json.data(using: .utf8)!
+        let data = try #require(json.data(using: .utf8))
         let metadata = try JSONDecoder().decode(ItemMetadata.self, from: data)
 
-        XCTAssertEqual(metadata.collection?.asArray, ["single_collection"])
+        #expect(metadata.collection?.asArray == ["single_collection"])
     }
 
-    func testCollectionValueAsArray() throws {
+    @Test func collectionValueAsArray() throws {
         let json = """
         {
             "identifier": "test",
@@ -194,15 +196,15 @@ final class MetadataModelsTests: XCTestCase {
         }
         """
 
-        let data = json.data(using: .utf8)!
+        let data = try #require(json.data(using: .utf8))
         let metadata = try JSONDecoder().decode(ItemMetadata.self, from: data)
 
-        XCTAssertEqual(metadata.collection?.asArray, ["collection1", "collection2"])
+        #expect(metadata.collection?.asArray == ["collection1", "collection2"])
     }
 
     // MARK: - FileInfo Tests
 
-    func testFileInfoDecoding() throws {
+    @Test func fileInfoDecoding() throws {
         let json = """
         {
             "name": "movie.mp4",
@@ -219,23 +221,23 @@ final class MetadataModelsTests: XCTestCase {
         }
         """
 
-        let data = json.data(using: .utf8)!
+        let data = try #require(json.data(using: .utf8))
         let fileInfo = try JSONDecoder().decode(FileInfo.self, from: data)
 
-        XCTAssertEqual(fileInfo.name, "movie.mp4")
-        XCTAssertEqual(fileInfo.source, "original")
-        XCTAssertEqual(fileInfo.format, "MPEG4")
-        XCTAssertEqual(fileInfo.size, "1000000")
-        XCTAssertEqual(fileInfo.md5, "abc123")
-        XCTAssertEqual(fileInfo.crc32, "def456")
-        XCTAssertEqual(fileInfo.sha1, "ghi789")
-        XCTAssertEqual(fileInfo.mtime, "1704067200")
-        XCTAssertEqual(fileInfo.length, "3600.5")
-        XCTAssertEqual(fileInfo.height, "1080")
-        XCTAssertEqual(fileInfo.width, "1920")
+        #expect(fileInfo.name == "movie.mp4")
+        #expect(fileInfo.source == "original")
+        #expect(fileInfo.format == "MPEG4")
+        #expect(fileInfo.size == "1000000")
+        #expect(fileInfo.md5 == "abc123")
+        #expect(fileInfo.crc32 == "def456")
+        #expect(fileInfo.sha1 == "ghi789")
+        #expect(fileInfo.mtime == "1704067200")
+        #expect(fileInfo.length == "3600.5")
+        #expect(fileInfo.height == "1080")
+        #expect(fileInfo.width == "1920")
     }
 
-    func testFileInfoMemberwiseInit() {
+    @Test func fileInfoMemberwiseInit() {
         let fileInfo = FileInfo(
             name: "test.mp4",
             source: "derivative",
@@ -244,70 +246,73 @@ final class MetadataModelsTests: XCTestCase {
             length: "1800"
         )
 
-        XCTAssertEqual(fileInfo.name, "test.mp4")
-        XCTAssertEqual(fileInfo.source, "derivative")
-        XCTAssertEqual(fileInfo.format, "h.264")
-        XCTAssertEqual(fileInfo.size, "500000")
-        XCTAssertEqual(fileInfo.length, "1800")
-        XCTAssertNil(fileInfo.md5)
-        XCTAssertNil(fileInfo.height)
+        #expect(fileInfo.name == "test.mp4")
+        #expect(fileInfo.source == "derivative")
+        #expect(fileInfo.format == "h.264")
+        #expect(fileInfo.size == "500000")
+        #expect(fileInfo.length == "1800")
+        #expect(fileInfo.md5 == nil)
+        #expect(fileInfo.height == nil)
     }
 
-    func testFileInfoSizeInBytes() {
+    @Test func fileInfoSizeInBytes() {
         let fileInfo = FileInfo(name: "test.mp4", size: "1234567890")
-        XCTAssertEqual(fileInfo.sizeInBytes, 1234567890)
+        #expect(fileInfo.sizeInBytes == 1234567890)
 
         let fileInfoNoSize = FileInfo(name: "test.mp4")
-        XCTAssertNil(fileInfoNoSize.sizeInBytes)
+        #expect(fileInfoNoSize.sizeInBytes == nil)
 
         let fileInfoInvalidSize = FileInfo(name: "test.mp4", size: "invalid")
-        XCTAssertNil(fileInfoInvalidSize.sizeInBytes)
+        #expect(fileInfoInvalidSize.sizeInBytes == nil)
     }
 
-    func testFileInfoDurationInSeconds() {
+    @Test func fileInfoDurationInSeconds() {
         let fileInfo = FileInfo(name: "test.mp4", length: "3600.5")
-        XCTAssertEqual(fileInfo.durationInSeconds ?? 0, 3600.5, accuracy: 0.01)
+        #expect(fileInfo.durationInSeconds != nil)
+        if let duration = fileInfo.durationInSeconds {
+            #expect(abs(duration - 3600.5) < 0.01)
+        }
 
         let fileInfoNoLength = FileInfo(name: "test.mp4")
-        XCTAssertNil(fileInfoNoLength.durationInSeconds)
+        #expect(fileInfoNoLength.durationInSeconds == nil)
 
         let fileInfoInvalidLength = FileInfo(name: "test.mp4", length: "invalid")
-        XCTAssertNil(fileInfoInvalidLength.durationInSeconds)
+        #expect(fileInfoInvalidLength.durationInSeconds == nil)
     }
 
-    func testFileInfoToDictionary() {
+    @Test func fileInfoToDictionary() {
         let fileInfo = TestFixtures.fileInfo
         let dict = fileInfo.toDictionary()
 
-        XCTAssertEqual(dict["name"] as? String, "test_file.mp4")
-        XCTAssertEqual(dict["source"] as? String, "original")
-        XCTAssertEqual(dict["format"] as? String, "MPEG4")
-        XCTAssertEqual(dict["size"] as? String, "1000000")
+        #expect(dict["name"] as? String == "test_file.mp4")
+        #expect(dict["source"] as? String == "original")
+        #expect(dict["format"] as? String == "MPEG4")
+        #expect(dict["size"] as? String == "1000000")
     }
 
-    func testFileInfoToDictionaryOmitsNilValues() {
+    @Test func fileInfoToDictionaryOmitsNilValues() {
         let fileInfo = FileInfo(name: "minimal.mp4")
         let dict = fileInfo.toDictionary()
 
-        XCTAssertEqual(dict["name"] as? String, "minimal.mp4")
-        XCTAssertNil(dict["source"])
-        XCTAssertNil(dict["format"])
-        XCTAssertNil(dict["size"])
-        XCTAssertNil(dict["md5"])
+        #expect(dict["name"] as? String == "minimal.mp4")
+        #expect(dict["source"] == nil)
+        #expect(dict["format"] == nil)
+        #expect(dict["size"] == nil)
+        #expect(dict["md5"] == nil)
     }
 
     // MARK: - Integration Test with TestFixtures
 
-    func testItemMetadataResponseFromFixtures() {
+    @Test func itemMetadataResponseFromFixtures() {
         let response = TestFixtures.itemMetadataResponse
 
-        XCTAssertNotNil(response.files)
-        XCTAssertEqual(response.files?.count, 1)
-        XCTAssertEqual(response.files?.first?.name, "test_file.mp4")
+        #expect(response.files != nil)
+        #expect(response.files?.count == 1)
+        #expect(response.files?.first?.name == "test_file.mp4")
 
-        XCTAssertNotNil(response.metadata)
-        XCTAssertEqual(response.metadata?.identifier, "test_item_001")
-        XCTAssertEqual(response.metadata?.title, "Test Item")
-        XCTAssertEqual(response.metadata?.mediatype, "movies")
+        #expect(response.metadata != nil)
+        #expect(response.metadata?.identifier == "test_item_001")
+        #expect(response.metadata?.title == "Test Item")
+        #expect(response.metadata?.mediatype == "movies")
     }
 }

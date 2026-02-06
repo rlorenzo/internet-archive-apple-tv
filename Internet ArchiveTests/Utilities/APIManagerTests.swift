@@ -5,271 +5,273 @@
 //  Unit tests for APIManager
 //
 
-import XCTest
+import Testing
+import Foundation
 import Alamofire
 @testable import Internet_Archive
 
+@Suite("APIManager Tests")
 @MainActor
-final class APIManagerTests: XCTestCase {
+struct APIManagerTests {
 
     // MARK: - Singleton Tests
 
-    func testSharedManager_exists() {
+    @Test func sharedManagerExists() {
         let manager = APIManager.sharedManager
-        XCTAssertNotNil(manager)
+        #expect(manager != nil)
     }
 
-    func testSharedManager_isSingleton() {
+    @Test func sharedManagerIsSingleton() {
         let manager1 = APIManager.sharedManager
         let manager2 = APIManager.sharedManager
-        XCTAssertTrue(manager1 === manager2)
+        #expect(manager1 === manager2)
     }
 
     // MARK: - Base URL Tests
 
-    func testBaseURL_isCorrect() {
+    @Test func baseURLIsCorrect() {
         let manager = APIManager.sharedManager
-        XCTAssertEqual(manager.baseURL, "https://archive.org/")
+        #expect(manager.baseURL == "https://archive.org/")
     }
 
-    func testBaseURL_hasTrailingSlash() {
+    @Test func baseURLHasTrailingSlash() {
         let manager = APIManager.sharedManager
-        XCTAssertTrue(manager.baseURL.hasSuffix("/"))
+        #expect(manager.baseURL.hasSuffix("/"))
     }
 
     // MARK: - API Endpoint Tests
 
-    func testApiCreate_endpoint() {
+    @Test func apiCreateEndpoint() {
         let manager = APIManager.sharedManager
-        XCTAssertEqual(manager.apiCreate, "services/xauthn/?op=create")
+        #expect(manager.apiCreate == "services/xauthn/?op=create")
     }
 
-    func testApiLogin_endpoint() {
+    @Test func apiLoginEndpoint() {
         let manager = APIManager.sharedManager
-        XCTAssertEqual(manager.apiLogin, "services/xauthn/?op=authenticate")
+        #expect(manager.apiLogin == "services/xauthn/?op=authenticate")
     }
 
-    func testApiInfo_endpoint() {
+    @Test func apiInfoEndpoint() {
         let manager = APIManager.sharedManager
-        XCTAssertEqual(manager.apiInfo, "services/xauthn/?op=info")
+        #expect(manager.apiInfo == "services/xauthn/?op=info")
     }
 
-    func testApiMetadata_endpoint() {
+    @Test func apiMetadataEndpoint() {
         let manager = APIManager.sharedManager
-        XCTAssertEqual(manager.apiMetadata, "metadata/")
+        #expect(manager.apiMetadata == "metadata/")
     }
 
-    func testApiWebLogin_endpoint() {
+    @Test func apiWebLoginEndpoint() {
         let manager = APIManager.sharedManager
-        XCTAssertEqual(manager.apiWebLogin, "account/login.php")
+        #expect(manager.apiWebLogin == "account/login.php")
     }
 
-    func testApiSaveFavorite_endpoint() {
+    @Test func apiSaveFavoriteEndpoint() {
         let manager = APIManager.sharedManager
-        XCTAssertEqual(manager.apiSaveFavorite, "bookmarks.php?add_bookmark=1")
+        #expect(manager.apiSaveFavorite == "bookmarks.php?add_bookmark=1")
     }
 
-    func testApiGetFavorite_endpoint() {
+    @Test func apiGetFavoriteEndpoint() {
         let manager = APIManager.sharedManager
-        XCTAssertEqual(manager.apiGetFavorite, "metadata/fav-")
+        #expect(manager.apiGetFavorite == "metadata/fav-")
     }
 
     // MARK: - Full URL Construction Tests
 
-    func testFullLoginURL() {
+    @Test func fullLoginURL() {
         let manager = APIManager.sharedManager
         let fullURL = "\(manager.baseURL)\(manager.apiLogin)"
-        XCTAssertEqual(fullURL, "https://archive.org/services/xauthn/?op=authenticate")
+        #expect(fullURL == "https://archive.org/services/xauthn/?op=authenticate")
     }
 
-    func testFullCreateURL() {
+    @Test func fullCreateURL() {
         let manager = APIManager.sharedManager
         let fullURL = "\(manager.baseURL)\(manager.apiCreate)"
-        XCTAssertEqual(fullURL, "https://archive.org/services/xauthn/?op=create")
+        #expect(fullURL == "https://archive.org/services/xauthn/?op=create")
     }
 
-    func testFullMetadataURL_withIdentifier() {
+    @Test func fullMetadataURLWithIdentifier() {
         let manager = APIManager.sharedManager
         let identifier = "test_item_123"
         let fullURL = "\(manager.baseURL)\(manager.apiMetadata)\(identifier)"
-        XCTAssertEqual(fullURL, "https://archive.org/metadata/test_item_123")
+        #expect(fullURL == "https://archive.org/metadata/test_item_123")
     }
 
-    func testFullFavoriteURL_withUsername() {
+    @Test func fullFavoriteURLWithUsername() {
         let manager = APIManager.sharedManager
         let username = "testuser"
         let fullURL = "\(manager.baseURL)\(manager.apiGetFavorite)\(username.lowercased())"
-        XCTAssertEqual(fullURL, "https://archive.org/metadata/fav-testuser")
+        #expect(fullURL == "https://archive.org/metadata/fav-testuser")
     }
 
     // MARK: - Headers Tests
 
-    func testHeaders_containsUserAgent() {
+    @Test func headersContainsUserAgent() {
         let manager = APIManager.sharedManager
-        XCTAssertNotNil(manager.headers["User-Agent"])
+        #expect(manager.headers["User-Agent"] != nil)
     }
 
-    func testHeaders_containsWaybackExtensionVersion() {
+    @Test func headersContainsWaybackExtensionVersion() {
         let manager = APIManager.sharedManager
-        XCTAssertNotNil(manager.headers["Wayback-Extension-Version"])
+        #expect(manager.headers["Wayback-Extension-Version"] != nil)
     }
 
-    func testHeaders_userAgentContainsWayback() {
+    @Test func headersUserAgentContainsWayback() {
         let manager = APIManager.sharedManager
         let userAgent = manager.headers["User-Agent"]
-        XCTAssertTrue(userAgent?.contains("Wayback_Machine_iOS") ?? false)
+        #expect(userAgent?.contains("Wayback_Machine_iOS") ?? false)
     }
 
     // MARK: - Network Service Tests
 
-    func testNetworkService_returnsService() {
+    @Test func networkServiceReturnsService() {
         let service = APIManager.networkService
-        XCTAssertNotNil(service)
+        #expect(service != nil)
     }
 
-    func testNetworkService_conformsToProtocol() {
+    @Test func networkServiceConformsToProtocol() {
         let service: Any = APIManager.networkService
-        XCTAssertTrue(service is NetworkServiceProtocol)
+        #expect(service is NetworkServiceProtocol)
     }
 
     // MARK: - FavoriteItemParams Tests
 
-    func testFavoriteItemParams_initialization() {
+    @Test func favoriteItemParamsInitialization() {
         let params = FavoriteItemParams(
             identifier: "test_id",
             mediatype: "movies",
             title: "Test Title"
         )
 
-        XCTAssertEqual(params.identifier, "test_id")
-        XCTAssertEqual(params.mediatype, "movies")
-        XCTAssertEqual(params.title, "Test Title")
+        #expect(params.identifier == "test_id")
+        #expect(params.mediatype == "movies")
+        #expect(params.title == "Test Title")
     }
 
-    func testFavoriteItemParams_withEmptyValues() {
+    @Test func favoriteItemParamsWithEmptyValues() {
         let params = FavoriteItemParams(
             identifier: "",
             mediatype: "",
             title: ""
         )
 
-        XCTAssertEqual(params.identifier, "")
-        XCTAssertEqual(params.mediatype, "")
-        XCTAssertEqual(params.title, "")
+        #expect(params.identifier == "")
+        #expect(params.mediatype == "")
+        #expect(params.title == "")
     }
 
-    func testFavoriteItemParams_withSpecialCharacters() {
+    @Test func favoriteItemParamsWithSpecialCharacters() {
         let params = FavoriteItemParams(
             identifier: "test-item_123",
             mediatype: "audio",
             title: "Test & Title: Special!"
         )
 
-        XCTAssertEqual(params.identifier, "test-item_123")
-        XCTAssertEqual(params.mediatype, "audio")
-        XCTAssertEqual(params.title, "Test & Title: Special!")
+        #expect(params.identifier == "test-item_123")
+        #expect(params.mediatype == "audio")
+        #expect(params.title == "Test & Title: Special!")
     }
 
     // MARK: - URL Encoding Tests
 
-    func testSearchURL_encoding() {
+    @Test func searchURLEncoding() {
         // Test that search queries can be properly encoded
         let query = "collection:(test) And mediatype:movies"
         let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
-        XCTAssertNotNil(encodedQuery)
-        XCTAssertTrue(encodedQuery?.contains("%") ?? false)
+        #expect(encodedQuery != nil)
+        #expect(encodedQuery?.contains("%") ?? false)
     }
 
-    func testFavoriteUsername_lowercased() {
+    @Test func favoriteUsernameLowercased() {
         let username = "TestUser"
         let lowercasedUsername = username.lowercased()
-        XCTAssertEqual(lowercasedUsername, "testuser")
+        #expect(lowercasedUsername == "testuser")
     }
 
     // MARK: - Manager Type Tests
 
-    func testSharedManager_isNSObject() {
+    @Test func sharedManagerIsNSObject() {
         let manager: Any = APIManager.sharedManager
-        XCTAssertTrue(manager is NSObject)
+        #expect(manager is NSObject)
     }
 
     // MARK: - URL Construction Tests (via APIManager)
 
-    func testMetadataURL_construction() {
+    @Test func metadataURLConstruction() {
         let manager = APIManager.sharedManager
         let identifier = "test_item_123"
         let expectedURL = "https://archive.org/metadata/test_item_123"
         let constructedURL = "\(manager.baseURL)\(manager.apiMetadata)\(identifier)"
-        XCTAssertEqual(constructedURL, expectedURL)
+        #expect(constructedURL == expectedURL)
     }
 
-    func testMetadataURL_withSpecialIdentifier() {
+    @Test func metadataURLWithSpecialIdentifier() {
         let manager = APIManager.sharedManager
         // Internet Archive identifiers use alphanumerics, underscores, and hyphens
         let identifier = "test-item_2025"
         let constructedURL = "\(manager.baseURL)\(manager.apiMetadata)\(identifier)"
-        XCTAssertTrue(constructedURL.hasPrefix("https://archive.org/metadata/"))
-        XCTAssertTrue(constructedURL.hasSuffix(identifier))
+        #expect(constructedURL.hasPrefix("https://archive.org/metadata/"))
+        #expect(constructedURL.hasSuffix(identifier))
     }
 
-    func testFavoritesURL_lowercasesUsername() {
+    @Test func favoritesURLLowercasesUsername() {
         let manager = APIManager.sharedManager
         let username = "TestUser"
         let constructedURL = "\(manager.baseURL)\(manager.apiGetFavorite)\(username.lowercased())"
         // Verify username is lowercased in the URL
-        XCTAssertEqual(constructedURL, "https://archive.org/metadata/fav-testuser")
-        XCTAssertFalse(constructedURL.contains("TestUser"))
+        #expect(constructedURL == "https://archive.org/metadata/fav-testuser")
+        #expect(!constructedURL.contains("TestUser"))
     }
 
-    func testFavoritesURL_withUnderscoresAndNumbers() {
+    @Test func favoritesURLWithUnderscoresAndNumbers() {
         let manager = APIManager.sharedManager
         let username = "Test_User_123"
         let constructedURL = "\(manager.baseURL)\(manager.apiGetFavorite)\(username.lowercased())"
-        XCTAssertEqual(constructedURL, "https://archive.org/metadata/fav-test_user_123")
+        #expect(constructedURL == "https://archive.org/metadata/fav-test_user_123")
     }
 
-    func testSearchURL_baseConstruction() {
+    @Test func searchURLBaseConstruction() {
         let manager = APIManager.sharedManager
         // The search endpoint is constructed as: baseURL + "advancedsearch.php?q=" + query + options
         let baseSearchURL = "\(manager.baseURL)advancedsearch.php"
-        XCTAssertEqual(baseSearchURL, "https://archive.org/advancedsearch.php")
+        #expect(baseSearchURL == "https://archive.org/advancedsearch.php")
     }
 
     // MARK: - Protocol Conformance Tests
 
-    func testAPIManager_conformsToNetworkServiceProtocol() {
+    @Test func apiManagerConformsToNetworkServiceProtocol() {
         let manager: Any = APIManager.sharedManager
-        XCTAssertTrue(manager is NetworkServiceProtocol)
+        #expect(manager is NetworkServiceProtocol)
     }
 
-    func testNetworkService_inTestEnvironment_returnsProtocolConformingService() {
+    @Test func networkServiceInTestEnvironmentReturnsProtocolConformingService() {
         // networkService should return something that conforms to NetworkServiceProtocol
         let service = APIManager.networkService
-        XCTAssertNotNil(service)
+        #expect(service != nil)
         // The service should be usable as a NetworkServiceProtocol
         let protocolService: NetworkServiceProtocol = service
-        XCTAssertNotNil(protocolService)
+        #expect(protocolService != nil)
     }
 
     // MARK: - Endpoint Consistency Tests
 
-    func testAllEndpoints_haveValidFormat() {
+    @Test func allEndpointsHaveValidFormat() {
         let manager = APIManager.sharedManager
 
         // Authentication endpoints should have query parameters
-        XCTAssertTrue(manager.apiCreate.contains("?op="))
-        XCTAssertTrue(manager.apiLogin.contains("?op="))
-        XCTAssertTrue(manager.apiInfo.contains("?op="))
+        #expect(manager.apiCreate.contains("?op="))
+        #expect(manager.apiLogin.contains("?op="))
+        #expect(manager.apiInfo.contains("?op="))
 
         // Metadata endpoint should be a path prefix
-        XCTAssertTrue(manager.apiMetadata.hasSuffix("/"))
-        XCTAssertFalse(manager.apiMetadata.contains("?"))
+        #expect(manager.apiMetadata.hasSuffix("/"))
+        #expect(!manager.apiMetadata.contains("?"))
 
         // Favorites endpoint should be a path prefix
-        XCTAssertTrue(manager.apiGetFavorite.hasPrefix("metadata/fav-"))
+        #expect(manager.apiGetFavorite.hasPrefix("metadata/fav-"))
     }
 
-    func testEndpoints_canFormValidURLs() {
+    @Test func endpointsCanFormValidURLs() {
         let manager = APIManager.sharedManager
 
         // Test that all endpoints form valid URLs when combined with baseURL
@@ -279,166 +281,157 @@ final class APIManagerTests: XCTestCase {
         let metadataURL = URL(string: "\(manager.baseURL)\(manager.apiMetadata)test_item")
         let favoriteURL = URL(string: "\(manager.baseURL)\(manager.apiGetFavorite)testuser")
 
-        XCTAssertNotNil(loginURL, "Login URL should be valid")
-        XCTAssertNotNil(createURL, "Create URL should be valid")
-        XCTAssertNotNil(infoURL, "Info URL should be valid")
-        XCTAssertNotNil(metadataURL, "Metadata URL should be valid")
-        XCTAssertNotNil(favoriteURL, "Favorite URL should be valid")
+        #expect(loginURL != nil, "Login URL should be valid")
+        #expect(createURL != nil, "Create URL should be valid")
+        #expect(infoURL != nil, "Info URL should be valid")
+        #expect(metadataURL != nil, "Metadata URL should be valid")
+        #expect(favoriteURL != nil, "Favorite URL should be valid")
     }
 
     // MARK: - Error Parsing Tests
 
-    func testNetworkError_noConnection_message() {
+    @Test func networkErrorNoConnectionMessage() {
         let error = NetworkError.noConnection
-        XCTAssertFalse(error.localizedDescription.isEmpty)
+        #expect(!error.localizedDescription.isEmpty)
     }
 
-    func testNetworkError_timeout_message() {
+    @Test func networkErrorTimeoutMessage() {
         let error = NetworkError.timeout
-        XCTAssertFalse(error.localizedDescription.isEmpty)
+        #expect(!error.localizedDescription.isEmpty)
     }
 
-    func testNetworkError_serverError_containsStatusCode() {
+    @Test func networkErrorServerErrorContainsStatusCode() {
         let error = NetworkError.serverError(statusCode: 500)
         // The error should capture the status code
         if case .serverError(let code) = error {
-            XCTAssertEqual(code, 500)
+            #expect(code == 500)
         } else {
-            XCTFail("Expected serverError case")
+            Issue.record("Expected serverError case")
         }
     }
 
-    func testNetworkError_serverError_differentCodes() {
+    @Test func networkErrorServerErrorDifferentCodes() {
         let error400 = NetworkError.serverError(statusCode: 400)
         let error500 = NetworkError.serverError(statusCode: 500)
         let error503 = NetworkError.serverError(statusCode: 503)
 
         if case .serverError(let code) = error400 {
-            XCTAssertEqual(code, 400)
+            #expect(code == 400)
         }
         if case .serverError(let code) = error500 {
-            XCTAssertEqual(code, 500)
+            #expect(code == 500)
         }
         if case .serverError(let code) = error503 {
-            XCTAssertEqual(code, 503)
+            #expect(code == 503)
         }
     }
 
-    func testNetworkError_invalidResponse() {
+    @Test func networkErrorInvalidResponse() {
         let error = NetworkError.invalidResponse
-        XCTAssertFalse(error.localizedDescription.isEmpty)
+        #expect(!error.localizedDescription.isEmpty)
     }
 
-    func testNetworkError_decodingFailed() {
+    @Test func networkErrorDecodingFailed() {
         let underlyingError = NSError(domain: "test", code: 1, userInfo: nil)
         let error = NetworkError.decodingFailed(underlyingError)
 
         if case .decodingFailed(let wrapped) = error {
-            XCTAssertNotNil(wrapped)
+            #expect(wrapped != nil)
         } else {
-            XCTFail("Expected decodingFailed case")
+            Issue.record("Expected decodingFailed case")
         }
     }
 
     // MARK: - URL Encoding Behavior Tests
 
-    func testURLEncoding_spacesInMetadataIdentifier() {
-        // URL(string:) auto-encodes spaces on Apple platforms, but explicit encoding is safer
-        // and ensures consistent behavior across platforms
+    @Test func urlEncodingSpacesInMetadataIdentifier() {
         let identifierWithSpace = "test item"
         let urlString = "https://archive.org/metadata/\(identifierWithSpace)"
         let url = URL(string: urlString)
 
         // URL auto-encodes the space to %20
-        XCTAssertNotNil(url, "URL should handle space via auto-encoding")
-        XCTAssertTrue(url?.absoluteString.contains("%20") ?? false, "Space should be percent-encoded")
+        #expect(url != nil, "URL should handle space via auto-encoding")
+        #expect(url?.absoluteString.contains("%20") ?? false, "Space should be percent-encoded")
 
         // Explicit encoding produces the same result
         let encodedIdentifier = identifierWithSpace.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)!
-        XCTAssertEqual(encodedIdentifier, "test%20item")
+        #expect(encodedIdentifier == "test%20item")
     }
 
-    func testURLEncoding_specialCharactersInPath() {
+    @Test func urlEncodingSpecialCharactersInPath() {
         // Test that special characters break URL parsing without encoding
         let filenameWithQuestion = "what?.mp4"
         let urlString = "https://archive.org/download/item/\(filenameWithQuestion)"
         let url = URL(string: urlString)
         // This actually creates a URL but the ? starts a query string, changing semantics
-        XCTAssertNotNil(url, "URL should be created")
+        #expect(url != nil, "URL should be created")
         // The path should NOT contain the question mark (it becomes query)
-        XCTAssertFalse(url!.path.contains("?"), "Unencoded ? should not be in path")
+        #expect(!url!.path.contains("?"), "Unencoded ? should not be in path")
     }
 
-    func testURLEncoding_hashInPath() {
+    @Test func urlEncodingHashInPath() {
         // Test that # breaks URL parsing (becomes fragment)
         let filenameWithHash = "track#1.mp3"
         let urlString = "https://archive.org/download/item/\(filenameWithHash)"
         let url = URL(string: urlString)
-        XCTAssertNotNil(url, "URL should be created")
+        #expect(url != nil, "URL should be created")
         // The hash starts a fragment, so path won't have the full filename
-        XCTAssertFalse(url!.path.hasSuffix("track#1.mp3"), "Unencoded # breaks path")
+        #expect(!url!.path.hasSuffix("track#1.mp3"), "Unencoded # breaks path")
     }
 
     // MARK: - Content Filter Service Integration Tests
 
-    func testContentFilterService_exists() {
+    @Test func contentFilterServiceExists() {
         // Verify ContentFilterService is available (used by APIManager.searchTyped)
         let filterService = ContentFilterService.shared
-        XCTAssertNotNil(filterService)
+        #expect(filterService != nil)
     }
 
-    func testContentFilterService_buildExclusionQuery_returnsString() {
+    @Test func contentFilterServiceBuildExclusionQueryReturnsString() {
         // APIManager uses this to build search queries
         let exclusionQuery = ContentFilterService.shared.buildExclusionQuery()
         // The exclusion query should be a string (may be empty if no filters configured)
-        XCTAssertNotNil(exclusionQuery)
+        #expect(exclusionQuery != nil)
     }
 
-    func testContentFilterService_isCollectionBlocked_returnsBool() {
+    @Test func contentFilterServiceIsCollectionBlockedReturnsBool() {
         // APIManager.getCollectionsTyped checks this before fetching
         let isBlocked = ContentFilterService.shared.isCollectionBlocked("test_collection")
         // Should return a boolean (likely false for test collection)
-        XCTAssertFalse(isBlocked)
+        #expect(!isBlocked)
     }
 
     // MARK: - APIManager Search Integration Tests
 
-    func testAPIManager_searchTyped_acceptsQueryAndOptions() {
+    @Test func apiManagerSearchTypedAcceptsQueryAndOptions() {
         // Verify the method signature exists and is callable
-        // We can't call it without a network, but we can verify the API shape
         let manager = APIManager.sharedManager
 
         // Verify manager has the searchTyped method via protocol conformance
         let protocolManager: NetworkServiceProtocol = manager
-        XCTAssertNotNil(protocolManager)
-
-        // The search method accepts query string and options dictionary
-        // This verifies the API contract without making a network call
+        #expect(protocolManager != nil)
     }
 
-    func testAPIManager_getMetaDataTyped_acceptsIdentifier() {
-        // Verify the method signature exists
+    @Test func apiManagerGetMetaDataTypedAcceptsIdentifier() {
         let manager = APIManager.sharedManager
         let protocolManager: NetworkServiceProtocol = manager
-        XCTAssertNotNil(protocolManager)
-        // getMetadata accepts an identifier string
+        #expect(protocolManager != nil)
     }
 
-    func testAPIManager_getFavoriteItemsTyped_acceptsUsername() {
-        // Verify the method signature exists
+    @Test func apiManagerGetFavoriteItemsTypedAcceptsUsername() {
         let manager = APIManager.sharedManager
         let protocolManager: NetworkServiceProtocol = manager
-        XCTAssertNotNil(protocolManager)
-        // getFavoriteItems accepts a username string
+        #expect(protocolManager != nil)
     }
 }
 
 // MARK: - Extended Error Tests
 
+@Suite("NetworkError Extended Tests")
 @MainActor
-final class NetworkErrorExtendedTests: XCTestCase {
+struct NetworkErrorExtendedTests {
 
-    func testNetworkError_allCases_haveNonEmptyDescriptions() {
+    @Test func networkErrorAllCasesHaveNonEmptyDescriptions() {
         let errors: [NetworkError] = [
             .noConnection,
             .timeout,
@@ -449,73 +442,74 @@ final class NetworkErrorExtendedTests: XCTestCase {
         ]
 
         for error in errors {
-            XCTAssertFalse(error.localizedDescription.isEmpty,
-                           "Error \(error) should have non-empty description")
+            #expect(!error.localizedDescription.isEmpty,
+                    "Error \(error) should have non-empty description")
         }
     }
 
-    func testNetworkError_serverError_variousStatusCodes() {
+    @Test func networkErrorServerErrorVariousStatusCodes() {
         let statusCodes = [400, 401, 403, 404, 500, 502, 503, 504]
 
         for code in statusCodes {
             let error = NetworkError.serverError(statusCode: code)
             if case .serverError(let extractedCode) = error {
-                XCTAssertEqual(extractedCode, code)
+                #expect(extractedCode == code)
             } else {
-                XCTFail("Expected serverError case")
+                Issue.record("Expected serverError case")
             }
         }
     }
 
-    func testNetworkError_decodingFailed_preservesUnderlyingError() {
+    @Test func networkErrorDecodingFailedPreservesUnderlyingError() {
         let underlyingError = NSError(domain: "JSONDecoding", code: 42, userInfo: [
             NSLocalizedDescriptionKey: "Test error"
         ])
         let error = NetworkError.decodingFailed(underlyingError)
 
         if case .decodingFailed(let wrapped) = error {
-            XCTAssertEqual((wrapped as NSError).code, 42)
-            XCTAssertEqual((wrapped as NSError).domain, "JSONDecoding")
+            #expect((wrapped as NSError).code == 42)
+            #expect((wrapped as NSError).domain == "JSONDecoding")
         } else {
-            XCTFail("Expected decodingFailed case")
+            Issue.record("Expected decodingFailed case")
         }
     }
 
-    func testNetworkError_resourceNotFound_message() {
+    @Test func networkErrorResourceNotFoundMessage() {
         let error = NetworkError.resourceNotFound
-        XCTAssertFalse(error.localizedDescription.isEmpty)
+        #expect(!error.localizedDescription.isEmpty)
     }
 }
 
 // MARK: - Extended URL Construction Tests
 
+@Suite("APIManager URL Construction Tests")
 @MainActor
-final class APIManagerURLConstructionTests: XCTestCase {
+struct APIManagerURLConstructionTests {
 
-    func testDownloadURL_construction() {
+    @Test func downloadURLConstruction() {
         let identifier = "my-video-item"
         let filename = "video.mp4"
         let downloadURL = "https://archive.org/download/\(identifier)/\(filename)"
 
-        XCTAssertEqual(downloadURL, "https://archive.org/download/my-video-item/video.mp4")
+        #expect(downloadURL == "https://archive.org/download/my-video-item/video.mp4")
     }
 
-    func testDownloadURL_withSpecialCharacters_needsEncoding() {
+    @Test func downloadURLWithSpecialCharactersNeedsEncoding() {
         let filename = "video file.mp4"
         let encoded = filename.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed)
 
-        XCTAssertNotNil(encoded)
-        XCTAssertTrue(encoded!.contains("%20"))
+        #expect(encoded != nil)
+        #expect(encoded!.contains("%20"))
     }
 
-    func testThumbnailURL_construction() {
+    @Test func thumbnailURLConstruction() {
         let identifier = "test-item"
         let thumbnailURL = "https://archive.org/services/img/\(identifier)"
 
-        XCTAssertEqual(thumbnailURL, "https://archive.org/services/img/test-item")
+        #expect(thumbnailURL == "https://archive.org/services/img/test-item")
     }
 
-    func testSearchURL_withPagination() {
+    @Test func searchURLWithPagination() {
         let manager = APIManager.sharedManager
         let baseURL = "\(manager.baseURL)advancedsearch.php"
         let page = 2
@@ -524,92 +518,92 @@ final class APIManagerURLConstructionTests: XCTestCase {
         let params = "page=\(page)&rows=\(rows)"
         let fullURL = "\(baseURL)?\(params)"
 
-        XCTAssertTrue(fullURL.contains("page=2"))
-        XCTAssertTrue(fullURL.contains("rows=50"))
+        #expect(fullURL.contains("page=2"))
+        #expect(fullURL.contains("rows=50"))
     }
 
-    func testSearchURL_withSortParameter() {
+    @Test func searchURLWithSortParameter() {
         let sortField = "downloads"
         let sortDirection = "desc"
         let sortParam = "sort[]=\(sortField)%20\(sortDirection)"
 
-        XCTAssertTrue(sortParam.contains("downloads"))
-        XCTAssertTrue(sortParam.contains("desc"))
+        #expect(sortParam.contains("downloads"))
+        #expect(sortParam.contains("desc"))
     }
 
-    func testMetadataURL_withHyphenatedIdentifier() {
+    @Test func metadataURLWithHyphenatedIdentifier() {
         let manager = APIManager.sharedManager
         let identifier = "my-hyphenated-item-2024"
         let url = "\(manager.baseURL)\(manager.apiMetadata)\(identifier)"
 
-        XCTAssertEqual(url, "https://archive.org/metadata/my-hyphenated-item-2024")
+        #expect(url == "https://archive.org/metadata/my-hyphenated-item-2024")
     }
 
-    func testMetadataURL_withUnderscoreIdentifier() {
+    @Test func metadataURLWithUnderscoreIdentifier() {
         let manager = APIManager.sharedManager
         let identifier = "my_underscore_item"
         let url = "\(manager.baseURL)\(manager.apiMetadata)\(identifier)"
 
-        XCTAssertEqual(url, "https://archive.org/metadata/my_underscore_item")
+        #expect(url == "https://archive.org/metadata/my_underscore_item")
     }
 
-    func testAPIEndpoints_areConsistent() {
+    @Test func apiEndpointsAreConsistent() {
         let manager = APIManager.sharedManager
 
         // All endpoints should use the same base URL
-        XCTAssertTrue(manager.baseURL.hasPrefix("https://"))
-        XCTAssertTrue(manager.baseURL.contains("archive.org"))
+        #expect(manager.baseURL.hasPrefix("https://"))
+        #expect(manager.baseURL.contains("archive.org"))
 
         // All paths should be relative (no leading slash for concatenation)
-        XCTAssertFalse(manager.apiLogin.hasPrefix("/"))
-        XCTAssertFalse(manager.apiCreate.hasPrefix("/"))
-        XCTAssertFalse(manager.apiMetadata.hasPrefix("/"))
+        #expect(!manager.apiLogin.hasPrefix("/"))
+        #expect(!manager.apiCreate.hasPrefix("/"))
+        #expect(!manager.apiMetadata.hasPrefix("/"))
     }
 }
 
 // MARK: - Request Parameter Tests
 
+@Suite("API Request Parameter Tests")
 @MainActor
-final class APIRequestParameterTests: XCTestCase {
+struct APIRequestParameterTests {
 
-    func testSearchOptions_defaultFields() {
-        // Verify the expected fields are included in search requests
+    @Test func searchOptionsDefaultFields() {
         let expectedFields = ["identifier", "title", "mediatype", "creator", "description", "date", "year", "downloads"]
 
         let fieldsParam = expectedFields.map { "\($0)" }.joined(separator: ",")
 
         for field in expectedFields {
-            XCTAssertTrue(fieldsParam.contains(field), "Missing field: \(field)")
+            #expect(fieldsParam.contains(field), "Missing field: \(field)")
         }
     }
 
-    func testSearchOptions_mediaTypeFilter() {
+    @Test func searchOptionsMediaTypeFilter() {
         let mediaType = "movies"
         let query = "mediatype:(\(mediaType))"
 
-        XCTAssertTrue(query.contains("mediatype:"))
-        XCTAssertTrue(query.contains("movies"))
+        #expect(query.contains("mediatype:"))
+        #expect(query.contains("movies"))
     }
 
-    func testSearchOptions_combinedMediaTypes() {
+    @Test func searchOptionsCombinedMediaTypes() {
         let mediaTypes = "movies OR etree OR audio"
         let query = "mediatype:(\(mediaTypes))"
 
-        XCTAssertTrue(query.contains("movies"))
-        XCTAssertTrue(query.contains("etree"))
-        XCTAssertTrue(query.contains("audio"))
-        XCTAssertTrue(query.contains("OR"))
+        #expect(query.contains("movies"))
+        #expect(query.contains("etree"))
+        #expect(query.contains("audio"))
+        #expect(query.contains("OR"))
     }
 
-    func testFavoriteParams_encoding() {
+    @Test func favoriteParamsEncoding() {
         let params = FavoriteItemParams(
             identifier: "test-item",
             mediatype: "movies",
             title: "Test Title with spaces"
         )
 
-        XCTAssertEqual(params.identifier, "test-item")
-        XCTAssertEqual(params.mediatype, "movies")
-        XCTAssertEqual(params.title, "Test Title with spaces")
+        #expect(params.identifier == "test-item")
+        #expect(params.mediatype == "movies")
+        #expect(params.title == "Test Title with spaces")
     }
 }
