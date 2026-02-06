@@ -413,11 +413,15 @@ enum TestFixtures {
     ///   - identifier: Item identifier
     ///   - progress: Progress percentage (0.0 to 1.0)
     ///   - isAudio: Whether this is audio content
+    ///   - title: Display title (defaults based on isAudio)
+    ///   - lastWatchedDate: When the item was last watched (defaults to now)
     /// - Returns: PlaybackProgress instance
     static func makePlaybackProgress(
         identifier: String = "progress_item",
         progress: Double = 0.5,
-        isAudio: Bool = false
+        isAudio: Bool = false,
+        title: String? = nil,
+        lastWatchedDate: Date = Date()
     ) -> PlaybackProgress {
         let duration: TimeInterval = 3600  // 1 hour
         let currentTime = duration * progress
@@ -427,10 +431,83 @@ enum TestFixtures {
             filename: isAudio ? "track.mp3" : "video.mp4",
             currentTime: currentTime,
             duration: duration,
-            lastWatchedDate: Date(),
-            title: isAudio ? "Test Album" : "Test Video",
-            mediaType: isAudio ? "audio" : "movies",
+            lastWatchedDate: lastWatchedDate,
+            title: title ?? (isAudio ? "Test Album" : "Test Video"),
+            mediaType: isAudio ? "etree" : "movies",
             imageURL: nil
         )
+    }
+
+    // MARK: - Favorite Item Factory
+
+    /// Creates a FavoriteItem for testing favorites functionality.
+    /// - Parameters:
+    ///   - identifier: Item identifier
+    ///   - title: Display title
+    ///   - mediatype: Media type string
+    /// - Returns: FavoriteItem instance
+    static func makeFavoriteItem(
+        identifier: String = "fav-item-1",
+        title: String = "Favorite Item",
+        mediatype: String = "movies"
+    ) -> FavoriteItem {
+        FavoriteItem(
+            identifier: identifier,
+            mediatype: mediatype,
+            title: title
+        )
+    }
+
+    /// Creates a FavoritesResponse with the given items.
+    /// - Parameter items: Favorite items to include (defaults to a single test item)
+    /// - Returns: FavoritesResponse instance
+    static func makeFavoritesResponse(
+        items: [FavoriteItem]? = nil
+    ) -> FavoritesResponse {
+        FavoritesResponse(
+            members: items ?? [makeFavoriteItem()]
+        )
+    }
+
+    // MARK: - Batch Favorite Factories
+
+    /// Creates an array of FavoriteItems for testing.
+    /// - Parameters:
+    ///   - count: Number of items to create
+    ///   - mediatype: Media type for all items
+    /// - Returns: Array of FavoriteItem with unique identifiers
+    static func makeFavoriteItems(
+        count: Int,
+        mediatype: String = "movies"
+    ) -> [FavoriteItem] {
+        (0..<count).map { index in
+            makeFavoriteItem(
+                identifier: "fav-\(index)",
+                title: "Favorite \(index)",
+                mediatype: mediatype
+            )
+        }
+    }
+
+    // MARK: - PlaybackProgress Batch Factory
+
+    /// Creates an array of PlaybackProgress items for testing continue watching/listening.
+    /// - Parameters:
+    ///   - count: Number of items to create
+    ///   - isAudio: Whether these are audio items
+    /// - Returns: Array of PlaybackProgress with unique identifiers
+    static func makePlaybackProgressItems(
+        count: Int,
+        isAudio: Bool = false
+    ) -> [PlaybackProgress] {
+        (0..<count).map { index in
+            makePlaybackProgress(
+                identifier: "\(isAudio ? "audio" : "video")_\(index)",
+                progress: Double(index + 1) / Double(count + 1),
+                isAudio: isAudio,
+                title: isAudio ? "Album \(index)" : "Video \(index)",
+                lastWatchedDate: Date().addingTimeInterval(Double(-index * 3600))
+            )
+        }
     }
 }

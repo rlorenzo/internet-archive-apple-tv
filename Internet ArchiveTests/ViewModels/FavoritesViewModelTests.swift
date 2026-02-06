@@ -8,37 +8,6 @@
 import Testing
 @testable import Internet_Archive
 
-// MARK: - Mock Favorites Service
-
-final class MockFavoritesService: FavoritesServiceProtocol, @unchecked Sendable {
-    var getFavoriteItemsCalled = false
-    var lastUsername: String?
-    var mockResponse: FavoritesResponse?
-    var errorToThrow: Error?
-
-    func getFavoriteItems(username: String) async throws -> FavoritesResponse {
-        getFavoriteItemsCalled = true
-        lastUsername = username
-
-        if let error = errorToThrow {
-            throw error
-        }
-
-        guard let response = mockResponse else {
-            throw NetworkError.invalidResponse
-        }
-
-        return response
-    }
-
-    func reset() {
-        getFavoriteItemsCalled = false
-        lastUsername = nil
-        mockResponse = nil
-        errorToThrow = nil
-    }
-}
-
 // MARK: - FavoritesViewModel Tests
 
 @Suite("FavoritesViewModel Tests", .serialized)
