@@ -236,7 +236,7 @@ struct MusicHomeView: View {
         // Try creator first, then year
         if let creator = item.creator {
             // Don't show if creator matches title (common for collections)
-            if creator.lowercased() != item.safeTitle.lowercased() {
+            if creator.localizedCaseInsensitiveCompare(item.safeTitle) != .orderedSame {
                 return creator
             }
         }

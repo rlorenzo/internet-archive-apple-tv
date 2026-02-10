@@ -22,7 +22,7 @@ struct ContentFilterServiceTests {
 
     @Test func sharedInstanceExists() {
         let service = ContentFilterService.shared
-        #expect(service != nil)
+        #expect(service === ContentFilterService.shared)
     }
 
     @Test func sharedInstanceIsSingleton() {

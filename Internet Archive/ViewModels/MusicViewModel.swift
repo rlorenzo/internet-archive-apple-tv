@@ -121,7 +121,14 @@ final class MusicViewModel: ObservableObject {
             let metadata = try await collectionService.getMetadata(identifier: state.collection)
             state.collectionTitle = metadata.metadata?.title
         } catch {
-            // Non-fatal: use fallback title
+            // Non-fatal: use fallback title, but log for debugging
+            ErrorLogger.shared.log(
+                error: error,
+                context: ErrorContext(
+                    operation: .getMetadata,
+                    additionalInfo: ["collection": state.collection]
+                )
+            )
         }
         // Mark as attempted regardless of success/failure so header shows
         state.hasTitleLoadAttempted = true

@@ -10,6 +10,7 @@ import XCTest
 
 // MARK: - NowPlayingView Initialization Tests
 
+@MainActor
 final class NowPlayingViewInitializationTests: XCTestCase {
 
     func testInit_setsAllProperties() {
@@ -80,6 +81,7 @@ final class NowPlayingViewInitializationTests: XCTestCase {
 
 // MARK: - NowPlayingView Coordinator Tests
 
+@MainActor
 final class NowPlayingViewCoordinatorTests: XCTestCase {
 
     func testCoordinator_initWithOnDismiss() {
@@ -106,6 +108,7 @@ final class NowPlayingViewCoordinatorTests: XCTestCase {
 
 // MARK: - NowPlayingView fromMetadata Tests
 
+@MainActor
 final class NowPlayingViewFromMetadataTests: XCTestCase {
 
     func testFromMetadata_filtersAudioFiles() {

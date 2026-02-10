@@ -224,7 +224,11 @@ struct RetryMechanism {
             case .timeout:
                 return true
 
-            // No connection is not retryable - no point retrying when offline
+            // No connection is not retryable. Unlike `.timeout` (a transient failure that
+            // may succeed on retry, e.g. a busy server or brief hiccup), `.noConnection` means
+            // `NetworkMonitor` has determined we are offline - a state expected to persist until
+            // the user restores connectivity. Retrying would waste resources and delay surfacing
+            // the failure; callers should trigger a new attempt after connectivity is restored.
             case .noConnection:
                 return false
 

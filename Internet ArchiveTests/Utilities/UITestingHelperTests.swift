@@ -26,7 +26,6 @@ struct UITestingHelperTests {
         let helper = UITestingHelper.shared
         let response = helper.mockSearchResponse
 
-        #expect(response.response != nil)
         #expect(response.response.docs.count == 20)
         #expect(response.response.numFound == 20)
     }
@@ -174,12 +173,12 @@ struct UITestingHelperTests {
         // In unit test context, this should return false
         // Just verify it doesn't crash and returns a boolean
         let result = helper.isUITesting
-        #expect(result != nil)
+        #expect(result == false)
     }
 
     @Test func useMockDataReturnsBool() {
         let helper = UITestingHelper.shared
         let result = helper.useMockData
-        #expect(result != nil)
+        #expect(result == false)
     }
 }

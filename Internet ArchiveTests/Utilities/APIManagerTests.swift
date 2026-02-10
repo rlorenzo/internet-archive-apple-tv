@@ -18,7 +18,7 @@ struct APIManagerTests {
 
     @Test func sharedManagerExists() {
         let manager = APIManager.sharedManager
-        #expect(manager != nil)
+        #expect(manager === APIManager.sharedManager)
     }
 
     @Test func sharedManagerIsSingleton() {
@@ -125,8 +125,8 @@ struct APIManagerTests {
     // MARK: - Network Service Tests
 
     @Test func networkServiceReturnsService() {
-        let service = APIManager.networkService
-        #expect(service != nil)
+        let service: Any = APIManager.networkService
+        #expect(service is NetworkServiceProtocol)
     }
 
     @Test func networkServiceConformsToProtocol() {
@@ -246,11 +246,8 @@ struct APIManagerTests {
 
     @Test func networkServiceInTestEnvironmentReturnsProtocolConformingService() {
         // networkService should return something that conforms to NetworkServiceProtocol
-        let service = APIManager.networkService
-        #expect(service != nil)
-        // The service should be usable as a NetworkServiceProtocol
-        let protocolService: NetworkServiceProtocol = service
-        #expect(protocolService != nil)
+        let service: Any = APIManager.networkService
+        #expect(service is NetworkServiceProtocol)
     }
 
     // MARK: - Endpoint Consistency Tests
@@ -336,7 +333,7 @@ struct APIManagerTests {
         let error = NetworkError.decodingFailed(underlyingError)
 
         if case .decodingFailed(let wrapped) = error {
-            #expect(wrapped != nil)
+            #expect((wrapped as NSError).domain == "test")
         } else {
             Issue.record("Expected decodingFailed case")
         }
@@ -384,14 +381,14 @@ struct APIManagerTests {
     @Test func contentFilterServiceExists() {
         // Verify ContentFilterService is available (used by APIManager.searchTyped)
         let filterService = ContentFilterService.shared
-        #expect(filterService != nil)
+        #expect(filterService === ContentFilterService.shared)
     }
 
     @Test func contentFilterServiceBuildExclusionQueryReturnsString() {
         // APIManager uses this to build search queries
         let exclusionQuery = ContentFilterService.shared.buildExclusionQuery()
-        // The exclusion query should be a string (may be empty if no filters configured)
-        #expect(exclusionQuery != nil)
+        // The exclusion query should contain filter terms
+        #expect(!exclusionQuery.isEmpty)
     }
 
     @Test func contentFilterServiceIsCollectionBlockedReturnsBool() {
@@ -404,24 +401,19 @@ struct APIManagerTests {
     // MARK: - APIManager Search Integration Tests
 
     @Test func apiManagerSearchTypedAcceptsQueryAndOptions() {
-        // Verify the method signature exists and is callable
-        let manager = APIManager.sharedManager
-
-        // Verify manager has the searchTyped method via protocol conformance
-        let protocolManager: NetworkServiceProtocol = manager
-        #expect(protocolManager != nil)
+        // Verify the method signature exists and is callable via protocol conformance
+        let manager: Any = APIManager.sharedManager
+        #expect(manager is NetworkServiceProtocol)
     }
 
     @Test func apiManagerGetMetaDataTypedAcceptsIdentifier() {
-        let manager = APIManager.sharedManager
-        let protocolManager: NetworkServiceProtocol = manager
-        #expect(protocolManager != nil)
+        let manager: Any = APIManager.sharedManager
+        #expect(manager is NetworkServiceProtocol)
     }
 
     @Test func apiManagerGetFavoriteItemsTypedAcceptsUsername() {
-        let manager = APIManager.sharedManager
-        let protocolManager: NetworkServiceProtocol = manager
-        #expect(protocolManager != nil)
+        let manager: Any = APIManager.sharedManager
+        #expect(manager is NetworkServiceProtocol)
     }
 }
 

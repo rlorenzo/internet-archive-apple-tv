@@ -37,6 +37,11 @@ struct FavoritesViewState: Sendable {
 @MainActor
 final class FavoritesViewModel: ObservableObject {
 
+    // MARK: - Constants
+
+    /// Media types supported for favorites display (case-insensitive matching)
+    static let supportedMediaTypes = ["movies", "video", "audio", "etree", "account"]
+
     // MARK: - Published State
 
     @Published private(set) var state = FavoritesViewState.initial
@@ -155,10 +160,9 @@ final class FavoritesViewModel: ObservableObject {
             }
 
             // Filter for supported media types (case-insensitive to match loadFavorites behavior)
-            let supportedTypes = ["movies", "video", "audio", "etree", "account"]
             let identifiers = favorites.compactMap { item -> String? in
                 guard let mediaType = item.mediatype?.lowercased(),
-                      supportedTypes.contains(mediaType) else {
+                      Self.supportedMediaTypes.contains(mediaType) else {
                     return nil
                 }
                 return item.identifier

@@ -390,3 +390,175 @@ final class CompositionalLayoutBuilderTests: XCTestCase {
         XCTAssertEqual(result, CGPoint(x: 150, y: 150))
     }
 }
+
+// MARK: - Section Provider Trigger Tests
+
+/// Tests that trigger section provider closures by attaching layouts to a UICollectionView.
+/// This exercises the internal closure code (item sizing, group creation, section configuration).
+@MainActor
+final class CompositionalLayoutSectionProviderTests: XCTestCase {
+
+    /// Helper to create a minimal collection view with a data source and trigger layout
+    private func triggerLayoutOnCollectionView(with layout: UICollectionViewLayout) -> UICollectionView {
+        let cv = UICollectionView(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080), collectionViewLayout: layout)
+        cv.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "cell")
+        cv.register(
+            UICollectionReusableView.self,
+            forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+            withReuseIdentifier: "header"
+        )
+
+        // Use a simple diffable data source
+        let dataSource = UICollectionViewDiffableDataSource<Int, String>(collectionView: cv) { cv, indexPath, item in
+            cv.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath)
+        }
+        dataSource.supplementaryViewProvider = { cv, kind, indexPath in
+            cv.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: "header", for: indexPath)
+        }
+
+        var snapshot = NSDiffableDataSourceSnapshot<Int, String>()
+        snapshot.appendSections([0])
+        snapshot.appendItems(["item1", "item2", "item3"], toSection: 0)
+        dataSource.apply(snapshot, animatingDifferences: false)
+
+        // Trigger layout
+        cv.layoutIfNeeded()
+        return cv
+    }
+
+    private func triggerMultiSectionLayout(with layout: UICollectionViewLayout) -> UICollectionView {
+        let cv = UICollectionView(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080), collectionViewLayout: layout)
+        cv.register(UICollectionViewCell.self, forCellWithReuseIdentifier: "cell")
+        cv.register(
+            UICollectionReusableView.self,
+            forSupplementaryViewOfKind: UICollectionView.elementKindSectionHeader,
+            withReuseIdentifier: "header"
+        )
+
+        let dataSource = UICollectionViewDiffableDataSource<Int, String>(collectionView: cv) { cv, indexPath, item in
+            cv.dequeueReusableCell(withReuseIdentifier: "cell", for: indexPath)
+        }
+        dataSource.supplementaryViewProvider = { cv, kind, indexPath in
+            cv.dequeueReusableSupplementaryView(ofKind: kind, withReuseIdentifier: "header", for: indexPath)
+        }
+
+        var snapshot = NSDiffableDataSourceSnapshot<Int, String>()
+        snapshot.appendSections([0, 1])
+        snapshot.appendItems(["a1", "a2", "a3"], toSection: 0)
+        snapshot.appendItems(["b1", "b2", "b3", "b4", "b5"], toSection: 1)
+        dataSource.apply(snapshot, animatingDifferences: false)
+
+        cv.layoutIfNeeded()
+        return cv
+    }
+
+    // MARK: - Grid Layout Section Provider
+
+    func testGridLayout_sectionProviderExecutes() {
+        let layout = CompositionalLayoutBuilder.createGridLayout(columns: 3, spacing: 20, aspectRatio: 0.75)
+        let cv = triggerLayoutOnCollectionView(with: layout)
+        XCTAssertNotNil(cv.collectionViewLayout)
+    }
+
+    func testGridLayout_standardGrid_sectionProviderExecutes() {
+        let layout = CompositionalLayoutBuilder.standardGrid
+        let cv = triggerLayoutOnCollectionView(with: layout)
+        XCTAssertNotNil(cv.collectionViewLayout)
+    }
+
+    func testGridLayout_compactGrid_sectionProviderExecutes() {
+        let layout = CompositionalLayoutBuilder.compactGrid
+        let cv = triggerLayoutOnCollectionView(with: layout)
+        XCTAssertNotNil(cv.collectionViewLayout)
+    }
+
+    func testGridLayout_largeItemGrid_sectionProviderExecutes() {
+        let layout = CompositionalLayoutBuilder.largeItemGrid
+        let cv = triggerLayoutOnCollectionView(with: layout)
+        XCTAssertNotNil(cv.collectionViewLayout)
+    }
+
+    // MARK: - List Layout Section Provider
+
+    func testListLayout_sectionProviderExecutes() {
+        let layout = CompositionalLayoutBuilder.createListLayout(itemHeight: 80, spacing: 20)
+        let cv = triggerLayoutOnCollectionView(with: layout)
+        XCTAssertNotNil(cv.collectionViewLayout)
+    }
+
+    func testListLayout_preset_sectionProviderExecutes() {
+        let layout = CompositionalLayoutBuilder.listLayout
+        let cv = triggerLayoutOnCollectionView(with: layout)
+        XCTAssertNotNil(cv.collectionViewLayout)
+    }
+
+    // MARK: - Horizontal Layout Section Provider
+
+    func testHorizontalLayout_sectionProviderExecutes() {
+        let layout = CompositionalLayoutBuilder.createHorizontalLayout(itemWidth: 400, itemHeight: 300, spacing: 40)
+        let cv = triggerLayoutOnCollectionView(with: layout)
+        XCTAssertNotNil(cv.collectionViewLayout)
+    }
+
+    // MARK: - Multi-Section Layout Section Provider
+
+    func testMultiSectionLayout_sectionProviderExecutes() {
+        var calledSections = Set<Int>()
+        let layout = CompositionalLayoutBuilder.createMultiSectionLayout { sectionIndex, environment in
+            calledSections.insert(sectionIndex)
+            return CompositionalLayoutBuilder.createMainGridSection(environment: environment)
+        }
+        let cv = triggerMultiSectionLayout(with: layout)
+        XCTAssertNotNil(cv.collectionViewLayout)
+        XCTAssertTrue(calledSections.contains(0))
+        XCTAssertTrue(calledSections.contains(1))
+    }
+
+    // MARK: - Video Home Layout Section Provider
+
+    func testVideoHomeLayout_withContinueWatching_triggersProviders() {
+        let layout = CompositionalLayoutBuilder.createVideoHomeLayout(hasContinueWatching: true)
+        let cv = triggerMultiSectionLayout(with: layout)
+        XCTAssertNotNil(cv.collectionViewLayout)
+    }
+
+    func testVideoHomeLayout_withoutContinueWatching_triggersProviders() {
+        let layout = CompositionalLayoutBuilder.createVideoHomeLayout(hasContinueWatching: false)
+        let cv = triggerMultiSectionLayout(with: layout)
+        XCTAssertNotNil(cv.collectionViewLayout)
+    }
+
+    // MARK: - Music Home Layout Section Provider
+
+    func testMusicHomeLayout_withContinueListening_triggersProviders() {
+        let layout = CompositionalLayoutBuilder.createMusicHomeLayout(hasContinueListening: true)
+        let cv = triggerMultiSectionLayout(with: layout)
+        XCTAssertNotNil(cv.collectionViewLayout)
+    }
+
+    func testMusicHomeLayout_withoutContinueListening_triggersProviders() {
+        let layout = CompositionalLayoutBuilder.createMusicHomeLayout(hasContinueListening: false)
+        let cv = triggerMultiSectionLayout(with: layout)
+        XCTAssertNotNil(cv.collectionViewLayout)
+    }
+
+    // MARK: - Direct Section Creation Tests
+
+    func testCreateContinueWatchingSection_directCall() {
+        // Create a mock environment by creating a temporary layout
+        let layout = UICollectionViewCompositionalLayout { sectionIndex, environment in
+            // Directly call the section creation method
+            return CompositionalLayoutBuilder.createContinueWatchingSection(environment: environment)
+        }
+        let cv = triggerLayoutOnCollectionView(with: layout)
+        XCTAssertNotNil(cv.collectionViewLayout)
+    }
+
+    func testCreateMainGridSection_directCall() {
+        let layout = UICollectionViewCompositionalLayout { sectionIndex, environment in
+            return CompositionalLayoutBuilder.createMainGridSection(environment: environment)
+        }
+        let cv = triggerLayoutOnCollectionView(with: layout)
+        XCTAssertNotNil(cv.collectionViewLayout)
+    }
+}

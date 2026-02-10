@@ -25,22 +25,22 @@ struct NetworkMonitorTests {
 
     @Test func connectionTypeWifi() {
         let type = NetworkMonitor.ConnectionType.wifi
-        #expect(type != nil)
+        #expect(type == .wifi)
     }
 
     @Test func connectionTypeCellular() {
         let type = NetworkMonitor.ConnectionType.cellular
-        #expect(type != nil)
+        #expect(type == .cellular)
     }
 
     @Test func connectionTypeWired() {
         let type = NetworkMonitor.ConnectionType.wired
-        #expect(type != nil)
+        #expect(type == .wired)
     }
 
     @Test func connectionTypeUnknown() {
         let type = NetworkMonitor.ConnectionType.unknown
-        #expect(type != nil)
+        #expect(type == .unknown)
     }
 
     @Test func connectionTypeAllCases() {
@@ -52,13 +52,14 @@ struct NetworkMonitorTests {
 
     @Test func isConnectedDefaultValue() {
         let monitor = NetworkMonitor.shared
-        // In simulator, we typically have connection
-        #expect(monitor.isConnected != nil)
+        // In simulator, we typically have connection - verify property is accessible
+        _ = monitor.isConnected
     }
 
     @Test func connectionTypeHasValue() {
         let monitor = NetworkMonitor.shared
-        #expect(monitor.connectionType != nil)
+        let allTypes: [NetworkConnectionType] = [.wifi, .cellular, .wired, .unknown]
+        #expect(allTypes.contains(monitor.connectionType))
     }
 
     // MARK: - High Quality Connection Tests
@@ -67,7 +68,6 @@ struct NetworkMonitorTests {
         let monitor = NetworkMonitor.shared
         // Just verify the property exists and returns a Bool
         _ = monitor.hasHighQualityConnection
-        #expect(monitor != nil)
     }
 
     // MARK: - Check Connection Tests
@@ -101,13 +101,11 @@ struct NetworkMonitorTests {
         monitor.stopMonitoring()
         // Restart monitoring after test
         monitor.startMonitoring()
-        #expect(monitor != nil)
     }
 
     @Test func startMonitoringDoesNotCrash() {
         let monitor = NetworkMonitor.shared
         monitor.startMonitoring()
-        #expect(monitor != nil)
     }
 
     // MARK: - ObservableObject Conformance Tests
@@ -116,7 +114,6 @@ struct NetworkMonitorTests {
         let monitor = NetworkMonitor.shared
         // Verify it conforms to ObservableObject by accessing objectWillChange
         _ = monitor.objectWillChange
-        #expect(monitor != nil)
     }
 }
 
@@ -283,7 +280,7 @@ struct MockNetworkMonitorTests {
 
     @Test func conformsToNetworkMonitorProtocol() {
         let protocolInstance: any NetworkMonitorProtocol = mockMonitor
-        #expect(protocolInstance != nil)
+        #expect(protocolInstance.isConnected == mockMonitor.isConnected)
     }
 
     @Test func protocolPropertiesAreAccessible() {
