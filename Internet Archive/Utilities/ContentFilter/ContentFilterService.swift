@@ -67,6 +67,7 @@ public final class ContentFilterService {
         // Public Domain
         "creativecommons.org/publicdomain/zero",      // CC0
         "creativecommons.org/publicdomain/mark",      // Public Domain Mark
+        "creativecommons.org/licenses/publicdomain",  // Legacy Public Domain Dedication
 
         // Creative Commons licenses (all versions 2.0, 2.5, 3.0, 4.0)
         "creativecommons.org/licenses/by/",           // CC BY
@@ -212,6 +213,9 @@ public final class ContentFilterService {
         if lowercased.contains("publicdomain/zero") {
             return "CC0 (Public Domain)"
         } else if lowercased.contains("publicdomain/mark") {
+            return "Public Domain"
+        } else if lowercased.contains("/licenses/publicdomain") {
+            // Legacy Creative Commons Public Domain Dedication URL format
             return "Public Domain"
         } else if lowercased.contains("/by-nc-sa/") {
             return "CC BY-NC-SA"

@@ -138,3 +138,15 @@ public struct SearchResult: Codable, Sendable {
         return dict
     }
 }
+
+// MARK: - Hashable Conformance
+
+extension SearchResult: Hashable {
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(identifier)
+    }
+
+    public static func == (lhs: SearchResult, rhs: SearchResult) -> Bool {
+        lhs.identifier == rhs.identifier
+    }
+}

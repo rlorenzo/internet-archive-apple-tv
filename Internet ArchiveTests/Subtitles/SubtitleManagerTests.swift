@@ -11,20 +11,26 @@ import XCTest
 @MainActor
 final class SubtitleManagerTests: XCTestCase {
 
-    var manager: SubtitleManager!
+    nonisolated(unsafe) var manager: SubtitleManager!
 
     override func setUp() {
         super.setUp()
-        manager = SubtitleManager.shared
-        // Clear preferences before each test
-        manager.subtitlesEnabled = false
-        manager.preferredLanguageCode = nil
+        let newManager = MainActor.assumeIsolated {
+            let mgr = SubtitleManager.shared
+            // Clear preferences before each test
+            mgr.subtitlesEnabled = false
+            mgr.preferredLanguageCode = nil
+            return mgr
+        }
+        manager = newManager
     }
 
     override func tearDown() {
-        // Clean up preferences after tests
-        manager.subtitlesEnabled = false
-        manager.preferredLanguageCode = nil
+        MainActor.assumeIsolated {
+            // Clean up preferences after tests
+            SubtitleManager.shared.subtitlesEnabled = false
+            SubtitleManager.shared.preferredLanguageCode = nil
+        }
         super.tearDown()
     }
 

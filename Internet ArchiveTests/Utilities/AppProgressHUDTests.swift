@@ -11,11 +11,14 @@ import XCTest
 @MainActor
 final class AppProgressHUDTests: XCTestCase {
 
-    var testView: UIView!
+    nonisolated(unsafe) var testView: UIView!
 
     override func setUp() {
         super.setUp()
-        testView = UIView(frame: CGRect(x: 0, y: 0, width: 400, height: 400))
+        let newTestView = MainActor.assumeIsolated {
+            return UIView(frame: CGRect(x: 0, y: 0, width: 400, height: 400))
+        }
+        testView = newTestView
     }
 
     override func tearDown() {

@@ -37,6 +37,9 @@ final class NowPlayingViewController: UIViewController {
     /// Flag to track if we were playing before scrubbing
     private var wasPlayingBeforeScrub: Bool = false
 
+    /// Callback invoked when the player is dismissed
+    var onDismiss: (() -> Void)?
+
     // MARK: - UI Components
 
     private let albumArtView = AlbumArtView(size: 400)
@@ -138,6 +141,7 @@ final class NowPlayingViewController: UIViewController {
         setupViews()
         setupConstraints()
         setupAccessibility()
+        setupMenuButtonHandler()
         configureDataSource()
         bindQueueManager()
 
@@ -166,6 +170,11 @@ final class NowPlayingViewController: UIViewController {
         stopProgressTracking()
         player?.pause()
         UIApplication.shared.isIdleTimerDisabled = false
+
+        // Notify caller that player is being dismissed
+        if isBeingDismissed || isMovingFromParent {
+            onDismiss?()
+        }
     }
 
     deinit {
@@ -251,6 +260,39 @@ final class NowPlayingViewController: UIViewController {
 
     override var preferredFocusEnvironments: [UIFocusEnvironment] {
         [controlsView.defaultFocusedButton]
+    }
+
+    /// Track if focus is currently in the track list for Menu button handling
+    private var isFocusInTrackList: Bool {
+        guard let focusedItem = UIFocusSystem.focusSystem(for: self)?.focusedItem else { return false }
+
+        // Check if the focused item is the track list or one of its cells
+        if let focusedView = focusedItem as? UIView {
+            return focusedView === trackListCollectionView ||
+                   focusedView.isDescendant(of: trackListCollectionView)
+        }
+        return false
+    }
+
+    /// Menu button tap gesture recognizer
+    private var menuTapRecognizer: UITapGestureRecognizer?
+
+    private func setupMenuButtonHandler() {
+        let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleMenuButton))
+        tapRecognizer.allowedPressTypes = [NSNumber(value: UIPress.PressType.menu.rawValue)]
+        view.addGestureRecognizer(tapRecognizer)
+        menuTapRecognizer = tapRecognizer
+    }
+
+    @objc private func handleMenuButton(_ recognizer: UITapGestureRecognizer) {
+        if isFocusInTrackList {
+            // Move focus back to controls instead of dismissing
+            setNeedsFocusUpdate()
+            updateFocusIfNeeded()
+        } else {
+            // Dismiss the player
+            dismiss(animated: true)
+        }
     }
 
     // MARK: - Data Source

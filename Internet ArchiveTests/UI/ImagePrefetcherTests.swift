@@ -11,18 +11,22 @@ import XCTest
 @MainActor
 final class ImagePrefetcherTests: XCTestCase {
 
-    var collectionView: UICollectionView!
-    var prefetcher: ImagePrefetcher!
-    var dataSource: ItemDataSource!
+    nonisolated(unsafe) var collectionView: UICollectionView!
+    nonisolated(unsafe) var prefetcher: ImagePrefetcher!
+    nonisolated(unsafe) var dataSource: ItemDataSource!
 
     override func setUp() {
         super.setUp()
-        let layout = UICollectionViewFlowLayout()
-        collectionView = UICollectionView(frame: CGRect(x: 0, y: 0, width: 400, height: 400), collectionViewLayout: layout)
-        collectionView.register(
-            ModernItemCell.self,
-            forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
-        )
+        let newCollectionView = MainActor.assumeIsolated {
+            let layout = UICollectionViewFlowLayout()
+            let cv = UICollectionView(frame: CGRect(x: 0, y: 0, width: 400, height: 400), collectionViewLayout: layout)
+            cv.register(
+                ModernItemCell.self,
+                forCellWithReuseIdentifier: ModernItemCell.reuseIdentifier
+            )
+            return cv
+        }
+        collectionView = newCollectionView
     }
 
     override func tearDown() {

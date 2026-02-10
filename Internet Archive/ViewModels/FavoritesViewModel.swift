@@ -37,6 +37,11 @@ struct FavoritesViewState: Sendable {
 @MainActor
 final class FavoritesViewModel: ObservableObject {
 
+    // MARK: - Constants
+
+    /// Media types supported for favorites display (case-insensitive matching)
+    static let supportedMediaTypes = ["movies", "video", "audio", "etree", "account"]
+
     // MARK: - Published State
 
     @Published private(set) var state = FavoritesViewState.initial
@@ -154,10 +159,10 @@ final class FavoritesViewModel: ObservableObject {
                 return
             }
 
-            // Filter for supported media types
+            // Filter for supported media types (case-insensitive to match loadFavorites behavior)
             let identifiers = favorites.compactMap { item -> String? in
-                guard let mediaType = item.mediatype,
-                      ["movies", "audio", "account"].contains(mediaType) else {
+                guard let mediaType = item.mediatype?.lowercased(),
+                      Self.supportedMediaTypes.contains(mediaType) else {
                     return nil
                 }
                 return item.identifier
@@ -182,16 +187,16 @@ final class FavoritesViewModel: ObservableObject {
             let query = "identifier:(\(identifiers.joined(separator: " OR ")))"
             let searchResponse = try await searchService.search(query: query, options: options)
 
-            // Categorize results by media type
+            // Categorize results by media type (case-insensitive)
             var movies: [SearchResult] = []
             var music: [SearchResult] = []
             var people: [SearchResult] = []
 
             for item in searchResponse.response.docs {
-                switch item.safeMediaType {
-                case "movies":
+                switch item.safeMediaType.lowercased() {
+                case "movies", "video":
                     movies.append(item)
-                case "audio":
+                case "audio", "etree":
                     music.append(item)
                 case "account":
                     people.append(item)

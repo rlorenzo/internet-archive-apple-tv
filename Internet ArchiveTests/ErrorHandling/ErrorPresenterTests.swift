@@ -296,3 +296,99 @@ final class ErrorContextAdditionalTests: XCTestCase {
         XCTAssertNil(context.additionalInfo)
     }
 }
+
+// MARK: - ErrorPresenter Present Tests
+
+@MainActor
+final class ErrorPresenterPresentTests: XCTestCase {
+
+    func testPresent_withRetry_showsAlert() {
+        let viewController = UIViewController()
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080))
+        window.rootViewController = viewController
+        window.makeKeyAndVisible()
+        viewController.loadViewIfNeeded()
+
+        ErrorPresenter.shared.present(
+            NetworkError.timeout,
+            context: ErrorContext(operation: .search, userFacingTitle: "Search Failed"),
+            on: viewController,
+            retry: { }
+        )
+
+        // Verify an alert was presented
+        let expectation = expectation(description: "Alert presented")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            XCTAssertNotNil(viewController.presentedViewController)
+            if let alert = viewController.presentedViewController as? UIAlertController {
+                XCTAssertEqual(alert.title, "Search Failed")
+                // Should have Retry and Cancel actions
+                XCTAssertEqual(alert.actions.count, 2)
+                XCTAssertEqual(alert.actions[0].title, "Retry")
+                XCTAssertEqual(alert.actions[1].title, "Cancel")
+            }
+            expectation.fulfill()
+        }
+        waitForExpectations(timeout: 1.0)
+
+        // Cleanup
+        viewController.dismiss(animated: false)
+        window.isHidden = true
+    }
+
+    func testPresent_withoutRetry_showsAlert() {
+        let viewController = UIViewController()
+        let window = UIWindow(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080))
+        window.rootViewController = viewController
+        window.makeKeyAndVisible()
+        viewController.loadViewIfNeeded()
+
+        ErrorPresenter.shared.present(
+            NetworkError.noConnection,
+            context: ErrorContext(operation: .loadMedia, userFacingTitle: "Load Failed"),
+            on: viewController
+        )
+
+        let expectation = expectation(description: "Alert presented")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
+            XCTAssertNotNil(viewController.presentedViewController)
+            expectation.fulfill()
+        }
+        waitForExpectations(timeout: 1.0)
+
+        // Cleanup
+        viewController.dismiss(animated: false)
+        window.isHidden = true
+    }
+
+    func testContentFilteredMessage() {
+        let message = ErrorPresenter.shared.userFriendlyMessage(for: .contentFiltered)
+        XCTAssertEqual(message, "This content is not available.")
+    }
+
+    func testUserFriendlyMessage_withCustomContext() {
+        let message = ErrorPresenter.shared.userFriendlyMessage(
+            for: .timeout,
+            context: ErrorContext(operation: .playVideo, userFacingTitle: "Playback Error")
+        )
+        XCTAssertTrue(message.contains("took too long"))
+    }
+
+    func testServerError_genericStatusCode() {
+        // Test a status code not specifically handled (not 404, 429, 500+)
+        let message = ErrorPresenter.shared.userFriendlyMessage(for: .serverError(statusCode: 403))
+        XCTAssertTrue(message.contains("Server error"))
+        XCTAssertTrue(message.contains("403"))
+    }
+
+    func testServerError_502() {
+        let message = ErrorPresenter.shared.userFriendlyMessage(for: .serverError(statusCode: 502))
+        XCTAssertTrue(message.contains("Internet Archive servers"))
+    }
+
+    func testUnknownError_withUnderlyingError() {
+        let underlying = NSError(domain: "test", code: 42)
+        let message = ErrorPresenter.shared.userFriendlyMessage(for: .unknown(underlying))
+        XCTAssertTrue(message.contains("unexpected error"))
+    }
+}

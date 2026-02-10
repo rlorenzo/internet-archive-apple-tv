@@ -5,7 +5,8 @@
 //  Unit tests for SearchViewModel
 //
 
-import XCTest
+import Testing
+import Foundation
 @testable import Internet_Archive
 
 // MARK: - Mock Search Service
@@ -42,40 +43,56 @@ final class MockSearchService: SearchServiceProtocol, @unchecked Sendable {
     }
 }
 
+/// Mock service with configurable delay for testing concurrent operations
+final class SlowMockSearchService: SearchServiceProtocol, @unchecked Sendable {
+    var searchCallCount = 0
+    var mockResponse: SearchResponse?
+    var delayMilliseconds: UInt64 = 0
+
+    func search(query: String, options: [String: String]) async throws -> SearchResponse {
+        searchCallCount += 1
+
+        if delayMilliseconds > 0 {
+            try? await Task.sleep(nanoseconds: delayMilliseconds * 1_000_000)
+        }
+
+        guard let response = mockResponse else {
+            throw NetworkError.invalidResponse
+        }
+
+        return response
+    }
+}
+
 // MARK: - SearchViewModel Tests
 
+@Suite("SearchViewModel Tests", .serialized)
 @MainActor
-final class SearchViewModelTests: XCTestCase {
+struct SearchViewModelTests {
 
-    var viewModel: SearchViewModel!
-    var mockService: MockSearchService!
+    var viewModel: SearchViewModel
+    var mockService: MockSearchService
 
-    override func setUp() {
-        super.setUp()
-        mockService = MockSearchService()
-        viewModel = SearchViewModel(searchService: mockService, pageSize: 10)
-    }
-
-    override func tearDown() {
-        viewModel = nil
-        mockService = nil
-        super.tearDown()
+    init() {
+        let service = MockSearchService()
+        mockService = service
+        viewModel = SearchViewModel(searchService: service, pageSize: 10)
     }
 
     // MARK: - Initial State Tests
 
-    func testInitialState() {
-        XCTAssertFalse(viewModel.state.isLoading)
-        XCTAssertTrue(viewModel.state.results.isEmpty)
-        XCTAssertNil(viewModel.state.errorMessage)
-        XCTAssertEqual(viewModel.state.totalResults, 0)
-        XCTAssertEqual(viewModel.state.currentPage, 0)
-        XCTAssertFalse(viewModel.state.hasMoreResults)
+    @Test func initialState() {
+        #expect(!viewModel.state.isLoading)
+        #expect(viewModel.state.results.isEmpty)
+        #expect(viewModel.state.errorMessage == nil)
+        #expect(viewModel.state.totalResults == 0)
+        #expect(viewModel.state.currentPage == 0)
+        #expect(!viewModel.state.hasMoreResults)
     }
 
     // MARK: - Search Tests
 
-    func testSearch_withValidQuery_callsService() async {
+    @Test func searchWithValidQueryCallsService() async {
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 5, docs: [
             TestFixtures.makeSearchResult(identifier: "1"),
             TestFixtures.makeSearchResult(identifier: "2")
@@ -83,11 +100,11 @@ final class SearchViewModelTests: XCTestCase {
 
         await viewModel.search(query: "test query")
 
-        XCTAssertTrue(mockService.searchCalled)
-        XCTAssertEqual(mockService.lastQuery, "test query")
+        #expect(mockService.searchCalled)
+        #expect(mockService.lastQuery == "test query")
     }
 
-    func testSearch_withValidQuery_updatesState() async {
+    @Test func searchWithValidQueryUpdatesState() async {
         let results = [
             TestFixtures.makeSearchResult(identifier: "1"),
             TestFixtures.makeSearchResult(identifier: "2"),
@@ -97,13 +114,13 @@ final class SearchViewModelTests: XCTestCase {
 
         await viewModel.search(query: "movies")
 
-        XCTAssertFalse(viewModel.state.isLoading)
-        XCTAssertEqual(viewModel.state.results.count, 3)
-        XCTAssertEqual(viewModel.state.totalResults, 3)
-        XCTAssertNil(viewModel.state.errorMessage)
+        #expect(!viewModel.state.isLoading)
+        #expect(viewModel.state.results.count == 3)
+        #expect(viewModel.state.totalResults == 3)
+        #expect(viewModel.state.errorMessage == nil)
     }
 
-    func testSearch_withEmptyQuery_clearsResults() async {
+    @Test func searchWithEmptyQueryClearsResults() async {
         // First do a search
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
             TestFixtures.makeSearchResult(identifier: "1")
@@ -114,58 +131,80 @@ final class SearchViewModelTests: XCTestCase {
         mockService.reset()
         await viewModel.search(query: "")
 
-        XCTAssertFalse(mockService.searchCalled)
-        XCTAssertTrue(viewModel.state.results.isEmpty)
+        #expect(!mockService.searchCalled)
+        #expect(viewModel.state.results.isEmpty)
     }
 
-    func testSearch_withWhitespaceQuery_clearsResults() async {
+    @Test func searchWithWhitespaceQueryClearsResults() async {
         await viewModel.search(query: "   ")
 
-        XCTAssertFalse(mockService.searchCalled)
-        XCTAssertTrue(viewModel.state.results.isEmpty)
+        #expect(!mockService.searchCalled)
+        #expect(viewModel.state.results.isEmpty)
     }
 
-    func testSearch_withError_setsErrorMessage() async {
+    @Test func searchWithWhitespaceQueryResetsToInitialState() async {
+        // First perform a valid search to populate state
+        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 100, docs: [
+            TestFixtures.makeSearchResult(identifier: "1")
+        ])
+        await viewModel.search(query: "test")
+        #expect(!viewModel.state.results.isEmpty)
+        #expect(viewModel.state.hasMoreResults)
+        #expect(viewModel.state.totalResults == 100)
+
+        // Now search with whitespace-only - should reset to initial state
+        await viewModel.search(query: "   ")
+
+        // Verify full state reset (matches SearchViewState.initial)
+        #expect(!viewModel.state.isLoading)
+        #expect(viewModel.state.results.isEmpty)
+        #expect(viewModel.state.errorMessage == nil)
+        #expect(viewModel.state.totalResults == 0)
+        #expect(viewModel.state.currentPage == 0)
+        #expect(!viewModel.state.hasMoreResults)
+    }
+
+    @Test func searchWithErrorSetsErrorMessage() async {
         mockService.errorToThrow = NetworkError.timeout
 
         await viewModel.search(query: "test")
 
-        XCTAssertFalse(viewModel.state.isLoading)
-        XCTAssertNotNil(viewModel.state.errorMessage)
-        XCTAssertTrue(viewModel.state.results.isEmpty)
+        #expect(!viewModel.state.isLoading)
+        #expect(viewModel.state.errorMessage != nil)
+        #expect(viewModel.state.results.isEmpty)
     }
 
-    func testSearch_withNetworkError_showsUserFriendlyMessage() async {
+    @Test func searchWithNetworkErrorShowsUserFriendlyMessage() async {
         mockService.errorToThrow = NetworkError.noConnection
 
         await viewModel.search(query: "test")
 
-        XCTAssertNotNil(viewModel.state.errorMessage)
-        XCTAssertTrue(viewModel.state.errorMessage?.contains("internet") ?? false)
+        #expect(viewModel.state.errorMessage != nil)
+        #expect(viewModel.state.errorMessage?.contains("internet") ?? false)
     }
 
     // MARK: - Pagination Tests
 
-    func testSearch_setsHasMoreResults_whenMoreAvailable() async {
+    @Test func searchSetsHasMoreResultsWhenMoreAvailable() async {
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 100, docs: [
             TestFixtures.makeSearchResult(identifier: "1")
         ])
 
         await viewModel.search(query: "test")
 
-        XCTAssertTrue(viewModel.state.hasMoreResults)
+        #expect(viewModel.state.hasMoreResults)
     }
 
-    func testSearch_setsHasMoreResults_false_whenAllLoaded() async {
+    @Test func searchSetsHasMoreResultsFalseWhenAllLoaded() async {
         let results = [TestFixtures.makeSearchResult(identifier: "1")]
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: results)
 
         await viewModel.search(query: "test")
 
-        XCTAssertFalse(viewModel.state.hasMoreResults)
+        #expect(!viewModel.state.hasMoreResults)
     }
 
-    func testLoadNextPage_appendsResults() async {
+    @Test func loadNextPageAppendsResults() async {
         // Initial search
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 20, docs: [
             TestFixtures.makeSearchResult(identifier: "1"),
@@ -180,11 +219,11 @@ final class SearchViewModelTests: XCTestCase {
         ])
         await viewModel.loadNextPage(query: "test")
 
-        XCTAssertEqual(viewModel.state.results.count, 4)
-        XCTAssertEqual(viewModel.state.currentPage, 1)
+        #expect(viewModel.state.results.count == 4)
+        #expect(viewModel.state.currentPage == 1)
     }
 
-    func testLoadNextPage_doesNotLoad_whenNoMoreResults() async {
+    @Test func loadNextPageDoesNotLoadWhenNoMoreResults() async {
         let results = [TestFixtures.makeSearchResult(identifier: "1")]
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: results)
         await viewModel.search(query: "test")
@@ -192,12 +231,12 @@ final class SearchViewModelTests: XCTestCase {
         mockService.reset()
         await viewModel.loadNextPage(query: "test")
 
-        XCTAssertFalse(mockService.searchCalled)
+        #expect(!mockService.searchCalled)
     }
 
     // MARK: - Clear Results Tests
 
-    func testClearResults_resetsState() async {
+    @Test func clearResultsResetsState() async {
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 5, docs: [
             TestFixtures.makeSearchResult(identifier: "1")
         ])
@@ -205,57 +244,57 @@ final class SearchViewModelTests: XCTestCase {
 
         viewModel.clearResults()
 
-        XCTAssertTrue(viewModel.state.results.isEmpty)
-        XCTAssertEqual(viewModel.state.totalResults, 0)
-        XCTAssertEqual(viewModel.state.currentPage, 0)
+        #expect(viewModel.state.results.isEmpty)
+        #expect(viewModel.state.totalResults == 0)
+        #expect(viewModel.state.currentPage == 0)
     }
 
     // MARK: - Search Options Tests
 
-    func testSearch_includesCorrectOptions() async {
+    @Test func searchIncludesCorrectOptions() async {
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 0, docs: [])
 
         await viewModel.search(query: "test")
 
-        XCTAssertEqual(mockService.lastOptions?["rows"], "10")
-        XCTAssertEqual(mockService.lastOptions?["page"], "1")
-        XCTAssertNotNil(mockService.lastOptions?["fl[]"])
+        #expect(mockService.lastOptions?["rows"] == "10")
+        #expect(mockService.lastOptions?["page"] == "1")
+        #expect(mockService.lastOptions?["fl[]"] != nil)
     }
 
     // MARK: - Error Type Tests
 
-    func testSearch_withServerError_showsAppropriateMessage() async {
+    @Test func searchWithServerErrorShowsAppropriateMessage() async {
         mockService.errorToThrow = NetworkError.serverError(statusCode: 500)
 
         await viewModel.search(query: "test")
 
-        XCTAssertNotNil(viewModel.state.errorMessage)
-        XCTAssertTrue(viewModel.state.errorMessage?.lowercased().contains("server") ?? false ||
+        #expect(viewModel.state.errorMessage != nil)
+        #expect(viewModel.state.errorMessage?.lowercased().contains("server") ?? false ||
                       viewModel.state.errorMessage?.lowercased().contains("archive") ?? false)
     }
 
-    func testSearch_withTimeoutError_showsAppropriateMessage() async {
+    @Test func searchWithTimeoutErrorShowsAppropriateMessage() async {
         mockService.errorToThrow = NetworkError.timeout
 
         await viewModel.search(query: "test")
 
-        XCTAssertNotNil(viewModel.state.errorMessage)
-        XCTAssertTrue(viewModel.state.errorMessage?.lowercased().contains("long") ?? false ||
+        #expect(viewModel.state.errorMessage != nil)
+        #expect(viewModel.state.errorMessage?.lowercased().contains("long") ?? false ||
                       viewModel.state.errorMessage?.lowercased().contains("connection") ?? false)
     }
 
-    func testSearch_withGenericError_showsDefaultMessage() async {
+    @Test func searchWithGenericErrorShowsDefaultMessage() async {
         mockService.errorToThrow = NSError(domain: "test", code: 123, userInfo: nil)
 
         await viewModel.search(query: "test")
 
-        XCTAssertNotNil(viewModel.state.errorMessage)
-        XCTAssertTrue(viewModel.state.errorMessage?.contains("unexpected") ?? false)
+        #expect(viewModel.state.errorMessage != nil)
+        #expect(viewModel.state.errorMessage?.contains("unexpected") ?? false)
     }
 
     // MARK: - Sequential Search Tests
 
-    func testSequentialSearches_lastSearchResultsShown() async {
+    @Test func sequentialSearchesLastSearchResultsShown() async {
         // First search
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 5, docs: [
             TestFixtures.makeSearchResult(identifier: "first1")
@@ -270,92 +309,111 @@ final class SearchViewModelTests: XCTestCase {
         await viewModel.search(query: "second")
 
         // Results should be from second search
-        XCTAssertEqual(viewModel.state.results.count, 2)
-        XCTAssertEqual(viewModel.state.results.first?.identifier, "second1")
+        #expect(viewModel.state.results.count == 2)
+        #expect(viewModel.state.results.first?.identifier == "second1")
     }
 
     // MARK: - Search Options Edge Cases
 
-    func testSearch_withSpecialCharactersInQuery() async {
+    @Test func searchWithSpecialCharactersInQuery() async {
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 0, docs: [])
 
         await viewModel.search(query: "test & special <chars>")
 
-        XCTAssertTrue(mockService.searchCalled)
-        XCTAssertEqual(mockService.lastQuery, "test & special <chars>")
+        #expect(mockService.searchCalled)
+        #expect(mockService.lastQuery == "test & special <chars>")
     }
 
-    func testSearch_withUnicodeQuery() async {
+    @Test func searchWithUnicodeQuery() async {
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 0, docs: [])
 
         await viewModel.search(query: "测试 日本語 한국어")
 
-        XCTAssertTrue(mockService.searchCalled)
+        #expect(mockService.searchCalled)
     }
 
-    func testSearch_withVeryLongQuery() async {
+    @Test func searchWithVeryLongQuery() async {
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 0, docs: [])
         let longQuery = String(repeating: "test ", count: 100)
 
         await viewModel.search(query: longQuery)
 
-        XCTAssertTrue(mockService.searchCalled)
+        #expect(mockService.searchCalled)
     }
 
     // MARK: - Pagination Edge Cases
 
-    func testLoadNextPage_withError_preservesExistingResults() async {
+    @Test func loadNextPageWithErrorPreservesExistingResults() async {
         // Initial search
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 20, docs: [
             TestFixtures.makeSearchResult(identifier: "1"),
             TestFixtures.makeSearchResult(identifier: "2")
         ])
         await viewModel.search(query: "test")
-        XCTAssertEqual(viewModel.state.results.count, 2)
+        #expect(viewModel.state.results.count == 2)
 
         // Load next page with error
         mockService.errorToThrow = NetworkError.timeout
         await viewModel.loadNextPage(query: "test")
 
         // Original results should be preserved
-        XCTAssertEqual(viewModel.state.results.count, 2)
-        XCTAssertNotNil(viewModel.state.errorMessage)
+        #expect(viewModel.state.results.count == 2)
+        #expect(viewModel.state.errorMessage != nil)
     }
 
-    func testLoadNextPage_whileLoading_doesNothing() async {
-        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 100, docs: [
+    @Test func loadNextPageWhileLoadingDoesNothing() async {
+        // Create slow mock service for this test
+        let slowMockService = SlowMockSearchService()
+        slowMockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 100, docs: [
             TestFixtures.makeSearchResult(identifier: "1")
         ])
-        await viewModel.search(query: "test")
+        let slowViewModel = SearchViewModel(searchService: slowMockService, pageSize: 10)
 
-        // Simulate loading state
-        var state = viewModel.state
-        state.isLoading = true
+        // First search to establish state
+        await slowViewModel.search(query: "test")
 
-        // loadNextPage should check isLoading and return early
-        // This tests the guard condition
-        mockService.reset()
-        await viewModel.loadNextPage(query: "test")
+        // Reset counter and set delay for next operation
+        slowMockService.searchCallCount = 0
+        slowMockService.delayMilliseconds = 500
 
-        // Service should have been called since we can't directly set state
-        // The behavior depends on async timing
-        XCTAssertNotNil(viewModel.state)
+        // Start a slow loadNextPage in background
+        let task = Task {
+            await slowViewModel.loadNextPage(query: "test")
+        }
+
+        // Wait for loading to start (bounded to avoid hanging CI)
+        let start = ContinuousClock.now
+        while !slowViewModel.state.isLoading {
+            if ContinuousClock.now - start > .seconds(2) {
+                Issue.record("Timed out waiting for isLoading")
+                break
+            }
+            try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
+        }
+
+        // Try to call loadNextPage while the first is still running - should be a no-op
+        await slowViewModel.loadNextPage(query: "test")
+
+        await task.value
+
+        // Only one call should have actually executed
+        #expect(slowMockService.searchCallCount == 1, "Only one loadNextPage should have executed")
     }
 
     // MARK: - Page Size Tests
 
-    func testCustomPageSize() async {
+    @Test func customPageSize() async {
         let customViewModel = SearchViewModel(searchService: mockService, pageSize: 25)
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 0, docs: [])
 
         await customViewModel.search(query: "test")
 
-        XCTAssertEqual(mockService.lastOptions?["rows"], "25")
+        #expect(mockService.lastOptions?["rows"] == "25")
     }
 
     // MARK: - SearchMoviesAndMusic Tests
 
-    func testSearchMoviesAndMusic_combinesMediaTypes() async {
+    @Test func searchMoviesAndMusicCombinesMediaTypes() async {
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 4, docs: [
             TestFixtures.makeSearchResult(identifier: "movie1", mediatype: "movies"),
             TestFixtures.makeSearchResult(identifier: "music1", mediatype: "etree"),
@@ -365,12 +423,12 @@ final class SearchViewModelTests: XCTestCase {
 
         await viewModel.searchMoviesAndMusic(query: "concert")
 
-        XCTAssertEqual(viewModel.state.results.count, 4)
-        XCTAssertEqual(viewModel.state.videoResults.count, 2)
-        XCTAssertEqual(viewModel.state.musicResults.count, 2)
+        #expect(viewModel.state.results.count == 4)
+        #expect(viewModel.state.videoResults.count == 2)
+        #expect(viewModel.state.musicResults.count == 2)
     }
 
-    func testSearchMoviesAndMusic_withEmptyQuery_clearsResults() async {
+    @Test func searchMoviesAndMusicWithEmptyQueryClearsResults() async {
         // First do a search
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
             TestFixtures.makeSearchResult(identifier: "1")
@@ -380,16 +438,16 @@ final class SearchViewModelTests: XCTestCase {
         // Search with empty query
         await viewModel.searchMoviesAndMusic(query: "")
 
-        XCTAssertTrue(viewModel.state.results.isEmpty)
+        #expect(viewModel.state.results.isEmpty)
     }
 
-    func testSearchMoviesAndMusic_withWhitespaceQuery_clearsResults() async {
+    @Test func searchMoviesAndMusicWithWhitespaceQueryClearsResults() async {
         await viewModel.searchMoviesAndMusic(query: "   ")
 
-        XCTAssertTrue(viewModel.state.results.isEmpty)
+        #expect(viewModel.state.results.isEmpty)
     }
 
-    func testSearchMoviesAndMusic_setsHasMoreResultsFalse() async {
+    @Test func searchMoviesAndMusicSetsHasMoreResultsFalse() async {
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 100, docs: [
             TestFixtures.makeSearchResult(identifier: "1")
         ])
@@ -397,70 +455,71 @@ final class SearchViewModelTests: XCTestCase {
         await viewModel.searchMoviesAndMusic(query: "test")
 
         // Single page search doesn't support pagination
-        XCTAssertFalse(viewModel.state.hasMoreResults)
+        #expect(!viewModel.state.hasMoreResults)
     }
 
-    func testSearchMoviesAndMusic_withError_setsErrorMessage() async {
+    @Test func searchMoviesAndMusicWithErrorSetsErrorMessage() async {
         mockService.errorToThrow = NetworkError.timeout
 
         await viewModel.searchMoviesAndMusic(query: "test")
 
-        XCTAssertNotNil(viewModel.state.errorMessage)
-        XCTAssertTrue(viewModel.state.results.isEmpty)
+        #expect(viewModel.state.errorMessage != nil)
+        #expect(viewModel.state.results.isEmpty)
     }
 
-    func testSearchMoviesAndMusic_callsServiceWithCombinedQuery() async {
+    @Test func searchMoviesAndMusicCallsServiceWithCombinedQuery() async {
         mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 0, docs: [])
 
         await viewModel.searchMoviesAndMusic(query: "grateful dead")
 
-        XCTAssertTrue(mockService.searchCalled)
-        XCTAssertTrue(mockService.lastQuery?.contains("grateful dead") ?? false)
-        XCTAssertTrue(mockService.lastQuery?.contains("mediatype:(etree OR movies)") ?? false)
+        #expect(mockService.searchCalled)
+        #expect(mockService.lastQuery?.contains("grateful dead") ?? false)
+        #expect(mockService.lastQuery?.contains("mediatype:(etree OR movies)") ?? false)
     }
 }
 
 // MARK: - SearchViewState Tests
 
-final class SearchViewStateTests: XCTestCase {
+@Suite("SearchViewState Tests")
+struct SearchViewStateTests {
 
-    func testInitialState() {
+    @Test func initialState() {
         let state = SearchViewState.initial
 
-        XCTAssertFalse(state.isLoading)
-        XCTAssertTrue(state.results.isEmpty)
-        XCTAssertNil(state.errorMessage)
-        XCTAssertEqual(state.totalResults, 0)
-        XCTAssertEqual(state.currentPage, 0)
-        XCTAssertFalse(state.hasMoreResults)
+        #expect(!state.isLoading)
+        #expect(state.results.isEmpty)
+        #expect(state.errorMessage == nil)
+        #expect(state.totalResults == 0)
+        #expect(state.currentPage == 0)
+        #expect(!state.hasMoreResults)
     }
 
-    func testInitialState_canBeModified() {
+    @Test func initialStateCanBeModified() {
         var state = SearchViewState.initial
         state.isLoading = true
         state.totalResults = 100
 
-        XCTAssertTrue(state.isLoading)
-        XCTAssertEqual(state.totalResults, 100)
+        #expect(state.isLoading)
+        #expect(state.totalResults == 100)
     }
 
-    func testState_resultsCanBeAppended() {
+    @Test func stateResultsCanBeAppended() {
         var state = SearchViewState.initial
         state.results = [TestFixtures.makeSearchResult(identifier: "1")]
         state.results.append(TestFixtures.makeSearchResult(identifier: "2"))
 
-        XCTAssertEqual(state.results.count, 2)
+        #expect(state.results.count == 2)
     }
 
-    func testState_errorMessageCanBeCleared() {
+    @Test func stateErrorMessageCanBeCleared() {
         var state = SearchViewState.initial
         state.errorMessage = "Some error"
         state.errorMessage = nil
 
-        XCTAssertNil(state.errorMessage)
+        #expect(state.errorMessage == nil)
     }
 
-    func testState_allPropertiesCanBeSet() {
+    @Test func stateAllPropertiesCanBeSet() {
         var state = SearchViewState.initial
         state.isLoading = true
         state.results = [TestFixtures.makeSearchResult(identifier: "1")]
@@ -469,17 +528,17 @@ final class SearchViewStateTests: XCTestCase {
         state.currentPage = 2
         state.hasMoreResults = true
 
-        XCTAssertTrue(state.isLoading)
-        XCTAssertEqual(state.results.count, 1)
-        XCTAssertEqual(state.errorMessage, "Error")
-        XCTAssertEqual(state.totalResults, 50)
-        XCTAssertEqual(state.currentPage, 2)
-        XCTAssertTrue(state.hasMoreResults)
+        #expect(state.isLoading)
+        #expect(state.results.count == 1)
+        #expect(state.errorMessage == "Error")
+        #expect(state.totalResults == 50)
+        #expect(state.currentPage == 2)
+        #expect(state.hasMoreResults)
     }
 
     // MARK: - Media Type Filtering Tests
 
-    func testVideoResults_filtersMovies() {
+    @Test func videoResultsFiltersMovies() {
         var state = SearchViewState.initial
         state.results = [
             TestFixtures.makeSearchResult(identifier: "movie1", mediatype: "movies"),
@@ -488,11 +547,11 @@ final class SearchViewStateTests: XCTestCase {
             TestFixtures.makeSearchResult(identifier: "audio1", mediatype: "audio")
         ]
 
-        XCTAssertEqual(state.videoResults.count, 2)
-        XCTAssertTrue(state.videoResults.allSatisfy { $0.safeMediaType == "movies" })
+        #expect(state.videoResults.count == 2)
+        #expect(state.videoResults.allSatisfy { $0.safeMediaType == "movies" })
     }
 
-    func testMusicResults_filtersEtreeAndAudio() {
+    @Test func musicResultsFiltersEtreeAndAudio() {
         var state = SearchViewState.initial
         state.results = [
             TestFixtures.makeSearchResult(identifier: "movie1", mediatype: "movies"),
@@ -501,13 +560,13 @@ final class SearchViewStateTests: XCTestCase {
             TestFixtures.makeSearchResult(identifier: "audio1", mediatype: "audio")
         ]
 
-        XCTAssertEqual(state.musicResults.count, 2)
-        XCTAssertTrue(state.musicResults.allSatisfy {
+        #expect(state.musicResults.count == 2)
+        #expect(state.musicResults.allSatisfy {
             $0.safeMediaType == "etree" || $0.safeMediaType == "audio"
         })
     }
 
-    func testFilterByMediaType_customType() {
+    @Test func filterByMediaTypeCustomType() {
         var state = SearchViewState.initial
         state.results = [
             TestFixtures.makeSearchResult(identifier: "book1", mediatype: "texts"),
@@ -516,84 +575,190 @@ final class SearchViewStateTests: XCTestCase {
         ]
 
         let textResults = state.filterByMediaType("texts")
-        XCTAssertEqual(textResults.count, 2)
+        #expect(textResults.count == 2)
     }
 
-    func testVideoResults_emptyWhenNoMovies() {
+    @Test func videoResultsEmptyWhenNoMovies() {
         var state = SearchViewState.initial
         state.results = [
             TestFixtures.makeSearchResult(identifier: "music1", mediatype: "etree"),
             TestFixtures.makeSearchResult(identifier: "audio1", mediatype: "audio")
         ]
 
-        XCTAssertTrue(state.videoResults.isEmpty)
+        #expect(state.videoResults.isEmpty)
     }
 
-    func testMusicResults_emptyWhenNoMusic() {
+    @Test func musicResultsEmptyWhenNoMusic() {
         var state = SearchViewState.initial
         state.results = [
             TestFixtures.makeSearchResult(identifier: "movie1", mediatype: "movies"),
             TestFixtures.makeSearchResult(identifier: "movie2", mediatype: "movies")
         ]
 
-        XCTAssertTrue(state.musicResults.isEmpty)
+        #expect(state.musicResults.isEmpty)
     }
 }
 
-// MARK: - SearchFilter Tests
+// MARK: - Pagination and Filter Switching Tests
 
-final class SearchFilterTests: XCTestCase {
+@Suite("Search Pagination Filter Tests", .serialized)
+@MainActor
+struct SearchPaginationFilterTests {
 
-    func testAllCases() {
-        XCTAssertEqual(SearchFilter.allCases.count, 3)
-        XCTAssertEqual(SearchFilter.allCases[0], .all)
-        XCTAssertEqual(SearchFilter.allCases[1], .video)
-        XCTAssertEqual(SearchFilter.allCases[2], .music)
+    var viewModel: SearchViewModel
+    var mockService: MockSearchService
+
+    init() {
+        let service = MockSearchService()
+        mockService = service
+        viewModel = SearchViewModel(searchService: service, pageSize: 10)
     }
 
-    func testRawValues() {
-        XCTAssertEqual(SearchFilter.all.rawValue, 0)
-        XCTAssertEqual(SearchFilter.video.rawValue, 1)
-        XCTAssertEqual(SearchFilter.music.rawValue, 2)
+    // MARK: - Filter Switching Tests
+
+    @Test func searchSwitchingQueriesResetsPage() async {
+        // First search
+        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 100, docs: [
+            TestFixtures.makeSearchResult(identifier: "first1")
+        ])
+        await viewModel.search(query: "first query")
+        await viewModel.loadNextPage(query: "first query")
+
+        #expect(viewModel.state.currentPage == 1)
+
+        // Switch to new query - should reset pagination
+        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 50, docs: [
+            TestFixtures.makeSearchResult(identifier: "second1")
+        ])
+        await viewModel.search(query: "second query")
+
+        #expect(viewModel.state.currentPage == 0)
+        #expect(viewModel.state.results.count == 1)
+        #expect(viewModel.state.results.first?.identifier == "second1")
     }
 
-    func testTitles() {
-        XCTAssertEqual(SearchFilter.all.title, "All")
-        XCTAssertEqual(SearchFilter.video.title, "Video")
-        XCTAssertEqual(SearchFilter.music.title, "Music")
+    @Test func searchSwitchingQueriesClearsPreviousResults() async {
+        // First search with movies
+        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 5, docs: [
+            TestFixtures.makeSearchResult(identifier: "movie1", mediatype: "movies"),
+            TestFixtures.makeSearchResult(identifier: "movie2", mediatype: "movies")
+        ])
+        await viewModel.search(query: "movies")
+        #expect(viewModel.state.results.count == 2)
+
+        // Switch to music query
+        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 3, docs: [
+            TestFixtures.makeSearchResult(identifier: "music1", mediatype: "etree")
+        ])
+        await viewModel.search(query: "music")
+
+        // Old results should be replaced
+        #expect(viewModel.state.results.count == 1)
+        #expect(viewModel.state.results.first?.safeMediaType == "etree")
     }
 
-    func testInitFromRawValue() {
-        XCTAssertEqual(SearchFilter(rawValue: 0), .all)
-        XCTAssertEqual(SearchFilter(rawValue: 1), .video)
-        XCTAssertEqual(SearchFilter(rawValue: 2), .music)
-        XCTAssertNil(SearchFilter(rawValue: 99))
-    }
-}
+    @Test func searchMoviesAndMusicFilterSwitchFromRegularSearch() async {
+        // First do a regular search
+        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 10, docs: [
+            TestFixtures.makeSearchResult(identifier: "item1", mediatype: "texts")
+        ])
+        await viewModel.search(query: "books")
+        #expect(viewModel.state.results.first?.safeMediaType == "texts")
 
-// MARK: - SearchSection Tests
+        // Switch to movies and music filter
+        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 5, docs: [
+            TestFixtures.makeSearchResult(identifier: "movie1", mediatype: "movies"),
+            TestFixtures.makeSearchResult(identifier: "music1", mediatype: "etree")
+        ])
+        await viewModel.searchMoviesAndMusic(query: "entertainment")
 
-final class SearchSectionTests: XCTestCase {
-
-    func testAllCases() {
-        XCTAssertEqual(SearchSection.allCases.count, 2)
-        XCTAssertEqual(SearchSection.allCases[0], .videos)
-        XCTAssertEqual(SearchSection.allCases[1], .music)
-    }
-
-    func testRawValues() {
-        XCTAssertEqual(SearchSection.videos.rawValue, 0)
-        XCTAssertEqual(SearchSection.music.rawValue, 1)
+        // Results should only include movies/music types
+        #expect(viewModel.state.results.count == 2)
+        #expect(viewModel.state.videoResults.count == 1)
+        #expect(viewModel.state.musicResults.count == 1)
     }
 
-    func testTitles() {
-        XCTAssertEqual(SearchSection.videos.title, "Videos")
-        XCTAssertEqual(SearchSection.music.title, "Music")
+    // MARK: - Pagination with Filter Changes
+
+    @Test func loadNextPageAfterFilterChangeUsesNewFilter() async {
+        // Initial search
+        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 100, docs: [
+            TestFixtures.makeSearchResult(identifier: "1"),
+            TestFixtures.makeSearchResult(identifier: "2")
+        ])
+        await viewModel.search(query: "test")
+
+        // Load page 2 with same query
+        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 100, docs: [
+            TestFixtures.makeSearchResult(identifier: "3"),
+            TestFixtures.makeSearchResult(identifier: "4")
+        ])
+        await viewModel.loadNextPage(query: "test")
+
+        #expect(viewModel.state.results.count == 4)
+        #expect(viewModel.state.currentPage == 1)
+
+        // Now change query and verify options are reset
+        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 50, docs: [
+            TestFixtures.makeSearchResult(identifier: "new1")
+        ])
+        await viewModel.search(query: "different")
+
+        #expect(mockService.lastOptions?["page"] == "1")
     }
 
-    func testInitFromRawValue() {
-        XCTAssertEqual(SearchSection(rawValue: 0), .videos)
-        XCTAssertEqual(SearchSection(rawValue: 1), .music)
-        XCTAssertNil(SearchSection(rawValue: 99))
+    @Test func loadNextPageIncrementsPageCorrectly() async {
+        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 100, docs: [
+            TestFixtures.makeSearchResult(identifier: "1")
+        ])
+        await viewModel.search(query: "test")
+        #expect(mockService.lastOptions?["page"] == "1")
+
+        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 100, docs: [
+            TestFixtures.makeSearchResult(identifier: "2")
+        ])
+        await viewModel.loadNextPage(query: "test")
+        #expect(mockService.lastOptions?["page"] == "2")
+
+        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 100, docs: [
+            TestFixtures.makeSearchResult(identifier: "3")
+        ])
+        await viewModel.loadNextPage(query: "test")
+        #expect(mockService.lastOptions?["page"] == "3")
+    }
+
+    // MARK: - Rapid Filter Switching Tests
+
+    @Test func rapidSearchesLastResultsWin() async {
+        // This tests that rapid searches don't cause race conditions
+        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "final")
+        ])
+
+        // Perform multiple searches quickly
+        await viewModel.search(query: "first")
+        await viewModel.search(query: "second")
+        await viewModel.search(query: "third")
+
+        // The last search's results should be shown
+        #expect(viewModel.state.results.count == 1)
+        #expect(mockService.lastQuery == "third")
+    }
+
+    @Test func searchClearsErrorOnNewSearch() async {
+        // First search with error
+        mockService.errorToThrow = NetworkError.timeout
+        await viewModel.search(query: "error test")
+        #expect(viewModel.state.errorMessage != nil)
+
+        // New search should clear error
+        mockService.errorToThrow = nil
+        mockService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "1")
+        ])
+        await viewModel.search(query: "success")
+
+        #expect(viewModel.state.errorMessage == nil)
+        #expect(viewModel.state.results.count == 1)
     }
 }

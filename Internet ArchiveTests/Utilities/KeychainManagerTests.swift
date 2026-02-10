@@ -9,139 +9,122 @@
 //  simulator and device.
 //
 
-import XCTest
+import Testing
 @testable import Internet_Archive
 
+@Suite("KeychainManager Tests", .serialized)
 @MainActor
-final class KeychainManagerTests: XCTestCase {
+struct KeychainManagerTests {
 
     private let testEmail = "test@example.com"
     private let testPassword = "testpassword123"
     private let testUsername = "testuser"
 
-    override func setUp() {
-        super.setUp()
+    init() {
         // Clean up before each test
         _ = KeychainManager.shared.deleteAll()
     }
 
-    override func tearDown() {
-        // Clean up after each test
-        _ = KeychainManager.shared.deleteAll()
-        super.tearDown()
-    }
-
     // MARK: - Singleton Tests
 
-    func testSharedInstance() {
+    @Test func sharedInstance() {
         let instance1 = KeychainManager.shared
         let instance2 = KeychainManager.shared
-        XCTAssertTrue(instance1 === instance2, "Shared instance should be the same object")
+        #expect(instance1 === instance2, "Shared instance should be the same object")
     }
 
     // MARK: - String Storage Tests
 
-
-    func testSaveAndGetString() {
+    @Test func saveAndGetString() {
         let result = KeychainManager.shared.save(testEmail, forKey: .userEmail)
-        XCTAssertTrue(result, "Save should succeed")
+        #expect(result, "Save should succeed")
 
         let retrieved = KeychainManager.shared.getString(forKey: .userEmail)
-        XCTAssertEqual(retrieved, testEmail)
+        #expect(retrieved == testEmail)
     }
 
-
-    func testGetNonExistentKey() {
+    @Test func getNonExistentKey() {
         let retrieved = KeychainManager.shared.getString(forKey: .userEmail)
-        XCTAssertNil(retrieved, "Non-existent key should return nil")
+        #expect(retrieved == nil, "Non-existent key should return nil")
     }
 
-
-    func testOverwriteExistingValue() {
+    @Test func overwriteExistingValue() {
         _ = KeychainManager.shared.save("original@test.com", forKey: .userEmail)
         _ = KeychainManager.shared.save("updated@test.com", forKey: .userEmail)
 
         let retrieved = KeychainManager.shared.getString(forKey: .userEmail)
-        XCTAssertEqual(retrieved, "updated@test.com")
+        #expect(retrieved == "updated@test.com")
     }
 
     // MARK: - Boolean Storage Tests
 
-
-    func testSaveAndGetBoolTrue() {
+    @Test func saveAndGetBoolTrue() {
         let result = KeychainManager.shared.save(true, forKey: .isLoggedIn)
-        XCTAssertTrue(result)
+        #expect(result)
 
         let retrieved = KeychainManager.shared.getBool(forKey: .isLoggedIn)
-        XCTAssertTrue(retrieved)
+        #expect(retrieved)
     }
 
-
-    func testSaveAndGetBoolFalse() {
+    @Test func saveAndGetBoolFalse() {
         let result = KeychainManager.shared.save(false, forKey: .isLoggedIn)
-        XCTAssertTrue(result)
+        #expect(result)
 
         let retrieved = KeychainManager.shared.getBool(forKey: .isLoggedIn)
-        XCTAssertFalse(retrieved)
+        #expect(!retrieved)
     }
 
-
-    func testGetBoolNonExistent() {
+    @Test func getBoolNonExistent() {
         let retrieved = KeychainManager.shared.getBool(forKey: .isLoggedIn)
-        XCTAssertFalse(retrieved, "Non-existent bool key should return false")
+        #expect(!retrieved, "Non-existent bool key should return false")
     }
 
     // MARK: - Delete Tests
 
-
-    func testDeleteExistingValue() {
+    @Test func deleteExistingValue() {
         _ = KeychainManager.shared.save(testEmail, forKey: .userEmail)
         let deleteResult = KeychainManager.shared.delete(forKey: .userEmail)
-        XCTAssertTrue(deleteResult)
+        #expect(deleteResult)
 
         let retrieved = KeychainManager.shared.getString(forKey: .userEmail)
-        XCTAssertNil(retrieved)
+        #expect(retrieved == nil)
     }
 
-
-    func testDeleteNonExistentValue() {
+    @Test func deleteNonExistentValue() {
         let deleteResult = KeychainManager.shared.delete(forKey: .userEmail)
-        XCTAssertTrue(deleteResult, "Deleting non-existent key should succeed (returns errSecItemNotFound)")
+        #expect(deleteResult, "Deleting non-existent key should succeed (returns errSecItemNotFound)")
     }
 
-
-    func testDeleteAll() {
+    @Test func deleteAll() {
         _ = KeychainManager.shared.save(testEmail, forKey: .userEmail)
         _ = KeychainManager.shared.save(testPassword, forKey: .userPassword)
         _ = KeychainManager.shared.save(testUsername, forKey: .username)
 
         let deleteResult = KeychainManager.shared.deleteAll()
-        XCTAssertTrue(deleteResult)
+        #expect(deleteResult)
 
-        XCTAssertNil(KeychainManager.shared.getString(forKey: .userEmail))
-        XCTAssertNil(KeychainManager.shared.getString(forKey: .userPassword))
-        XCTAssertNil(KeychainManager.shared.getString(forKey: .username))
+        #expect(KeychainManager.shared.getString(forKey: .userEmail) == nil)
+        #expect(KeychainManager.shared.getString(forKey: .userPassword) == nil)
+        #expect(KeychainManager.shared.getString(forKey: .username) == nil)
     }
 
     // MARK: - User Credentials Tests
 
-
-    func testSaveUserCredentials() {
+    @Test func saveUserCredentials() {
         let result = KeychainManager.shared.saveUserCredentials(
             email: testEmail,
             password: testPassword,
             username: testUsername
         )
-        XCTAssertTrue(result)
+        #expect(result)
 
-        XCTAssertEqual(KeychainManager.shared.userEmail, testEmail)
-        XCTAssertEqual(KeychainManager.shared.userPassword, testPassword)
-        XCTAssertEqual(KeychainManager.shared.username, testUsername)
-        XCTAssertTrue(KeychainManager.shared.isLoggedIn)
+        #expect(KeychainManager.shared.userEmail == testEmail)
+        #expect(KeychainManager.shared.userPassword == testPassword)
+        #expect(KeychainManager.shared.username == testUsername)
+        #expect(KeychainManager.shared.isLoggedIn)
     }
 
-
-    func testClearUserCredentials() {
+    @Test func clearUserCredentials() {
         // First save some credentials
         _ = KeychainManager.shared.saveUserCredentials(
             email: testEmail,
@@ -151,48 +134,44 @@ final class KeychainManagerTests: XCTestCase {
 
         // Then clear them
         let clearResult = KeychainManager.shared.clearUserCredentials()
-        XCTAssertTrue(clearResult)
+        #expect(clearResult)
 
-        XCTAssertNil(KeychainManager.shared.userEmail)
-        XCTAssertNil(KeychainManager.shared.userPassword)
-        XCTAssertNil(KeychainManager.shared.username)
-        XCTAssertFalse(KeychainManager.shared.isLoggedIn)
+        #expect(KeychainManager.shared.userEmail == nil)
+        #expect(KeychainManager.shared.userPassword == nil)
+        #expect(KeychainManager.shared.username == nil)
+        #expect(!KeychainManager.shared.isLoggedIn)
     }
 
     // MARK: - Computed Properties Tests
 
-
-    func testUserEmailProperty() {
+    @Test func userEmailProperty() {
         _ = KeychainManager.shared.save(testEmail, forKey: .userEmail)
-        XCTAssertEqual(KeychainManager.shared.userEmail, testEmail)
+        #expect(KeychainManager.shared.userEmail == testEmail)
     }
 
-
-    func testUserPasswordProperty() {
+    @Test func userPasswordProperty() {
         _ = KeychainManager.shared.save(testPassword, forKey: .userPassword)
-        XCTAssertEqual(KeychainManager.shared.userPassword, testPassword)
+        #expect(KeychainManager.shared.userPassword == testPassword)
     }
 
-
-    func testUsernameProperty() {
+    @Test func usernameProperty() {
         _ = KeychainManager.shared.save(testUsername, forKey: .username)
-        XCTAssertEqual(KeychainManager.shared.username, testUsername)
+        #expect(KeychainManager.shared.username == testUsername)
     }
 
-
-    func testIsLoggedInProperty() {
-        XCTAssertFalse(KeychainManager.shared.isLoggedIn)
+    @Test func isLoggedInProperty() {
+        #expect(!KeychainManager.shared.isLoggedIn)
 
         _ = KeychainManager.shared.save(true, forKey: .isLoggedIn)
-        XCTAssertTrue(KeychainManager.shared.isLoggedIn)
+        #expect(KeychainManager.shared.isLoggedIn)
     }
 
     // MARK: - KeychainKey Enum Tests
 
-    func testKeychainKeyRawValues() {
-        XCTAssertEqual(KeychainManager.KeychainKey.userEmail.rawValue, "user_email")
-        XCTAssertEqual(KeychainManager.KeychainKey.userPassword.rawValue, "user_password")
-        XCTAssertEqual(KeychainManager.KeychainKey.username.rawValue, "username")
-        XCTAssertEqual(KeychainManager.KeychainKey.isLoggedIn.rawValue, "is_logged_in")
+    @Test func keychainKeyRawValues() {
+        #expect(KeychainManager.KeychainKey.userEmail.rawValue == "user_email")
+        #expect(KeychainManager.KeychainKey.userPassword.rawValue == "user_password")
+        #expect(KeychainManager.KeychainKey.username.rawValue == "username")
+        #expect(KeychainManager.KeychainKey.isLoggedIn.rawValue == "is_logged_in")
     }
 }
