@@ -56,21 +56,23 @@ struct ContentView: View {
                 .accessibilityLabel(Tab.search.accessibilityLabel)
                 .accessibilityHint(Tab.search.accessibilityHint)
 
-            FavoritesView()
-                .tabItem {
-                    Label("Favorites", systemImage: "heart.fill")
-                }
-                .tag(Tab.favorites)
-                .accessibilityLabel(Tab.favorites.accessibilityLabel)
-                .accessibilityHint(Tab.favorites.accessibilityHint)
+            if AppConfiguration.shared.isConfigured {
+                FavoritesView()
+                    .tabItem {
+                        Label("Favorites", systemImage: "heart.fill")
+                    }
+                    .tag(Tab.favorites)
+                    .accessibilityLabel(Tab.favorites.accessibilityLabel)
+                    .accessibilityHint(Tab.favorites.accessibilityHint)
 
-            AccountView()
-                .tabItem {
-                    Label("Account", systemImage: "person.crop.circle")
-                }
-                .tag(Tab.account)
-                .accessibilityLabel(Tab.account.accessibilityLabel)
-                .accessibilityHint(Tab.account.accessibilityHint)
+                AccountView()
+                    .tabItem {
+                        Label("Account", systemImage: "person.crop.circle")
+                    }
+                    .tag(Tab.account)
+                    .accessibilityLabel(Tab.account.accessibilityLabel)
+                    .accessibilityHint(Tab.account.accessibilityHint)
+            }
         }
         .onExitCommand {
             // Handle Menu button at TabView level
