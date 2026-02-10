@@ -158,7 +158,7 @@ final class NowPlayingControlsViewTests: XCTestCase {
         controlsView.setHasNext(false)
         let nextButton = controlsView.focusableButtons[3]
         XCTAssertFalse(nextButton.isEnabled)
-        XCTAssertEqual(nextButton.alpha, 0.4)
+        XCTAssertEqual(nextButton.alpha, 0.4, accuracy: 0.01)
     }
 
     func testSetHasPrevious_true_enablesButton() {
@@ -172,7 +172,7 @@ final class NowPlayingControlsViewTests: XCTestCase {
         controlsView.setHasPrevious(false)
         let previousButton = controlsView.focusableButtons[1]
         XCTAssertFalse(previousButton.isEnabled)
-        XCTAssertEqual(previousButton.alpha, 0.4)
+        XCTAssertEqual(previousButton.alpha, 0.4, accuracy: 0.01)
     }
 
     // MARK: - Delegate Callback Tests
