@@ -90,7 +90,7 @@ Config/                         # Build configurations
 - **UI:** SwiftUI (primary) with UIKit wrappers for video/audio playback
 - **Networking:** Alamofire 5.11, AlamofireImage 4.3
 - **Dependencies:** Swift Package Manager (SPM)
-- **Testing:** Swift Testing (unit tests), XCTest (UI tests)
+- **Testing:** Unit tests use a mix of Swift Testing and XCTest (prefer Swift Testing for new unit tests); UI tests use XCTest
 
 ## Key Patterns
 
