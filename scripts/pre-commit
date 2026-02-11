@@ -16,14 +16,13 @@ echo "🔍 Running SwiftLint pre-commit check..."
 if ! command -v swiftlint &> /dev/null; then
     echo -e "${RED}❌ SwiftLint is not installed.${NC}"
     echo "Install it with: brew install swiftlint"
-    echo "Or add it to your Podfile: pod 'SwiftLint'"
     exit 1
 fi
 
 # Collect staged Swift files once into a temp file (null-delimited for safe path handling)
 FILELIST=$(mktemp)
 trap 'rm -f "$FILELIST"' EXIT
-git diff --cached --name-only -z --diff-filter=ACM | grep -z '\.swift$' > "$FILELIST" || true
+git diff --cached --name-only -z --diff-filter=ACM -- '*.swift' > "$FILELIST"
 
 if [ ! -s "$FILELIST" ]; then
     echo -e "${GREEN}✅ No Swift files to lint${NC}"
