@@ -69,7 +69,6 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/cgoldsby/TvOSMoreButton.git",
       "state" : {
-        "branch" : "main",
         "revision" : "afd4fa478d8a214a17152caa6209b49a08066ea3"
       }
     },
@@ -78,7 +77,6 @@
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/dcordero/TvOSTextViewer.git",
       "state" : {
-        "branch" : "master",
         "revision" : "87829515d7f9246a68a7f777b227d996dae28417"
       }
     }

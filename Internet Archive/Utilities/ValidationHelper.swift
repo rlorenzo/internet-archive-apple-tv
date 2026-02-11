@@ -29,7 +29,7 @@ enum ValidationHelper {
     // MARK: - Password Validation
 
     /// Minimum required password length
-    static let minimumPasswordLength = 3
+    static let minimumPasswordLength = 8
 
     /// Validates a password and returns validation result with optional error message.
     ///

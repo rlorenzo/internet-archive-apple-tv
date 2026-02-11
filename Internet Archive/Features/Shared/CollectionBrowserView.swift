@@ -196,6 +196,7 @@ struct CollectionBrowserView: View {
                     .accessibilityHint("Double-tap to view details")
                 }
             }
+            .focusSection()
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Items section with \(items.count) items")

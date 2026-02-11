@@ -540,7 +540,7 @@ Tests run automatically on every push and pull request via GitHub Actions.
 - Reports code coverage
 - Fails build if tests fail
 
-See `.github/workflows/tests.yml` for configuration.
+See `.github/workflows/ci.yml` for configuration.
 
 ## Troubleshooting
 

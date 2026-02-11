@@ -79,10 +79,7 @@ swiftlint lint --path "Internet Archive/AppDelegate.swift"
 
 ### Pre-commit Hook
 
-The pre-commit hook automatically runs SwiftLint on staged Swift files before each commit:
-
-- **During migration phase:** Warnings are reported but commits are allowed
-- **After Sprint 3:** Will become strict (block commits with lint errors)
+The pre-commit hook automatically runs SwiftLint on staged Swift files before each commit. Commits are blocked if any lint violations are found.
 
 To bypass the hook (not recommended):
 ```bash
@@ -101,10 +98,10 @@ The SwiftLint configuration includes custom rules to catch:
 
 ### Swift Version
 - **Target:** Swift 6.0
-- **Strict Concurrency:** Enabled (after Sprint 8)
+- **Strict Concurrency:** Enabled
 
 ### tvOS Deployment Target
-- **Target:** tvOS 26.0
+- **Target:** tvOS 17.0+
 
 ### Code Signing
 Configure your development team in Xcode:
@@ -118,10 +115,11 @@ Configure your development team in Xcode:
 ```
 internet-archive-apple-tv/
 ├── Internet Archive/           # Main app source code
-│   ├── AppDelegate.swift
-│   ├── Classes/               # Reusable components
+│   ├── App/                   # SwiftUI app entry point (@main)
+│   ├── Features/              # Feature modules (SwiftUI views)
+│   ├── Models/                # Codable data models
 │   ├── Utilities/             # API manager, helpers
-│   └── ViewControllers/       # Feature modules
+│   └── ViewControllers/       # UIKit controllers (player only)
 ├── Internet ArchiveTests/      # Unit tests
 ├── scripts/                   # Development scripts
 │   ├── pre-commit            # Git pre-commit hook
@@ -167,6 +165,6 @@ During the migration phase, you may encounter build errors. See `MODERNIZATION_S
 ## Next Steps
 
 After setup, refer to:
-- `MODERNIZATION_SPRINTS.md` - Detailed migration plan
-- Sprint 2 tasks - Dependency modernization
-- Sprint 3 tasks - Swift syntax migration
+
+- `TESTING.md` - Testing guide and coverage report
+- `APP_STORE_CHECKLIST.md` - Release checklist

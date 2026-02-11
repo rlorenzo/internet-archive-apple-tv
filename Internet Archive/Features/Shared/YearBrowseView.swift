@@ -256,6 +256,7 @@ struct YearBrowseView: View {
                 }
                 .padding(.horizontal, 60)
                 .padding(.bottom, 60)
+                .focusSection()
             }
         }
     }
