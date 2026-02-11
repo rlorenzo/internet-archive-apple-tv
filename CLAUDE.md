@@ -90,7 +90,7 @@ Config/                         # Build configurations
 - **UI:** SwiftUI (primary) with UIKit wrappers for video/audio playback
 - **Networking:** Alamofire 5.11, AlamofireImage 4.3
 - **Dependencies:** Swift Package Manager (SPM)
-- **Testing:** XCTest
+- **Testing:** Unit tests use a mix of Swift Testing and XCTest (prefer Swift Testing for new unit tests); UI tests use XCTest
 
 ## Key Patterns
 
@@ -131,9 +131,9 @@ Config/                         # Build configurations
 
 ## Important Files
 
-- `MODERNIZATION_SPRINTS.md` - Detailed sprint plan and progress
-- `TESTING.md` - Testing documentation
+- `TESTING.md` - Testing documentation and coverage report
 - `DEVELOPMENT_SETUP.md` - Setup instructions
+- `APP_STORE_CHECKLIST.md` - Release submission checklist
 - `.swiftlint.yml` - Linting rules
 - `Internet Archive.xcodeproj` - Xcode project (includes SPM package references)
 

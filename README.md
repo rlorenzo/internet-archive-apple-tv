@@ -14,7 +14,6 @@ A native tvOS application for browsing and streaming video and audio content fro
 
 - Xcode 16.0+
 - tvOS 17.0+
-- CocoaPods 1.16+
 - Apple TV (4th generation or later)
 
 ## Quick Start
@@ -25,45 +24,44 @@ A native tvOS application for browsing and streaming video and audio content fro
    cd internet-archive-apple-tv
    ```
 
-2. **Install dependencies**
-   ```bash
-   pod install
-   ```
-
-3. **Configure API credentials** (optional - required for login/favorites)
+2. **Configure API credentials** (optional - required for login/favorites)
    ```bash
    cp Configuration.plist.template "Internet Archive/Configuration.plist"
    ```
    Edit `Configuration.plist` and add your Internet Archive S3 API keys from [archive.org/account/s3.php](https://archive.org/account/s3.php).
 
+3. **Set up Git hooks**
+   ```bash
+   bash scripts/setup-hooks.sh
+   ```
+   This installs a pre-commit hook that runs SwiftLint on staged files.
+
 4. **Open and run**
    ```bash
-   open "Internet Archive.xcworkspace"
+   open "Internet Archive.xcodeproj"
    ```
-   Select the "Internet Archive" scheme and run on Apple TV Simulator or device.
+   SPM dependencies resolve automatically. Select the "Internet Archive" scheme and run on Apple TV Simulator or device.
+
+See [DEVELOPMENT_SETUP.md](DEVELOPMENT_SETUP.md) for full setup details including SwiftLint configuration.
 
 ## Project Structure
 
 ```
 Internet Archive/
-├── AppDelegate.swift           # App lifecycle
-├── Configuration/              # App configuration
+├── App/                        # SwiftUI app entry point (@main)
+├── Features/                   # Feature modules (SwiftUI views)
 ├── Models/                     # Codable data models
 ├── Protocols/                  # Protocol definitions
-├── UI/                         # Modern UI components
-│   ├── CollectionView/         # DiffableDataSource infrastructure
-│   ├── ImageLoading/           # Image caching and prefetching
-│   └── Loading/                # Skeleton and empty state views
-├── Utilities/                  # Helpers and managers
-│   └── ErrorHandling/          # Error presentation and logging
-└── ViewControllers/            # Screen implementations
+├── UI/                         # UIKit components (cells, image loading)
+├── Utilities/                  # API manager, helpers, error handling
+└── ViewControllers/            # UIKit controllers (player only)
 ```
 
 ## Architecture
 
 - **Swift 6.0** with strict concurrency checking
-- **Async/await** networking with Alamofire 5.9
-- **UICollectionViewDiffableDataSource** for all collection views
+- **SwiftUI** (primary) with UIKit wrappers for video/audio playback
+- **Async/await** networking with Alamofire 5.11
 - **Protocol-based dependency injection** for testability
 - **Codable models** for type-safe API responses
 
@@ -72,7 +70,7 @@ Internet Archive/
 Run the test suite:
 ```bash
 xcodebuild test \
-  -workspace "Internet Archive.xcworkspace" \
+  -project "Internet Archive.xcodeproj" \
   -scheme "Internet Archive" \
   -destination "platform=tvOS Simulator,name=Apple TV"
 ```

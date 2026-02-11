@@ -87,6 +87,7 @@ final class APIManager: NSObject {
                                     parameters: request,
                                     encoder: URLEncodedFormParameterEncoder.default,
                                     headers: headers)
+            .validate()
             .serializingDecodable(AuthResponse.self)
             .value
     }
@@ -106,6 +107,7 @@ final class APIManager: NSObject {
                                     parameters: request,
                                     encoder: URLEncodedFormParameterEncoder.default,
                                     headers: headers)
+            .validate()
             .serializingDecodable(AuthResponse.self)
             .value
     }
@@ -124,6 +126,7 @@ final class APIManager: NSObject {
                                     parameters: request,
                                     encoder: URLEncodedFormParameterEncoder.default,
                                     headers: headers)
+            .validate()
             .serializingDecodable(AccountInfoResponse.self)
             .value
     }
@@ -177,6 +180,7 @@ final class APIManager: NSObject {
             encoding: URLEncoding.default,
             headers: headers
         )
+        .validate()
         .serializingDecodable(SearchResponse.self)
         .value
 
@@ -253,12 +257,17 @@ final class APIManager: NSObject {
     ///   - applyContentFilter: Whether to check content filter (default: true)
     /// - Throws: NetworkError.contentFiltered if the item is blocked
     func getMetaDataTyped(identifier: String, applyContentFilter: Bool = true) async throws -> ItemMetadataResponse {
+        guard let encodedId = identifier.addingPercentEncoding(withAllowedCharacters: .urlPathAllowed) else {
+            throw NetworkError.invalidParameters
+        }
+
         let response = try await AF.request(
-            "\(baseURL)\(apiMetadata)\(identifier)",
+            "\(baseURL)\(apiMetadata)\(encodedId)",
             method: .get,
             encoding: URLEncoding.default,
             headers: headers
         )
+        .validate()
         .serializingDecodable(ItemMetadataResponse.self)
         .value
 
@@ -275,11 +284,18 @@ final class APIManager: NSObject {
 
     /// Get favorite items with typed response (async/await)
     func getFavoriteItemsTyped(username: String) async throws -> FavoritesResponse {
-        let url = "\(baseURL)\(apiGetFavorite)\(username.lowercased())"
+        guard let encodedUsername = username.lowercased().addingPercentEncoding(
+            withAllowedCharacters: .urlPathAllowed
+        ) else {
+            throw NetworkError.invalidParameters
+        }
+
+        let url = "\(baseURL)\(apiGetFavorite)\(encodedUsername)"
 
         return try await AF.request(url,
                                     method: .get,
                                     encoding: URLEncoding.default)
+            .validate()
             .serializingDecodable(FavoritesResponse.self)
             .value
     }

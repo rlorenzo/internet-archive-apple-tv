@@ -123,11 +123,11 @@ struct LoginViewModelTests {
     }
 
     @Test func validateInputsShortPassword() {
-        let result = viewModel.validateInputs(email: "test@example.com", password: "ab")
+        let result = viewModel.validateInputs(email: "test@example.com", password: "short")
 
         #expect(!result.isValid)
         #expect(result.passwordError != nil)
-        #expect(result.passwordError?.contains("short") ?? false)
+        #expect(result.passwordError?.contains("\(ValidationHelper.minimumPasswordLength)") ?? false)
     }
 
     @Test func validateInputsBothInvalid() {
@@ -216,7 +216,8 @@ struct LoginViewModelTests {
     // MARK: - Check Login Status Tests
 
     @Test func checkLoginStatusWhenLoggedIn() {
-        Global.saveUserData(userData: ["logged-in": true, "email": "test@example.com"])
+        Global.saveUserData(userData: ["logged-in": true])
+        _ = KeychainManager.shared.saveUserCredentials(email: "test@example.com", password: "password123", username: "testuser")
 
         viewModel.checkLoginStatus()
 
@@ -224,6 +225,7 @@ struct LoginViewModelTests {
         #expect(viewModel.state.email == "test@example.com")
         // Cleanup
         Global.saveUserData(userData: [:])
+        _ = KeychainManager.shared.clearUserCredentials()
     }
 
     @Test func checkLoginStatusWhenNotLoggedIn() {

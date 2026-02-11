@@ -251,6 +251,7 @@ struct SearchView: View {
                                 ))
                             }
                         )
+                        .focusSection()
                     }
 
                     if selectedFilter != .videos && !musicResults.isEmpty {
@@ -268,6 +269,7 @@ struct SearchView: View {
                                 ))
                             }
                         )
+                        .focusSection()
                     }
                 }
                 .padding(.horizontal, 80)

@@ -32,6 +32,7 @@
 - [ ] API credentials configured
 - [ ] No HTTP traffic (HTTPS only)
 - [ ] App Transport Security properly configured
+- [ ] PrivacyInfo.xcprivacy included and up to date
 - [ ] Crash-free startup verified
 - [ ] Memory usage acceptable (<200MB typical for tvOS apps; validate with Instruments)
 

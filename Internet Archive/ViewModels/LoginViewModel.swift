@@ -68,8 +68,8 @@ final class LoginViewModel: ObservableObject {
         // Password validation
         if password.isEmpty {
             passwordError = "Password is required"
-        } else if password.count < 3 {
-            passwordError = "Password is too short"
+        } else if password.count < ValidationHelper.minimumPasswordLength {
+            passwordError = "Password must be at least \(ValidationHelper.minimumPasswordLength) characters"
         }
 
         let isValid = emailError == nil && passwordError == nil
@@ -93,7 +93,6 @@ final class LoginViewModel: ObservableObject {
             if response.isSuccess {
                 // Save user data
                 let userData: [String: Any?] = [
-                    "email": email,
                     "logged-in": true
                 ]
                 Global.saveUserData(userData: userData)
@@ -131,8 +130,8 @@ final class LoginViewModel: ObservableObject {
     /// Check if user is currently logged in
     func checkLoginStatus() {
         state.isLoggedIn = Global.isLoggedIn()
-        if let userData = Global.getUserData() {
-            state.email = userData["email"] as? String ?? ""
+        if let email = KeychainManager.shared.userEmail {
+            state.email = email
         }
     }
 

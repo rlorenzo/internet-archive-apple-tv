@@ -10,7 +10,7 @@ import UIKit
 import AlamofireImage
 
 /// Manages image caching with two-tier strategy:
-/// 1. Fast in-memory cache (AutoPurgingImageCache) - 100 MB, cleared on memory warnings
+/// 1. Fast in-memory cache (AutoPurgingImageCache) - device-aware (50–150 MB), cleared on memory warnings
 /// 2. Persistent disk cache (URLCache) - 500 MB, survives app restarts
 @MainActor
 final class ImageCacheManager {
@@ -22,8 +22,17 @@ final class ImageCacheManager {
     // MARK: - Properties
 
     private let imageCache: AutoPurgingImageCache
-    private let memoryCacheSize: UInt64 = 100_000_000 // 100 MB in-memory
-    private let preferredMemoryUsageAfterPurge: UInt64 = 60_000_000 // 60 MB after purge
+
+    /// Compute device-aware memory cache size (capped at ~5% of physical RAM)
+    private static var deviceAwareMemoryCacheSize: UInt64 {
+        let physicalMemory = ProcessInfo.processInfo.physicalMemory
+        let fivePercent = physicalMemory / 20
+        // Clamp between 50 MB and 150 MB
+        return min(max(fivePercent, 50_000_000), 150_000_000)
+    }
+
+    private let memoryCacheSize: UInt64 = deviceAwareMemoryCacheSize
+    private let preferredMemoryUsageAfterPurge: UInt64 = deviceAwareMemoryCacheSize * 6 / 10
 
     /// Image downloader with custom configuration including disk cache
     private lazy var imageDownloader: ImageDownloader = {
@@ -154,7 +163,9 @@ final class ImageCacheManager {
         // Purge cache on memory warning
         let purgedMemory = imageCache.memoryUsage
         imageCache.removeAllImages()
+        #if DEBUG
         print("ImageCacheManager: Purged \(purgedMemory / 1_000_000) MB due to memory warning")
+        #endif
     }
 }
 
@@ -190,7 +201,9 @@ extension UIImageView {
                     )
 
                 case .failure(let error):
+                    #if DEBUG
                     print("Failed to load image: \(error.localizedDescription)")
+                    #endif
                 }
             }
         }

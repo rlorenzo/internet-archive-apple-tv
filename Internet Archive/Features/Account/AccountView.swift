@@ -485,7 +485,6 @@ struct RegisterFormView: View {
                     // Save partial user data (not logged in yet - needs email verification)
                     let userData: [String: Any?] = [
                         "username": username,
-                        "email": email,
                         "logged-in": false
                     ]
                     Global.saveUserData(userData: userData)

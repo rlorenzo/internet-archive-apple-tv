@@ -45,15 +45,16 @@ struct ValidationHelperTests {
     // MARK: - Password Validation Tests
 
     @Test func isValidPasswordValidPassword() {
-        #expect(ValidationHelper.isValidPassword("abc"))  // Minimum length
+        #expect(ValidationHelper.isValidPassword("password"))  // Minimum length (8)
         #expect(ValidationHelper.isValidPassword("password123"))
         #expect(ValidationHelper.isValidPassword("a very long password with spaces"))
     }
 
     @Test func isValidPasswordInvalidPassword() {
         #expect(!ValidationHelper.isValidPassword(""))
-        #expect(!ValidationHelper.isValidPassword("ab"))  // Too short
+        #expect(!ValidationHelper.isValidPassword("abc"))  // Too short (< 8)
         #expect(!ValidationHelper.isValidPassword("a"))
+        #expect(!ValidationHelper.isValidPassword("1234567"))  // 7 chars, still too short
     }
 
     @Test func validatePasswordReturnsCorrectMessage() {
@@ -63,13 +64,13 @@ struct ValidationHelperTests {
         #expect(validResult.message == nil)
 
         // Invalid password
-        let invalidResult = ValidationHelper.validatePassword("ab")
+        let invalidResult = ValidationHelper.validatePassword("abc")
         #expect(!invalidResult.isValid)
         #expect(invalidResult.message != nil)
-        #expect(invalidResult.message?.contains("3") ?? false)
+        #expect(invalidResult.message?.contains("8") ?? false)
     }
 
     @Test func minimumPasswordLengthConstant() {
-        #expect(ValidationHelper.minimumPasswordLength == 3)
+        #expect(ValidationHelper.minimumPasswordLength == 8)
     }
 }

@@ -16,30 +16,27 @@ echo "🔍 Running SwiftLint pre-commit check..."
 if ! command -v swiftlint &> /dev/null; then
     echo -e "${RED}❌ SwiftLint is not installed.${NC}"
     echo "Install it with: brew install swiftlint"
-    echo "Or add it to your Podfile: pod 'SwiftLint'"
     exit 1
 fi
 
-# Get list of staged Swift files
-STAGED_SWIFT_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.swift$' || true)
+# Collect staged Swift files once into a temp file (null-delimited for safe path handling)
+FILELIST=$(mktemp)
+trap 'rm -f "$FILELIST"' EXIT
+git diff --cached --name-only -z --diff-filter=ACM -- '*.swift' > "$FILELIST"
 
-if [ -z "$STAGED_SWIFT_FILES" ]; then
+if [ ! -s "$FILELIST" ]; then
     echo -e "${GREEN}✅ No Swift files to lint${NC}"
     exit 0
 fi
 
 echo "Checking files:"
-echo "$STAGED_SWIFT_FILES" | while read -r file; do
-    echo "  - $file"
-done
+xargs -0 -n1 printf '  - %s\n' < "$FILELIST"
 
-# Run SwiftLint on all staged files at once
-# Using --quiet to reduce noise, remove if you want verbose output
+# Run SwiftLint on the same file list
 echo ""
 
-# Use xargs to properly pass files and capture exit code
 LINT_EXIT_CODE=0
-echo "$STAGED_SWIFT_FILES" | xargs swiftlint lint --config .swiftlint.yml --quiet || LINT_EXIT_CODE=$?
+xargs -0 swiftlint lint --config .swiftlint.yml --quiet < "$FILELIST" || LINT_EXIT_CODE=$?
 
 if [ $LINT_EXIT_CODE -ne 0 ]; then
     echo ""
@@ -55,11 +52,8 @@ if [ $LINT_EXIT_CODE -ne 0 ]; then
     echo "  git commit --no-verify"
     echo ""
 
-    # For now, just warn but allow commit during migration
-    # Change to 'exit 1' to enforce strict linting
-    echo -e "${YELLOW}Allowing commit with warnings during migration phase.${NC}"
-    echo -e "${YELLOW}This will become strict after Sprint 3.${NC}"
-    exit 0
+    echo -e "${RED}Commit blocked due to SwiftLint violations.${NC}"
+    exit 1
 fi
 
 echo -e "${GREEN}✅ SwiftLint check passed!${NC}"

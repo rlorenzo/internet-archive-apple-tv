@@ -14,6 +14,9 @@ actor SRTtoVTTConverter {
     /// Shared instance for app-wide subtitle conversion
     static let shared = SRTtoVTTConverter()
 
+    /// Cache time-to-live: 7 days in seconds
+    private let cacheTTL: TimeInterval = 7 * 24 * 60 * 60
+
     // MARK: - Cache Management
 
     /// Cache directory for converted VTT files
@@ -69,9 +72,15 @@ actor SRTtoVTTConverter {
             .replacingOccurrences(of: ".srt", with: ".vtt", options: .caseInsensitive)
         let cacheURL = cacheDir.appendingPathComponent(vttFilename)
 
-        // Check if already cached
+        // Check if already cached and not expired (7-day TTL)
         if FileManager.default.fileExists(atPath: cacheURL.path) {
-            return cacheURL
+            if let attributes = try? FileManager.default.attributesOfItem(atPath: cacheURL.path),
+               let modDate = attributes[.modificationDate] as? Date,
+               Date().timeIntervalSince(modDate) < cacheTTL {
+                return cacheURL
+            }
+            // Expired - remove stale file
+            try? FileManager.default.removeItem(at: cacheURL)
         }
 
         // Download SRT content
