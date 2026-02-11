@@ -540,7 +540,7 @@ Tests run automatically on every push and pull request via GitHub Actions.
 - Reports code coverage
 - Fails build if tests fail
 
-See `.github/workflows/ci.yml` for configuration.
+See `.github/workflows/tests.yml` for test and coverage configuration (and `.github/workflows/ci.yml` for SwiftLint and build configuration).
 
 ## Troubleshooting
 

@@ -126,8 +126,7 @@ internet-archive-apple-tv/
 │   └── setup-hooks.sh        # Hook installation script
 ├── .swiftlint.yml            # SwiftLint configuration
 ├── .swift-version            # Swift version file
-├── Internet Archive.xcodeproj # Xcode project (with SPM package refs)
-└── MODERNIZATION_SPRINTS.md  # Migration plan
+└── Internet Archive.xcodeproj # Xcode project (with SPM package refs)
 ```
 
 ## Troubleshooting
@@ -149,10 +148,6 @@ If Swift Package Manager fails to resolve dependencies:
 2. Close Xcode
 3. Delete derived data: `rm -rf ~/Library/Developer/Xcode/DerivedData/Internet_Archive-*`
 4. Reopen the project and let Xcode resolve packages
-
-### Build Errors
-
-During the migration phase, you may encounter build errors. See `MODERNIZATION_SPRINTS.md` for the planned migration path.
 
 ## Contributing
 
