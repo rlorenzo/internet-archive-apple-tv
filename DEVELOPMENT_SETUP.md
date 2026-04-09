@@ -29,8 +29,6 @@ Xcode will automatically resolve Swift Package Manager dependencies:
 
 - Alamofire (HTTP networking)
 - AlamofireImage (Image caching)
-- SVProgressHUD (Progress indicators)
-- MBProgressHUD (Alternative progress HUD)
 - SwiftSoup (HTML parsing)
 - TvOSMoreButton (tvOS UI component)
 - TvOSTextViewer (Text display)
