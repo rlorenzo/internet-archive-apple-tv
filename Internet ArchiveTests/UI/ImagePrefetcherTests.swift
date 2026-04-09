@@ -1,18 +1,18 @@
 //
-//  ImagePrefetcherTests.swift
+//  ImagePrefetcherHelperTests.swift
 //  Internet ArchiveTests
 //
-//  Unit tests for ImagePrefetcher and SearchResult imageURL extension
+//  Unit tests for ImagePrefetcherHelper and SearchResult imageURL extension
 //
 
 import XCTest
 @testable import Internet_Archive
 
 @MainActor
-final class ImagePrefetcherTests: XCTestCase {
+final class ImagePrefetcherHelperTests: XCTestCase {
 
     nonisolated(unsafe) var collectionView: UICollectionView!
-    nonisolated(unsafe) var prefetcher: ImagePrefetcher!
+    nonisolated(unsafe) var prefetcher: ImagePrefetcherHelper!
     nonisolated(unsafe) var dataSource: ItemDataSource!
 
     override func setUp() {
@@ -39,7 +39,7 @@ final class ImagePrefetcherTests: XCTestCase {
     // MARK: - Initialization Tests
 
     func testInit_setsCollectionViewPrefetchDataSource() {
-        prefetcher = ImagePrefetcher(collectionView: collectionView)
+        prefetcher = ImagePrefetcherHelper(collectionView: collectionView)
 
         XCTAssertNotNil(collectionView.prefetchDataSource)
         XCTAssertTrue(collectionView.prefetchDataSource === prefetcher)
@@ -56,14 +56,14 @@ final class ImagePrefetcherTests: XCTestCase {
                 return cell
             }
         )
-        prefetcher = ImagePrefetcher(collectionView: collectionView, dataSource: dataSource)
+        prefetcher = ImagePrefetcherHelper(collectionView: collectionView, dataSource: dataSource)
 
         XCTAssertNotNil(collectionView.prefetchDataSource)
         XCTAssertTrue(collectionView.prefetchDataSource === prefetcher)
     }
 
     func testSetDataSource() {
-        prefetcher = ImagePrefetcher(collectionView: collectionView)
+        prefetcher = ImagePrefetcherHelper(collectionView: collectionView)
 
         dataSource = ItemDataSource(
             collectionView: collectionView,
@@ -84,7 +84,7 @@ final class ImagePrefetcherTests: XCTestCase {
     // MARK: - Prefetching Tests
 
     func testPrefetchItemsAt_withNoDataSource() {
-        prefetcher = ImagePrefetcher(collectionView: collectionView)
+        prefetcher = ImagePrefetcherHelper(collectionView: collectionView)
 
         // Should not crash when no data source
         prefetcher.collectionView(collectionView, prefetchItemsAt: [IndexPath(item: 0, section: 0)])
@@ -92,7 +92,7 @@ final class ImagePrefetcherTests: XCTestCase {
     }
 
     func testPrefetchItemsAt_withEmptyIndexPaths() {
-        prefetcher = ImagePrefetcher(collectionView: collectionView)
+        prefetcher = ImagePrefetcherHelper(collectionView: collectionView)
 
         // Should not crash with empty array
         prefetcher.collectionView(collectionView, prefetchItemsAt: [])
@@ -100,7 +100,7 @@ final class ImagePrefetcherTests: XCTestCase {
     }
 
     func testCancelPrefetchingForItemsAt_doesNotCrash() {
-        prefetcher = ImagePrefetcher(collectionView: collectionView)
+        prefetcher = ImagePrefetcherHelper(collectionView: collectionView)
 
         // Should not crash
         prefetcher.collectionView(collectionView, cancelPrefetchingForItemsAt: [IndexPath(item: 0, section: 0)])
@@ -108,7 +108,7 @@ final class ImagePrefetcherTests: XCTestCase {
     }
 
     func testCancelPrefetchingForItemsAt_withEmptyIndexPaths() {
-        prefetcher = ImagePrefetcher(collectionView: collectionView)
+        prefetcher = ImagePrefetcherHelper(collectionView: collectionView)
 
         // Should not crash with empty array
         prefetcher.collectionView(collectionView, cancelPrefetchingForItemsAt: [])
@@ -126,7 +126,7 @@ final class ImagePrefetcherTests: XCTestCase {
                 return cell
             }
         )
-        prefetcher = ImagePrefetcher(collectionView: collectionView, dataSource: dataSource)
+        prefetcher = ImagePrefetcherHelper(collectionView: collectionView, dataSource: dataSource)
 
         // Apply a snapshot with items
         var snapshot = ItemSnapshot()
@@ -157,7 +157,7 @@ final class ImagePrefetcherTests: XCTestCase {
                 return cell
             }
         )
-        prefetcher = ImagePrefetcher(collectionView: collectionView, dataSource: dataSource)
+        prefetcher = ImagePrefetcherHelper(collectionView: collectionView, dataSource: dataSource)
 
         // Apply a snapshot with items
         var snapshot = ItemSnapshot()
@@ -188,7 +188,7 @@ final class ImagePrefetcherTests: XCTestCase {
                 return cell
             }
         )
-        prefetcher = ImagePrefetcher(collectionView: collectionView, dataSource: dataSource)
+        prefetcher = ImagePrefetcherHelper(collectionView: collectionView, dataSource: dataSource)
 
         // Apply a snapshot with multiple sections
         var snapshot = ItemSnapshot()

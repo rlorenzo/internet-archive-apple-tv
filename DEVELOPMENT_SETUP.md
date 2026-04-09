@@ -28,10 +28,8 @@ open "Internet Archive.xcodeproj"
 Xcode will automatically resolve Swift Package Manager dependencies:
 
 - Alamofire (HTTP networking)
-- AlamofireImage (Image caching)
+- Nuke / NukeUI (Image loading and caching)
 - SwiftSoup (HTML parsing)
-- TvOSMoreButton (tvOS UI component)
-- TvOSTextViewer (Text display)
 
 ### 3. Set Up Git Hooks
 

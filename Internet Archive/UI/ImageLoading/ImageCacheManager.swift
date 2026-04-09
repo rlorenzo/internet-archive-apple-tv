@@ -7,11 +7,11 @@
 //
 
 import UIKit
-import AlamofireImage
+import Nuke
 
-/// Manages image caching with two-tier strategy:
-/// 1. Fast in-memory cache (AutoPurgingImageCache) - device-aware (50–150 MB), cleared on memory warnings
-/// 2. Persistent disk cache (URLCache) - 500 MB, survives app restarts
+/// Manages image caching with Nuke's two-tier strategy:
+/// 1. Fast in-memory cache - device-aware (50–150 MB), cleared on memory warnings
+/// 2. Persistent disk cache - 500 MB, survives app restarts
 @MainActor
 final class ImageCacheManager {
 
@@ -21,50 +21,38 @@ final class ImageCacheManager {
 
     // MARK: - Properties
 
-    private let imageCache: AutoPurgingImageCache
+    /// The Nuke image pipeline used for all image loading
+    let pipeline: ImagePipeline
 
     /// Compute device-aware memory cache size (capped at ~5% of physical RAM)
-    private static var deviceAwareMemoryCacheSize: UInt64 {
+    private static var deviceAwareMemoryCacheSize: Int {
         let physicalMemory = ProcessInfo.processInfo.physicalMemory
         let fivePercent = physicalMemory / 20
         // Clamp between 50 MB and 150 MB
-        return min(max(fivePercent, 50_000_000), 150_000_000)
+        return Int(min(max(fivePercent, 50_000_000), 150_000_000))
     }
-
-    private let memoryCacheSize: UInt64 = deviceAwareMemoryCacheSize
-    private let preferredMemoryUsageAfterPurge: UInt64 = deviceAwareMemoryCacheSize * 6 / 10
-
-    /// Image downloader with custom configuration including disk cache
-    private lazy var imageDownloader: ImageDownloader = {
-        let configuration = URLSessionConfiguration.default
-        configuration.requestCachePolicy = .returnCacheDataElseLoad
-
-        // Configure URLCache for disk persistence (500 MB disk, 50 MB memory)
-        let urlCache = URLCache(
-            memoryCapacity: 50_000_000,   // 50 MB memory
-            diskCapacity: 500_000_000,     // 500 MB disk
-            diskPath: "image_cache"
-        )
-        configuration.urlCache = urlCache
-
-        let downloader = ImageDownloader(
-            configuration: configuration,
-            downloadPrioritization: .fifo,
-            maximumActiveDownloads: 4,
-            imageCache: imageCache
-        )
-
-        return downloader
-    }()
 
     // MARK: - Initialization
 
     private init() {
-        // Initialize cache
-        imageCache = AutoPurgingImageCache(
-            memoryCapacity: memoryCacheSize,
-            preferredMemoryUsageAfterPurge: preferredMemoryUsageAfterPurge
-        )
+        // Configure memory cache
+        let imageCache = ImageCache()
+        imageCache.costLimit = ImageCacheManager.deviceAwareMemoryCacheSize
+
+        // Configure disk cache (500 MB)
+        let dataCache = try? DataCache(name: "internet_archive_images")
+        dataCache?.sizeLimit = 500_000_000
+
+        // Build pipeline
+        var config = ImagePipeline.Configuration()
+        config.imageCache = imageCache
+        config.dataCache = dataCache
+        config.dataCachePolicy = .automatic
+
+        pipeline = ImagePipeline(configuration: config)
+
+        // Also set as shared pipeline for NukeUI LazyImage usage
+        ImagePipeline.shared = pipeline
 
         // Setup memory warning observer
         NotificationCenter.default.addObserver(
@@ -86,83 +74,67 @@ final class ImageCacheManager {
     ///   - url: Image URL
     ///   - completion: Completion handler with image result
     func loadImage(from url: URL, completion: @escaping @Sendable (Result<UIImage, Error>) -> Void) {
+        let request = ImageRequest(url: url)
+
         // Check cache first
-        if let cachedImage = imageCache.image(withIdentifier: url.absoluteString) {
-            completion(.success(cachedImage))
+        if let cached = pipeline.cache[request] {
+            completion(.success(cached.image))
             return
         }
 
         // Download image
-        let urlRequest = URLRequest(url: url)
-        let urlString = url.absoluteString
-
-        imageDownloader.download(
-            urlRequest,
-            completion: { [weak self] (response: AFIDataResponse<Image>) in
-                Task { @MainActor in
-                    switch response.result {
-                    case .success(let image):
-                        // Cache the image
-                        self?.imageCache.add(image, withIdentifier: urlString)
-                        completion(.success(image))
-
-                    case .failure(let error):
-                        completion(.failure(error))
-                    }
+        pipeline.loadImage(with: request) { result in
+            Task { @MainActor in
+                switch result {
+                case .success(let response):
+                    completion(.success(response.image))
+                case .failure(let error):
+                    completion(.failure(error))
                 }
             }
-        )
+        }
     }
 
     /// Prefetch images for URLs
     /// - Parameter urls: Array of URLs to prefetch
     func prefetchImages(for urls: [URL]) {
-        for url in urls {
-            // Skip if already cached
-            guard imageCache.image(withIdentifier: url.absoluteString) == nil else {
-                continue
-            }
-
-            // Download with low priority
-            let urlRequest = URLRequest(url: url)
-            let urlString = url.absoluteString
-
-            imageDownloader.download(
-                urlRequest,
-                completion: { [weak self] (response: AFIDataResponse<Image>) in
-                    Task { @MainActor in
-                        if case .success(let image) = response.result {
-                            self?.imageCache.add(image, withIdentifier: urlString)
-                        }
-                    }
-                }
-            )
-        }
+        guard !urls.isEmpty else { return }
+        let requests = urls.map { ImageRequest(url: $0, priority: .low) }
+        let prefetcher = ImagePrefetcher(pipeline: pipeline)
+        prefetcher.startPrefetching(with: requests)
     }
 
     /// Get cached image if available
     /// - Parameter url: Image URL
     /// - Returns: Cached image or nil
     func cachedImage(for url: URL) -> UIImage? {
-        imageCache.image(withIdentifier: url.absoluteString)
+        let request = ImageRequest(url: url)
+        return pipeline.cache[request]?.image
     }
 
     /// Clear all cached images
     func clearCache() {
-        imageCache.removeAllImages()
+        pipeline.cache.removeAll()
+        if let dataCache = pipeline.configuration.dataCache as? DataCache {
+            dataCache.removeAll()
+        }
     }
 
     /// Get current cache memory usage
     var cacheMemoryUsage: UInt64 {
-        imageCache.memoryUsage
+        if let cache = pipeline.configuration.imageCache as? ImageCache {
+            return UInt64(cache.totalCost)
+        }
+        return 0
     }
 
     // MARK: - Memory Management
 
     @objc private func handleMemoryWarning() {
-        // Purge cache on memory warning
-        let purgedMemory = imageCache.memoryUsage
-        imageCache.removeAllImages()
+        let purgedMemory = cacheMemoryUsage
+        if let cache = pipeline.configuration.imageCache as? ImageCache {
+            cache.removeAll()
+        }
         #if DEBUG
         print("ImageCacheManager: Purged \(purgedMemory / 1_000_000) MB due to memory warning")
         #endif
@@ -173,7 +145,7 @@ final class ImageCacheManager {
 
 extension UIImageView {
 
-    /// Load image with ImageCacheManager
+    /// Load image with Nuke pipeline
     /// - Parameters:
     ///   - url: Image URL
     ///   - placeholder: Placeholder image
@@ -185,27 +157,23 @@ extension UIImageView {
         // Load image
         guard let url = url else { return }
 
-        ImageCacheManager.shared.loadImage(from: url) { [weak self] result in
-            Task { @MainActor in
-                guard let self = self else { return }
-
-                switch result {
-                case .success(let image):
-                    UIView.transition(
-                        with: self,
-                        duration: 0.3,
-                        options: .transitionCrossDissolve,
-                        animations: {
-                            self.image = image
-                        }
-                    )
-
-                case .failure(let error):
+        let request = ImageRequest(url: url)
+        Nuke.loadImage(
+            with: request,
+            into: self,
+            transition: .fadeIn(duration: 0.3),
+            completion: { [weak self] result in
+                if case .failure(let error) = result {
+                    _ = error
                     #if DEBUG
                     print("Failed to load image: \(error.localizedDescription)")
                     #endif
+                    // Keep placeholder on failure
+                    if self?.image == nil {
+                        self?.image = placeholder
+                    }
                 }
             }
-        }
+        )
     }
 }
