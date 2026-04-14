@@ -6,6 +6,108 @@
 //
 
 import SwiftUI
+import UIKit
+
+// MARK: - Now Playing Presenter
+
+/// Helper to present NowPlayingViewController from SwiftUI using UIKit modal presentation.
+/// This ensures proper tvOS focus handling for transport controls and track list.
+enum NowPlayingPresenter {
+    /// Present music player from item metadata.
+    /// - Parameters:
+    ///   - item: The search result item
+    ///   - metadata: Item metadata response containing audio files
+    ///   - savedProgress: Optional saved playback progress for resume
+    ///   - onDismiss: Callback when player is dismissed
+    /// - Returns: true if presentation was successful, false if no playable audio found
+    @MainActor
+    @discardableResult
+    static func presentFromMetadata(
+        item: SearchResult,
+        metadata: ItemMetadataResponse,
+        savedProgress: PlaybackProgress? = nil,
+        onDismiss: (() -> Void)? = nil
+    ) -> Bool {
+        guard let files = metadata.files else { return false }
+
+        // Filter for audio files, preferring originals to avoid duplicates
+        let allAudioFiles = files.filter { file in
+            let audioFormats = ["mp3", "flac", "ogg", "wav", "aac", "m4a", "vbr mp3"]
+            let format = file.format?.lowercased() ?? ""
+            let name = file.name.lowercased()
+
+            return audioFormats.contains(format) ||
+                   audioFormats.contains { name.hasSuffix(".\($0)") }
+        }
+
+        let originals = allAudioFiles.filter { $0.source == "original" }
+        let audioFiles = originals.isEmpty ? allAudioFiles : originals
+
+        guard !audioFiles.isEmpty else { return false }
+
+        // Convert to AudioTrack models
+        let thumbnailURL = URL(string: "https://archive.org/services/img/\(item.identifier)")
+        let tracks = audioFiles.map { file in
+            AudioTrack(
+                fileInfo: file,
+                itemIdentifier: item.identifier,
+                itemTitle: item.safeTitle,
+                imageURL: thumbnailURL
+            )
+        }.sorted { AudioTrack.sortByTrackNumber($0, $1) }
+
+        // Determine starting track and resume time from saved progress
+        var startIndex = 0
+        var trackResumeTime: Double?
+
+        if let progress = savedProgress {
+            if let savedIndex = progress.trackIndex, savedIndex < tracks.count {
+                startIndex = savedIndex
+                trackResumeTime = progress.trackCurrentTime
+            } else if let savedFilename = progress.trackFilename {
+                if let matchIndex = tracks.firstIndex(where: { $0.filename == savedFilename }) {
+                    startIndex = matchIndex
+                    trackResumeTime = progress.trackCurrentTime
+                }
+            }
+        }
+
+        // Find the root view controller to present from
+        let activeScene = UIApplication.shared.connectedScenes
+            .compactMap { $0 as? UIWindowScene }
+            .first { $0.activationState == .foregroundActive }
+            ?? UIApplication.shared.connectedScenes.first as? UIWindowScene
+        guard let rootVC = activeScene?.windows
+            .first(where: { $0.isKeyWindow })?.rootViewController
+            ?? activeScene?.windows.first?.rootViewController else {
+            return false
+        }
+
+        // Find the topmost presented view controller
+        var presentingVC = rootVC
+        while let presented = presentingVC.presentedViewController {
+            presentingVC = presented
+        }
+
+        // Create the now playing view controller
+        let playerVC = NowPlayingViewController(
+            itemIdentifier: item.identifier,
+            itemTitle: item.safeTitle,
+            imageURL: thumbnailURL,
+            tracks: tracks,
+            startAt: startIndex,
+            resumeTime: trackResumeTime
+        )
+
+        playerVC.modalPresentationStyle = .fullScreen
+        playerVC.onDismiss = onDismiss
+
+        // Present using UIKit - this ensures proper tvOS focus handling
+        presentingVC.present(playerVC, animated: true)
+
+        return true
+    }
+}
 
 /// SwiftUI wrapper for the Now Playing audio player.
 ///
@@ -140,8 +242,9 @@ extension NowPlayingView {
     ) -> NowPlayingView? {
         guard let files = metadata.files else { return nil }
 
-        // Filter for audio files and sort by track number
-        let audioFiles = files.filter { file in
+        // Filter for audio files, preferring originals to avoid duplicates
+        // (the API returns both original MP3 and derivative formats like Ogg Vorbis)
+        let allAudioFiles = files.filter { file in
             let audioFormats = ["mp3", "flac", "ogg", "wav", "aac", "m4a", "vbr mp3"]
             let format = file.format?.lowercased() ?? ""
             let name = file.name.lowercased()
@@ -149,6 +252,9 @@ extension NowPlayingView {
             return audioFormats.contains(format) ||
                    audioFormats.contains { name.hasSuffix(".\($0)") }
         }
+
+        let originals = allAudioFiles.filter { $0.source == "original" }
+        let audioFiles = originals.isEmpty ? allAudioFiles : originals
 
         guard !audioFiles.isEmpty else { return nil }
 

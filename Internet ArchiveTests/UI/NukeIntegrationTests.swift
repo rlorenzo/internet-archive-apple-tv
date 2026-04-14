@@ -7,6 +7,7 @@
 
 import XCTest
 import Nuke
+import NukeExtensions
 @testable import Internet_Archive
 
 @MainActor
@@ -103,7 +104,7 @@ final class NukeIntegrationTests: XCTestCase {
         let url = URL(string: "https://archive.org/services/img/cancel_test")!
 
         imageView.loadImage(from: url)
-        Nuke.cancelRequest(for: imageView)
+        NukeExtensions.cancelRequest(for: imageView)
 
         XCTAssertNotNil(imageView)
     }
@@ -111,7 +112,7 @@ final class NukeIntegrationTests: XCTestCase {
     func testCancelRequest_onUnloadedImageView() {
         let imageView = UIImageView(frame: CGRect(x: 0, y: 0, width: 100, height: 100))
         // Cancel without ever loading — should not crash
-        Nuke.cancelRequest(for: imageView)
+        NukeExtensions.cancelRequest(for: imageView)
         XCTAssertNotNil(imageView)
     }
 

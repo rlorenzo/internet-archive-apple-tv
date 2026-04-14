@@ -7,6 +7,7 @@
 
 import UIKit
 import Nuke
+import NukeExtensions
 
 /// Collection view cell for Continue Watching/Listening sections
 @MainActor
@@ -184,7 +185,7 @@ final class ContinueWatchingCell: UICollectionViewCell {
         if let thumbnailURL = progress.thumbnailURL {
             let placeholder = UIImage(systemName: progress.isVideo ? "film" : "music.note")
             let request = ImageRequest(url: thumbnailURL)
-            Nuke.loadImage(
+            NukeExtensions.loadImage(
                 with: request,
                 options: ImageLoadingOptions(
                     placeholder: placeholder,
@@ -205,7 +206,7 @@ final class ContinueWatchingCell: UICollectionViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
-        Nuke.cancelRequest(for: imageView)
+        NukeExtensions.cancelRequest(for: imageView)
         imageView.image = nil
         titleLabel.text = nil
         timeRemainingLabel.text = nil

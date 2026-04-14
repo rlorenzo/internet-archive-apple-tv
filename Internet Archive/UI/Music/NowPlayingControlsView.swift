@@ -30,39 +30,49 @@ final class NowPlayingControlsView: UIView {
         stack.axis = .horizontal
         stack.alignment = .center
         stack.distribution = .equalSpacing
-        stack.spacing = 50
+        stack.spacing = 0
         stack.translatesAutoresizingMaskIntoConstraints = false
         return stack
     }()
 
+    // Fixed button frame sizes: play/pause is larger for prominence,
+    // all other controls share a consistent size.
+    private static let standardButtonSize: CGFloat = 90
+    private static let primaryButtonSize: CGFloat = 110
+
     private lazy var shuffleButton: UIButton = createControlButton(
         systemName: "shuffle",
         action: #selector(shuffleTapped),
-        size: 36
+        iconSize: 36,
+        buttonSize: Self.standardButtonSize
     )
 
     private lazy var previousButton: UIButton = createControlButton(
         systemName: "backward.fill",
         action: #selector(previousTapped),
-        size: 44
+        iconSize: 44,
+        buttonSize: Self.standardButtonSize
     )
 
     private lazy var playPauseButton: UIButton = createControlButton(
         systemName: "play.fill",
         action: #selector(playPauseTapped),
-        size: 72
+        iconSize: 60,
+        buttonSize: Self.primaryButtonSize
     )
 
     private lazy var nextButton: UIButton = createControlButton(
         systemName: "forward.fill",
         action: #selector(nextTapped),
-        size: 44
+        iconSize: 44,
+        buttonSize: Self.standardButtonSize
     )
 
     private lazy var repeatButton: UIButton = createControlButton(
         systemName: "repeat",
         action: #selector(repeatTapped),
-        size: 36
+        iconSize: 36,
+        buttonSize: Self.standardButtonSize
     )
 
     /// Current playback state
@@ -98,7 +108,8 @@ final class NowPlayingControlsView: UIView {
         stackView.addArrangedSubview(repeatButton)
 
         NSLayoutConstraint.activate([
-            stackView.centerXAnchor.constraint(equalTo: centerXAnchor),
+            stackView.leadingAnchor.constraint(equalTo: leadingAnchor),
+            stackView.trailingAnchor.constraint(equalTo: trailingAnchor),
             stackView.centerYAnchor.constraint(equalTo: centerYAnchor),
             stackView.topAnchor.constraint(greaterThanOrEqualTo: topAnchor),
             stackView.bottomAnchor.constraint(lessThanOrEqualTo: bottomAnchor)
@@ -127,13 +138,21 @@ final class NowPlayingControlsView: UIView {
     private func createControlButton(
         systemName: String,
         action: Selector,
-        size: CGFloat
+        iconSize: CGFloat,
+        buttonSize: CGFloat
     ) -> UIButton {
         let button = UIButton(type: .system)
-        let config = UIImage.SymbolConfiguration(pointSize: size, weight: .medium)
+        let config = UIImage.SymbolConfiguration(pointSize: iconSize, weight: .medium)
         button.setImage(UIImage(systemName: systemName, withConfiguration: config), for: .normal)
         button.tintColor = .white
         button.addTarget(self, action: action, for: .primaryActionTriggered)
+
+        // Fixed square size prevents focus background from stretching
+        button.translatesAutoresizingMaskIntoConstraints = false
+        NSLayoutConstraint.activate([
+            button.widthAnchor.constraint(equalToConstant: buttonSize),
+            button.heightAnchor.constraint(equalToConstant: buttonSize)
+        ])
         return button
     }
 
@@ -144,7 +163,7 @@ final class NowPlayingControlsView: UIView {
     func setPlaying(_ playing: Bool) {
         isPlaying = playing
         let iconName = playing ? "pause.fill" : "play.fill"
-        let config = UIImage.SymbolConfiguration(pointSize: 72, weight: .medium)
+        let config = UIImage.SymbolConfiguration(pointSize: 60, weight: .medium)
         playPauseButton.setImage(UIImage(systemName: iconName, withConfiguration: config), for: .normal)
         playPauseButton.accessibilityLabel = playing ? "Pause" : "Play"
     }

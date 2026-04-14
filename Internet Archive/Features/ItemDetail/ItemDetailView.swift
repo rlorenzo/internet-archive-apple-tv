@@ -79,15 +79,16 @@ struct ItemDetailView: View {
     var body: some View {
         GeometryReader { geometry in
             HStack(alignment: .top, spacing: 60) {
-                // Left side: Thumbnail
-                thumbnailView
-                    .frame(width: geometry.size.width * 0.4)
+                // Left side: Thumbnail + playback controls
+                VStack(alignment: .leading, spacing: 30) {
+                    thumbnailView
+                    controlsSection
+                }
+                .frame(width: geometry.size.width * 0.4)
 
-                // Right side: Metadata and controls
+                // Right side: Metadata
                 VStack(alignment: .leading, spacing: 30) {
                     metadataSection
-                    Spacer()
-                    controlsSection
                 }
                 .frame(maxWidth: .infinity, alignment: .leading)
                 .padding(.vertical, 60)
@@ -406,8 +407,18 @@ struct ItemDetailView: View {
                 showPlayer = true // Will show error view
             }
         } else {
-            // Use SwiftUI fullScreenCover for audio (NowPlayingView)
-            showPlayer = true
+            // Use UIKit presentation for proper tvOS focus handling
+            let success = NowPlayingPresenter.presentFromMetadata(
+                item: item,
+                metadata: response,
+                savedProgress: savedProgress,
+                onDismiss: {
+                    self.checkSavedProgress()
+                }
+            )
+            if !success {
+                showPlayer = true // Will show error view
+            }
         }
     }
 

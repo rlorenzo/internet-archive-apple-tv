@@ -10,9 +10,9 @@
 		48B242C72F0DE75A00A59F96 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00001 /* Alamofire */; };
 		48B242C82F0DE75A00A59F96 /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00002 /* Nuke */; };
 		48B242C8AF0DE75A00A59F96 /* NukeUI in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00009 /* NukeUI */; };
+		48B242C8BF0DE75A00A59F96 /* NukeExtensions in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00010 /* NukeExtensions */; };
 		48B242CB2F0DE75A00A59F96 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00005 /* SwiftSoup */; };
 		48B242CE2F0DE75A00A59F96 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00008 /* Alamofire */; };
-		5B209B3244745CCDF1B7349B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C0C3712C0BC3B5ECEE64F311 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -75,8 +75,6 @@
 		};
 		48AC81C72ED1181A004C9F77 /* Internet ArchiveUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Internet ArchiveUITests";
 			sourceTree = "<group>";
 		};
@@ -105,6 +103,7 @@
 				48B242CB2F0DE75A00A59F96 /* SwiftSoup in Frameworks */,
 				48B242C82F0DE75A00A59F96 /* Nuke in Frameworks */,
 				48B242C8AF0DE75A00A59F96 /* NukeUI in Frameworks */,
+				48B242C8BF0DE75A00A59F96 /* NukeExtensions in Frameworks */,
 				48B242C72F0DE75A00A59F96 /* Alamofire in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -202,6 +201,7 @@
 				SPM00001 /* Alamofire */,
 				SPM00002 /* Nuke */,
 				SPM00009 /* NukeUI */,
+				SPM00010 /* NukeExtensions */,
 				SPM00005 /* SwiftSoup */,
 			);
 			productName = "Internet Archive";
@@ -282,7 +282,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5B209B3244745CCDF1B7349B /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -483,7 +482,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -513,7 +512,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -544,7 +543,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -574,7 +573,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
@@ -715,11 +714,6 @@
 			package = PKG00002 /* XCRemoteSwiftPackageReference "Nuke" */;
 			productName = Nuke;
 		};
-		SPM00009 /* NukeUI */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = PKG00002 /* XCRemoteSwiftPackageReference "Nuke" */;
-			productName = NukeUI;
-		};
 		SPM00005 /* SwiftSoup */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = PKG00005 /* XCRemoteSwiftPackageReference "SwiftSoup" */;
@@ -729,6 +723,16 @@
 			isa = XCSwiftPackageProductDependency;
 			package = PKG00001 /* XCRemoteSwiftPackageReference "Alamofire" */;
 			productName = Alamofire;
+		};
+		SPM00009 /* NukeUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = PKG00002 /* XCRemoteSwiftPackageReference "Nuke" */;
+			productName = NukeUI;
+		};
+		SPM00010 /* NukeExtensions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = PKG00002 /* XCRemoteSwiftPackageReference "Nuke" */;
+			productName = NukeExtensions;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

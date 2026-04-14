@@ -8,6 +8,7 @@
 
 import UIKit
 import Nuke
+import NukeExtensions
 
 /// Modern collection view cell with liquid glass effects and enhanced focus
 @MainActor
@@ -152,7 +153,7 @@ final class ModernItemCell: UICollectionViewCell {
         // Load image
         if let imageURL = item.imageURL {
             let request = ImageRequest(url: imageURL)
-            Nuke.loadImage(
+            NukeExtensions.loadImage(
                 with: request,
                 options: ImageLoadingOptions(
                     placeholder: UIImage(systemName: "film"),
@@ -188,7 +189,7 @@ final class ModernItemCell: UICollectionViewCell {
 
     override func prepareForReuse() {
         super.prepareForReuse()
-        Nuke.cancelRequest(for: imageView)
+        NukeExtensions.cancelRequest(for: imageView)
         imageView.image = nil
         titleLabel.text = nil
         accessibilityLabel = nil

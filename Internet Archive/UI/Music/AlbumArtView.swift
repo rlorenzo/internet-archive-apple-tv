@@ -7,6 +7,7 @@
 
 import UIKit
 import Nuke
+import NukeExtensions
 
 /// Large album art view with reflection effect for the Now Playing screen
 @MainActor
@@ -125,22 +126,23 @@ final class AlbumArtView: UIView {
         }
 
         let request = ImageRequest(url: url)
-        Nuke.loadImage(
+        NukeExtensions.loadImage(
             with: request,
             options: ImageLoadingOptions(
                 transition: .fadeIn(duration: 0.3)
             ),
-            into: imageView
-        ) { [weak self] result in
-            switch result {
-            case .success(let response):
-                self?.placeholderImageView.isHidden = true
-                self?.reflectionImageView.image = response.image
-                self?.accessibilityLabel = "Album artwork loaded"
-            case .failure:
-                self?.showPlaceholder()
+            into: imageView,
+            completion: { [weak self] result in
+                switch result {
+                case .success(let response):
+                    self?.placeholderImageView.isHidden = true
+                    self?.reflectionImageView.image = response.image
+                    self?.accessibilityLabel = "Album artwork loaded"
+                case .failure:
+                    self?.showPlaceholder()
+                }
             }
-        }
+        )
     }
 
     /// Set the album art directly from an image

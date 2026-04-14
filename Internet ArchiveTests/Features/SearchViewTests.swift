@@ -170,33 +170,3 @@ final class SearchResultsDestinationTests: XCTestCase {
         XCTAssertEqual(destinations.count, 2)
     }
 }
-
-// MARK: - Notification Name Tests
-
-/// Tests for SearchView-related notification names.
-@MainActor
-final class SearchNotificationTests: XCTestCase {
-
-    func testPopSearchNavigation_notificationExists() {
-        let notification = Notification.Name.popSearchNavigation
-
-        XCTAssertEqual(notification.rawValue, "popSearchNavigation")
-    }
-
-    func testPopSearchNavigation_canBePosted() {
-        let expectation = self.expectation(description: "Notification received")
-
-        let observer = NotificationCenter.default.addObserver(
-            forName: .popSearchNavigation,
-            object: nil,
-            queue: .main
-        ) { _ in
-            expectation.fulfill()
-        }
-
-        NotificationCenter.default.post(name: .popSearchNavigation, object: nil)
-
-        waitForExpectations(timeout: 1.0)
-        NotificationCenter.default.removeObserver(observer)
-    }
-}

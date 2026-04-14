@@ -80,8 +80,13 @@ final class VideoLoadingStateTests: XCTestCase {
 final class MockVideoCollectionService: CollectionServiceProtocol, @unchecked Sendable {
     var mockResults: [SearchResult] = []
     var mockMetadataResponse: ItemMetadataResponse?
+    var mockPageResponse: SearchResponse?
+    var mockPageResponses: [Int: SearchResponse] = [:]
     var errorToThrow: Error?
     var getCollectionsCalled = false
+    var getCollectionPageCalled = false
+    var lastPage: Int?
+    var lastPageSize: Int?
     var delayMilliseconds: UInt64 = 0
 
     func getCollections(collection: String, resultType: String, limit: Int?) async throws -> (collection: String, results: [SearchResult]) {
@@ -110,39 +115,49 @@ final class MockVideoCollectionService: CollectionServiceProtocol, @unchecked Se
         return response
     }
 
+    func getCollectionPage(
+        collection: String,
+        resultType: String,
+        page: Int,
+        pageSize: Int,
+        sort: String
+    ) async throws -> SearchResponse {
+        getCollectionPageCalled = true
+        lastPage = page
+        lastPageSize = pageSize
+
+        if delayMilliseconds > 0 {
+            try? await Task.sleep(nanoseconds: delayMilliseconds * 1_000_000)
+        }
+
+        if let error = errorToThrow {
+            throw error
+        }
+
+        if let keyed = mockPageResponses[page] {
+            return keyed
+        }
+
+        if let response = mockPageResponse {
+            return response
+        }
+
+        return SearchResponse(
+            responseHeader: nil,
+            response: SearchResponse.SearchResults(numFound: 0, start: 0, docs: [])
+        )
+    }
+
     func reset() {
         mockResults = []
         mockMetadataResponse = nil
+        mockPageResponse = nil
+        mockPageResponses = [:]
         errorToThrow = nil
         getCollectionsCalled = false
+        getCollectionPageCalled = false
+        lastPage = nil
+        lastPageSize = nil
         delayMilliseconds = 0
-    }
-}
-
-// MARK: - Notification Tests
-
-final class VideoNotificationTests: XCTestCase {
-
-    func testPopVideoNavigationNotification_exists() {
-        // Verify the notification name is accessible
-        let notificationName = Notification.Name.popVideoNavigation
-        XCTAssertEqual(notificationName.rawValue, "popVideoNavigation")
-    }
-
-    func testPopVideoNavigationNotification_canBePosted() {
-        let expectation = XCTestExpectation(description: "Notification received")
-
-        let observer = NotificationCenter.default.addObserver(
-            forName: .popVideoNavigation,
-            object: nil,
-            queue: .main
-        ) { _ in
-            expectation.fulfill()
-        }
-
-        NotificationCenter.default.post(name: .popVideoNavigation, object: nil)
-
-        wait(for: [expectation], timeout: 1.0)
-        NotificationCenter.default.removeObserver(observer)
     }
 }

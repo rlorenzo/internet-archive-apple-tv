@@ -8,6 +8,7 @@
 
 import UIKit
 import Nuke
+import NukeExtensions
 
 /// Manages image caching with Nuke's two-tier strategy:
 /// 1. Fast in-memory cache - device-aware (50–150 MB), cleared on memory warnings
@@ -151,27 +152,26 @@ extension UIImageView {
     ///   - placeholder: Placeholder image
     @MainActor
     func loadImage(from url: URL?, placeholder: UIImage? = nil) {
-        // Set placeholder
-        self.image = placeholder
-
-        // Load image
-        guard let url = url else { return }
+        guard let url = url else {
+            self.image = placeholder
+            return
+        }
 
         let request = ImageRequest(url: url)
-        Nuke.loadImage(
+        NukeExtensions.loadImage(
             with: request,
+            options: ImageLoadingOptions(
+                placeholder: placeholder,
+                transition: .fadeIn(duration: 0.3),
+                failureImage: placeholder
+            ),
             into: self,
-            transition: .fadeIn(duration: 0.3),
-            completion: { [weak self] result in
+            completion: { result in
                 if case .failure(let error) = result {
                     _ = error
                     #if DEBUG
                     print("Failed to load image: \(error.localizedDescription)")
                     #endif
-                    // Keep placeholder on failure
-                    if self?.image == nil {
-                        self?.image = placeholder
-                    }
                 }
             }
         )
