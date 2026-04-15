@@ -109,7 +109,6 @@ private struct FullTextViewer: View {
             isTextFocused = true
         }
         .accessibilityLabel("Full description")
-        .accessibilityValue(text)
     }
 }
 

@@ -59,8 +59,10 @@ extension ImagePrefetcherHelper: UICollectionViewDataSourcePrefetching {
         let urls = extractURLs(for: indexPaths)
         guard !urls.isEmpty else { return }
 
-        // Prefetch images using Nuke
-        prefetcher.startPrefetching(with: urls)
+        // Low-priority requests so off-screen prefetches don't compete with
+        // on-screen image loads.
+        let requests = urls.map { ImageRequest(url: $0, priority: .low) }
+        prefetcher.startPrefetching(with: requests)
 
         #if DEBUG
         print("Prefetching \(urls.count) images for index paths: \(indexPaths.map { $0.item })")
@@ -71,8 +73,8 @@ extension ImagePrefetcherHelper: UICollectionViewDataSourcePrefetching {
         let urls = extractURLs(for: indexPaths)
         guard !urls.isEmpty else { return }
 
-        // Cancel prefetching with Nuke
-        prefetcher.stopPrefetching(with: urls)
+        let requests = urls.map { ImageRequest(url: $0, priority: .low) }
+        prefetcher.stopPrefetching(with: requests)
 
         #if DEBUG
         print("Canceled prefetching for index paths: \(indexPaths.map { $0.item })")

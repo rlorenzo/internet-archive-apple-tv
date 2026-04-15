@@ -523,9 +523,17 @@ final class VideoViewModelTests: XCTestCase {
 
         await viewModel.setSortOption(.monthlyViews)
 
+        // Clear state set by the initial load so the next assertions can only
+        // be satisfied by the next-page fetch.
+        mockService.lastSort = nil
+        mockService.lastPage = nil
+        mockService.getCollectionPageCalled = false
+
         let nearEndItem = viewModel.state.items[20]
         await viewModel.loadNextPageIfNeeded(currentItem: nearEndItem)
 
+        XCTAssertTrue(mockService.getCollectionPageCalled)
+        XCTAssertEqual(mockService.lastPage, 1)
         XCTAssertEqual(mockService.lastSort, "month desc")
     }
 }
