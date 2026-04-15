@@ -158,6 +158,8 @@ extension UIImageView {
     @MainActor
     func loadImage(from url: URL?, placeholder: UIImage? = nil) {
         guard let url = url else {
+            // Cancel any in-flight request so it can't later overwrite the placeholder.
+            NukeExtensions.cancelRequest(for: self)
             self.image = placeholder
             return
         }

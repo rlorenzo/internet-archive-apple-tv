@@ -159,6 +159,8 @@ final class AlbumArtView: UIView {
     }
 
     private func showPlaceholder() {
+        // Cancel any in-flight Nuke request so it can't later overwrite the placeholder.
+        NukeExtensions.cancelRequest(for: imageView)
         imageView.image = nil
         reflectionImageView.image = nil
         placeholderImageView.isHidden = false
