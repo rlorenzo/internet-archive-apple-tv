@@ -78,8 +78,8 @@ final class NukeIntegrationTests: XCTestCase {
 
         imageView.loadImage(from: url, placeholder: placeholder)
 
-        // Placeholder should be set immediately (before async load completes)
-        XCTAssertNotNil(imageView.image)
+        // Placeholder should be set synchronously before the async load completes.
+        XCTAssertEqual(imageView.image, placeholder)
     }
 
     func testLoadImage_withNilURL_keepsPlaceholder() {
@@ -183,8 +183,8 @@ final class NukeIntegrationTests: XCTestCase {
         XCTAssertNotNil(ImageCacheManager.shared)
     }
 
-    func testPrefetchImages_empty_doesNotCreatePrefetcher() {
-        // Empty array should early-return without creating a prefetcher
+    func testPrefetchImages_emptyArray_earlyReturns() {
+        // Empty array should early-return and not invoke the long-lived prefetcher.
         ImageCacheManager.shared.prefetchImages(for: [])
         XCTAssertNotNil(ImageCacheManager.shared)
     }

@@ -78,7 +78,7 @@ final class VideoViewModel: ObservableObject {
     }
 
     /// Load the first page of content, resetting all pagination state.
-    /// Uses server-side sorting by downloads so client-side sort is no longer needed.
+    /// Uses the currently selected server-side sort option, so no client-side sorting is needed.
     func loadInitialPage() async {
         let loadToken = UUID()
         currentLoadToken = loadToken
