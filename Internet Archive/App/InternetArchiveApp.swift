@@ -20,6 +20,14 @@ struct InternetArchiveApp: App {
     /// Shared app state for authentication and user preferences
     @StateObject private var appState = AppState()
 
+    @MainActor
+    init() {
+        // Force ImageCacheManager.shared to initialize at launch so its
+        // configured pipeline replaces ImagePipeline.shared before any
+        // NukeExtensions.loadImage call runs in a collection view cell.
+        _ = ImageCacheManager.shared
+    }
+
     var body: some Scene {
         WindowGroup {
             ContentView()

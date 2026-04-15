@@ -113,7 +113,7 @@ Config/                         # Build configurations
 
 ### Image Loading
 - Use `ImageCacheManager` (backed by Nuke pipeline) for cached image loading
-- Use `Nuke.loadImage()` with `ImageLoadingOptions` for UIKit collection view cells
+- Use `NukeExtensions.loadImage(...)` with `ImageLoadingOptions` for UIKit collection view cells, and `NukeExtensions.cancelRequest(...)` for cancellation on reuse
 - Use `LazyImage` (NukeUI) or `AsyncImage` for SwiftUI views
 
 ### SwiftUI Navigation

@@ -25,6 +25,10 @@ final class ImageCacheManager {
     /// The Nuke image pipeline used for all image loading
     let pipeline: ImagePipeline
 
+    /// Long-lived prefetcher; retained so in-flight prefetches aren't cancelled
+    /// when a caller's scope ends (Nuke cancels prefetcher tasks on deinit).
+    private let prefetcher: ImagePrefetcher
+
     /// Compute device-aware memory cache size (capped at ~5% of physical RAM)
     private static var deviceAwareMemoryCacheSize: Int {
         let physicalMemory = ProcessInfo.processInfo.physicalMemory
@@ -50,9 +54,11 @@ final class ImageCacheManager {
         config.dataCache = dataCache
         config.dataCachePolicy = .automatic
 
-        pipeline = ImagePipeline(configuration: config)
+        let pipeline = ImagePipeline(configuration: config)
+        self.pipeline = pipeline
+        self.prefetcher = ImagePrefetcher(pipeline: pipeline)
 
-        // Also set as shared pipeline for NukeUI LazyImage usage
+        // Also set as shared pipeline for NukeUI LazyImage and NukeExtensions usage
         ImagePipeline.shared = pipeline
 
         // Setup memory warning observer
@@ -101,7 +107,6 @@ final class ImageCacheManager {
     func prefetchImages(for urls: [URL]) {
         guard !urls.isEmpty else { return }
         let requests = urls.map { ImageRequest(url: $0, priority: .low) }
-        let prefetcher = ImagePrefetcher(pipeline: pipeline)
         prefetcher.startPrefetching(with: requests)
     }
 
