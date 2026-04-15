@@ -41,6 +41,12 @@ struct CollectionBrowserView: View {
     /// Error message
     @State private var errorMessage: String?
 
+    /// Sort order for collection items
+    @State private var sortOption: CollectionSortOption = .weeklyViews
+
+    /// Token to discard stale responses after sort changes
+    @State private var loadToken = UUID()
+
     /// Navigation path passed from parent for proper back navigation
     @Binding var navigationPath: NavigationPath
 
@@ -77,6 +83,9 @@ struct CollectionBrowserView: View {
         .background(Color.black.opacity(0.95))
         .task {
             await loadCollectionItems()
+        }
+        .onChange(of: sortOption) { _, _ in
+            Task { await loadCollectionItems() }
         }
         // Note: NavigationStack handles back navigation automatically on tvOS.
         // Don't use .onExitCommand here as it can interfere with the navigation stack.
@@ -177,8 +186,28 @@ struct CollectionBrowserView: View {
 
     private var itemsGrid: some View {
         VStack(alignment: .leading, spacing: 20) {
-            SectionHeader("Items")
-                .accessibilityAddTraits(.isHeader)
+            HStack {
+                Text("Items")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                    .accessibilityAddTraits(.isHeader)
+
+                Spacer()
+
+                Text("Sort by")
+                    .font(.callout)
+                    .foregroundStyle(.tertiary)
+
+                Picker("Sort by", selection: $sortOption) {
+                    ForEach(CollectionSortOption.allCases) { option in
+                        Text(option.displayName).tag(option)
+                    }
+                }
+                .pickerStyle(.segmented)
+                .frame(width: 400)
+                .accessibilityLabel("Sort order")
+            }
 
             LazyVGrid(
                 columns: gridColumns,
@@ -289,8 +318,11 @@ struct CollectionBrowserView: View {
     // MARK: - Data Loading
 
     private func loadCollectionItems() async {
+        let token = UUID()
+        loadToken = token
         isLoading = true
         errorMessage = nil
+        items = []
 
         do {
             // Build search options
@@ -299,7 +331,7 @@ struct CollectionBrowserView: View {
             let options: [String: String] = [
                 "rows": "100",
                 "fl[]": "identifier,title,mediatype,creator,description,date,year,downloads",
-                "sort": "downloads desc"
+                "sort[]": sortOption.apiSortString
             ]
 
             // Load items within the collection
@@ -308,6 +340,7 @@ struct CollectionBrowserView: View {
                 options: options
             )
 
+            guard token == loadToken else { return }
             items = result.response.docs
 
             // Also try to load collection metadata for description
@@ -315,6 +348,7 @@ struct CollectionBrowserView: View {
                 let metadata = try await APIManager.sharedManager.getMetaDataTyped(
                     identifier: collection.identifier
                 )
+                guard token == loadToken else { return }
                 collectionMetadata = metadata.metadata
             } catch {
                 // Non-fatal: description from search result is sufficient
@@ -322,9 +356,11 @@ struct CollectionBrowserView: View {
 
             isLoading = false
         } catch let networkError as NetworkError {
+            guard token == loadToken else { return }
             errorMessage = ErrorPresenter.shared.userFriendlyMessage(for: networkError)
             isLoading = false
         } catch {
+            guard token == loadToken else { return }
             errorMessage = "Failed to load collection items. Please try again."
             isLoading = false
         }

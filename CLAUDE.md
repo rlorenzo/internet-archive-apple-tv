@@ -88,7 +88,8 @@ Config/                         # Build configurations
 - **Platform:** tvOS 17.0+ (deployment target)
 - **Language:** Swift 6.0 with strict concurrency
 - **UI:** SwiftUI (primary) with UIKit wrappers for video/audio playback
-- **Networking:** Alamofire 5.11, AlamofireImage 4.3
+- **Networking:** Alamofire 5.11
+- **Image Loading:** Nuke 12, NukeUI
 - **Dependencies:** Swift Package Manager (SPM)
 - **Testing:** Unit tests use a mix of Swift Testing and XCTest (prefer Swift Testing for new unit tests); UI tests use XCTest
 
@@ -111,9 +112,9 @@ Config/                         # Build configurations
 - Suppress verbose logging during tests with `isRunningTests` checks
 
 ### Image Loading
-- Use `ImageCacheManager` for cached image loading
-- Use AlamofireImage's `af.setImage()` for collection view cells
-- Use `AsyncImage` for SwiftUI views with custom placeholder handling
+- Use `ImageCacheManager` (backed by Nuke pipeline) for cached image loading
+- Use `NukeExtensions.loadImage(...)` with `ImageLoadingOptions` for UIKit collection view cells, and `NukeExtensions.cancelRequest(...)` for cancellation on reuse
+- Use `LazyImage` (NukeUI) or `AsyncImage` for SwiftUI views
 
 ### SwiftUI Navigation
 - App uses SwiftUI `TabView` for main navigation (5 tabs)

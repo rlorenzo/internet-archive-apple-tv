@@ -11,6 +11,22 @@ import Foundation
 protocol CollectionServiceProtocol: Sendable {
     func getCollections(collection: String, resultType: String, limit: Int?) async throws -> (collection: String, results: [SearchResult])
     func getMetadata(identifier: String) async throws -> ItemMetadataResponse
+
+    /// Fetch a single page of collection items using server-side sorting and pagination.
+    /// - Parameters:
+    ///   - collection: The collection identifier
+    ///   - resultType: The mediatype filter (e.g., "collection", "movies", "audio")
+    ///   - page: Zero-indexed page number (converted to 1-indexed for the API)
+    ///   - pageSize: Number of items per page
+    ///   - sort: Solr-style sort expression (e.g., "downloads desc")
+    /// - Returns: Raw SearchResponse so callers can read numFound for pagination decisions
+    func getCollectionPage(
+        collection: String,
+        resultType: String,
+        page: Int,
+        pageSize: Int,
+        sort: String
+    ) async throws -> SearchResponse
 }
 
 /// ViewModel state for collection browsing
@@ -137,5 +153,26 @@ struct DefaultCollectionService: CollectionServiceProtocol {
     @MainActor
     func getMetadata(identifier: String) async throws -> ItemMetadataResponse {
         try await APIManager.sharedManager.getMetaDataTyped(identifier: identifier)
+    }
+
+    @MainActor
+    func getCollectionPage(
+        collection: String,
+        resultType: String,
+        page: Int,
+        pageSize: Int,
+        sort: String
+    ) async throws -> SearchResponse {
+        let options: [String: String] = [
+            "rows": "\(pageSize)",
+            "page": "\(page + 1)", // API uses 1-indexed pages
+            "fl[]": "identifier,title,year,downloads,date,creator,description,mediatype,collection,licenseurl",
+            "sort[]": sort
+        ]
+
+        return try await APIManager.sharedManager.searchTyped(
+            query: "collection:(\(collection)) And mediatype:\(resultType)",
+            options: options
+        )
     }
 }

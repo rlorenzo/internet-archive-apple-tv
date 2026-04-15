@@ -24,8 +24,8 @@ struct MusicHomeView: View {
     /// Navigation path for programmatic navigation control
     @State private var navigationPath = NavigationPath()
 
-    /// Binding to expose navigation depth to parent for exit command handling
-    @Binding var hasNavigationHistory: Bool
+    /// Selected sort order for the featured music grid
+    @State private var selectedSort: CollectionSortOption = .weeklyViews
 
     // MARK: - Body
 
@@ -60,21 +60,14 @@ struct MusicHomeView: View {
                 )
             }
         }
-        .onChange(of: navigationPath.count) { _, newCount in
-            // Sync navigation state with parent
-            hasNavigationHistory = newCount > 0
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .popMusicNavigation)) { _ in
-            // Handle pop request from parent (when Menu pressed on tab bar)
-            if !navigationPath.isEmpty {
-                navigationPath.removeLast()
-            }
-        }
         .task {
             await loadContent()
         }
         .onAppear {
             refreshContinueListening()
+        }
+        .onChange(of: selectedSort) { _, newValue in
+            Task { await viewModel.setSortOption(newValue) }
         }
     }
 
@@ -114,23 +107,59 @@ struct MusicHomeView: View {
 
     // MARK: - Featured Music Section
 
-    /// Card size for music items (square album art)
-    private let musicCardSize: CGFloat = 220
-
     private var featuredMusicSection: some View {
         VStack(alignment: .leading, spacing: 20) {
             // Only show title after load attempt to avoid flash
-            SectionHeader(viewModel.state.displayTitle)
-                .opacity(viewModel.state.hasTitleLoadAttempted ? 1 : 0)
-                .accessibilityAddTraits(.isHeader)
+            HStack {
+                Text(viewModel.state.displayTitle)
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                    .accessibilityAddTraits(.isHeader)
 
-            if viewModel.state.hasItems {
-                // Use horizontal scroll rows for proper aspect ratio support
-                VStack(alignment: .leading, spacing: 48) {
-                    musicRow(items: Array(viewModel.state.items.prefix(6)))
-                    musicRow(items: Array(viewModel.state.items.dropFirst(6).prefix(6)))
+                Spacer()
+
+                Picker("Sort by", selection: $selectedSort) {
+                    ForEach(CollectionSortOption.allCases) { option in
+                        Text(option.displayName).tag(option)
+                    }
                 }
-            } else {
+                .pickerStyle(.segmented)
+                .frame(width: 400)
+                .accessibilityLabel("Sort order")
+            }
+            .opacity(viewModel.state.hasTitleLoadAttempted ? 1 : 0)
+
+            if viewModel.state.isLoading && !viewModel.state.hasItems {
+                SkeletonGrid(cardType: .music, columns: 6, rows: 3)
+            } else if viewModel.state.hasItems {
+                LazyVGrid(
+                    columns: SearchResultsGridHelpers.gridColumns(for: .music),
+                    spacing: 40
+                ) {
+                    ForEach(viewModel.state.items) { item in
+                        Button {
+                            navigationPath.append(item)
+                        } label: {
+                            SearchResultCard(item: item, mediaType: .music)
+                        }
+                        .tvCardStyle()
+                        .onAppear {
+                            Task { await viewModel.loadNextPageIfNeeded(currentItem: item) }
+                        }
+                    }
+
+                    if viewModel.state.isLoadingMore {
+                        ForEach(0..<SearchResultsGridHelpers.skeletonCardCount(for: .music), id: \.self) { _ in
+                            SkeletonCard.music
+                        }
+                    }
+                }
+
+                if !viewModel.state.hasMore && viewModel.state.hasLoaded {
+                    noMoreContentView
+                }
+            } else if viewModel.state.hasLoaded {
                 EmptyContentView.emptyCollection(collectionName: "music")
             }
         }
@@ -138,53 +167,12 @@ struct MusicHomeView: View {
         .accessibilityLabel("\(viewModel.state.displayTitle) section with \(viewModel.state.items.count) items")
     }
 
-    private func musicRow(items: [SearchResult]) -> some View {
-        HStack(alignment: .top, spacing: 40) {
-            ForEach(items) { item in
-                Button {
-                    navigationPath.append(item)
-                } label: {
-                    VStack(alignment: .leading, spacing: 12) {
-                        // Square album art thumbnail
-                        MediaThumbnailView(
-                            identifier: item.identifier,
-                            mediaType: .music,
-                            size: CGSize(width: musicCardSize, height: musicCardSize)
-                        )
-
-                        // Text content - fixed height for consistent alignment
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(item.safeTitle)
-                                .font(.caption)
-                                .fontWeight(.medium)
-                                .lineLimit(2)
-                                .foregroundStyle(.primary)
-                                .frame(height: 44, alignment: .bottomLeading)
-
-                            Text(subtitleFor(item) ?? " ")
-                                .font(.caption2)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    .frame(width: musicCardSize)
-                }
-                .tvCardStyle()
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(musicAccessibilityLabel(for: item))
-                .accessibilityHint("Double-tap to view details")
-            }
-        }
-        .padding(.vertical, 50)
-    }
-
-    /// Generate accessibility label for a music item
-    private func musicAccessibilityLabel(for item: SearchResult) -> String {
-        var components = [item.safeTitle, "Music"]
-        if let subtitle = subtitleFor(item) {
-            components.insert(subtitle, at: 1)
-        }
-        return components.joined(separator: ", ")
+    private var noMoreContentView: some View {
+        Text("No More Content")
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 40)
     }
 
     // MARK: - Loading View
@@ -201,7 +189,7 @@ struct MusicHomeView: View {
                     // Keep title hidden until load attempt to avoid flash
                     SectionHeader(viewModel.state.displayTitle)
                         .opacity(viewModel.state.hasTitleLoadAttempted ? 1 : 0)
-                    SkeletonGrid(cardType: .music, columns: 6, rows: 2)
+                    SkeletonGrid(cardType: .music, columns: 6, rows: 3)
                 }
                 .padding(.horizontal, 80)
             }
@@ -212,7 +200,7 @@ struct MusicHomeView: View {
     // MARK: - Data Loading
 
     private func loadContent() async {
-        await viewModel.loadCollection()
+        await viewModel.loadInitialPage()
     }
 
     private func refreshContinueListening() {
@@ -230,31 +218,11 @@ struct MusicHomeView: View {
         )
         navigationPath.append(item)
     }
-
-    /// Returns subtitle for item, or nil if it would duplicate the title
-    private func subtitleFor(_ item: SearchResult) -> String? {
-        // Try creator first, then year
-        if let creator = item.creator {
-            // Don't show if creator matches title (common for collections)
-            if creator.localizedCaseInsensitiveCompare(item.safeTitle) != .orderedSame {
-                return creator
-            }
-        }
-        // Fall back to year if no unique creator
-        return item.year
-    }
 }
 
 // MARK: - Preview
 
 #Preview {
-    MusicHomeView(hasNavigationHistory: .constant(false))
+    MusicHomeView()
         .environmentObject(AppState())
-}
-
-// MARK: - Notification Names
-
-extension Notification.Name {
-    /// Posted when parent requests music navigation to pop back
-    static let popMusicNavigation = Notification.Name("popMusicNavigation")
 }

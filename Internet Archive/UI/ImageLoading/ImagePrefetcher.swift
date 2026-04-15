@@ -7,21 +7,24 @@
 //
 
 import UIKit
+import Nuke
 
 /// Handles prefetching of images for collection views with DiffableDataSource
 @MainActor
-final class ImagePrefetcher: NSObject {
+final class ImagePrefetcherHelper: NSObject {
 
     // MARK: - Properties
 
     private weak var collectionView: UICollectionView?
     private weak var dataSource: ItemDataSource?
+    private let prefetcher: ImagePrefetcher
 
     // MARK: - Initialization
 
     init(collectionView: UICollectionView, dataSource: ItemDataSource? = nil) {
         self.collectionView = collectionView
         self.dataSource = dataSource
+        self.prefetcher = ImagePrefetcher(pipeline: ImageCacheManager.shared.pipeline)
         super.init()
         collectionView.prefetchDataSource = self
     }
@@ -50,14 +53,16 @@ final class ImagePrefetcher: NSObject {
 
 // MARK: - UICollectionViewDataSourcePrefetching
 
-extension ImagePrefetcher: UICollectionViewDataSourcePrefetching {
+extension ImagePrefetcherHelper: UICollectionViewDataSourcePrefetching {
 
     func collectionView(_ collectionView: UICollectionView, prefetchItemsAt indexPaths: [IndexPath]) {
         let urls = extractURLs(for: indexPaths)
         guard !urls.isEmpty else { return }
 
-        // Prefetch images using cache manager
-        ImageCacheManager.shared.prefetchImages(for: urls)
+        // Low-priority requests so off-screen prefetches don't compete with
+        // on-screen image loads.
+        let requests = urls.map { ImageRequest(url: $0, priority: .low) }
+        prefetcher.startPrefetching(with: requests)
 
         #if DEBUG
         print("Prefetching \(urls.count) images for index paths: \(indexPaths.map { $0.item })")
@@ -65,8 +70,12 @@ extension ImagePrefetcher: UICollectionViewDataSourcePrefetching {
     }
 
     func collectionView(_ collectionView: UICollectionView, cancelPrefetchingForItemsAt indexPaths: [IndexPath]) {
-        // Note: AlamofireImage doesn't support canceling specific prefetch requests
-        // Images will continue to download but won't block high-priority requests
+        let urls = extractURLs(for: indexPaths)
+        guard !urls.isEmpty else { return }
+
+        let requests = urls.map { ImageRequest(url: $0, priority: .low) }
+        prefetcher.stopPrefetching(with: requests)
+
         #if DEBUG
         print("Canceled prefetching for index paths: \(indexPaths.map { $0.item })")
         #endif

@@ -1,5 +1,5 @@
 {
-  "originHash" : "1f4ebc0b3c6e488fb6cb5c40cb819a0fd3178298876eb6e1fede84d35f88a9ba",
+  "originHash" : "98ca721e211e37bd972994bcef9c22ff0157472615e8996a92e35711fc3640ff",
   "pins" : [
     {
       "identity" : "alamofire",
@@ -11,21 +11,21 @@
       }
     },
     {
-      "identity" : "alamofireimage",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/Alamofire/AlamofireImage.git",
-      "state" : {
-        "revision" : "1eaf3b6c6882bed10f6e7b119665599dd2329aa1",
-        "version" : "4.3.0"
-      }
-    },
-    {
       "identity" : "lrucache",
       "kind" : "remoteSourceControl",
       "location" : "https://github.com/nicklockwood/LRUCache.git",
       "state" : {
-        "revision" : "0d91406ecd4d6c1c56275866f00508d9aeacc92a",
-        "version" : "1.2.0"
+        "revision" : "cb5b2bd0da83ad29c0bec762d39f41c8ad0eaf3e",
+        "version" : "1.2.1"
+      }
+    },
+    {
+      "identity" : "nuke",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/kean/Nuke.git",
+      "state" : {
+        "revision" : "0ead44350d2737db384908569c012fe67c421e4d",
+        "version" : "12.8.0"
       }
     },
     {
@@ -44,22 +44,6 @@
       "state" : {
         "revision" : "d86f244ed497d48012782e2f59c985a55e77b3f5",
         "version" : "2.11.3"
-      }
-    },
-    {
-      "identity" : "tvosmorebutton",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/cgoldsby/TvOSMoreButton.git",
-      "state" : {
-        "revision" : "afd4fa478d8a214a17152caa6209b49a08066ea3"
-      }
-    },
-    {
-      "identity" : "tvostextviewer",
-      "kind" : "remoteSourceControl",
-      "location" : "https://github.com/dcordero/TvOSTextViewer.git",
-      "state" : {
-        "revision" : "87829515d7f9246a68a7f777b227d996dae28417"
       }
     }
   ],

@@ -2,17 +2,15 @@
 //  DescriptionView.swift
 //  Internet Archive
 //
-//  SwiftUI view for displaying expandable descriptions with TvOSTextViewer
+//  SwiftUI view for displaying expandable descriptions with native full-screen viewer
 //
 
 import SwiftUI
-import TvOSTextViewer
-import UIKit
 
 /// A SwiftUI view that renders HTML content with expandable full-screen viewer.
 ///
-/// Displays truncated text that expands to full-screen TvOSTextViewer when
-/// the "Read More" button is pressed.
+/// Displays truncated text that expands to a native full-screen scrollable text view
+/// when the "Read More" button is pressed.
 ///
 /// ## Usage
 /// ```swift
@@ -74,74 +72,43 @@ struct DescriptionView: View {
             }
         }
         .fullScreenCover(isPresented: $showFullText) {
-            FullTextViewerWrapper(text: plainText) {
+            FullTextViewer(text: plainText) {
                 showFullText = false
             }
         }
     }
 }
 
-// MARK: - Full Text Viewer Wrapper
+// MARK: - Full Text Viewer
 
-/// UIViewControllerRepresentable wrapper for TvOSTextViewerViewController
-private struct FullTextViewerWrapper: UIViewControllerRepresentable {
+/// Native SwiftUI full-screen scrollable text viewer
+private struct FullTextViewer: View {
     let text: String
     let onDismiss: () -> Void
 
-    func makeUIViewController(context: Context) -> UIViewController {
-        let textViewerController = TvOSTextViewerViewController()
-        textViewerController.text = text
-        textViewerController.textEdgeInsets = UIEdgeInsets(top: 100, left: 250, bottom: 100, right: 250)
+    @FocusState private var isTextFocused: Bool
 
-        // Wrap in a container that handles dismissal
-        let container = TextViewerContainerController(
-            textViewer: textViewerController,
-            onDismiss: onDismiss
-        )
-        return container
-    }
+    var body: some View {
+        ZStack {
+            Color.black.ignoresSafeArea()
 
-    func updateUIViewController(_ uiViewController: UIViewController, context: Context) {
-        // No updates needed
-    }
-}
-
-// MARK: - Text Viewer Container
-
-/// Container controller that wraps TvOSTextViewerViewController and handles dismissal
-private final class TextViewerContainerController: UIViewController {
-    private let textViewer: TvOSTextViewerViewController
-    private let onDismiss: () -> Void
-
-    init(textViewer: TvOSTextViewerViewController, onDismiss: @escaping () -> Void) {
-        self.textViewer = textViewer
-        self.onDismiss = onDismiss
-        super.init(nibName: nil, bundle: nil)
-    }
-
-    @available(*, unavailable)
-    required init?(coder: NSCoder) {
-        fatalError("init(coder:) has not been implemented")
-    }
-
-    override func viewDidLoad() {
-        super.viewDidLoad()
-
-        // Add text viewer as child
-        addChild(textViewer)
-        textViewer.view.frame = view.bounds
-        textViewer.view.autoresizingMask = [.flexibleWidth, .flexibleHeight]
-        view.addSubview(textViewer.view)
-        textViewer.didMove(toParent: self)
-
-        // Add menu button gesture to dismiss
-        let menuPressRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleMenuPress))
-        menuPressRecognizer.allowedPressTypes = [NSNumber(value: UIPress.PressType.menu.rawValue)]
-        view.addGestureRecognizer(menuPressRecognizer)
-    }
-
-    @objc private func handleMenuPress() {
-        onDismiss()
+            ScrollView {
+                Text(text)
+                    .font(.system(size: 32))
+                    .foregroundStyle(.white)
+                    .lineSpacing(8)
+                    .padding(EdgeInsets(top: 100, leading: 250, bottom: 100, trailing: 250))
+                    .focusable()
+                    .focused($isTextFocused)
+            }
+        }
+        .onExitCommand {
+            onDismiss()
+        }
+        .onAppear {
+            isTextFocused = true
+        }
+        .accessibilityLabel("Full description")
     }
 }
 

@@ -6,7 +6,8 @@
 //
 
 import UIKit
-import AlamofireImage
+import Nuke
+import NukeExtensions
 
 /// Large album art view with reflection effect for the Now Playing screen
 @MainActor
@@ -124,20 +125,24 @@ final class AlbumArtView: UIView {
             return
         }
 
-        imageView.af.setImage(
-            withURL: url,
-            placeholderImage: nil,
-            imageTransition: .crossDissolve(0.3)
-        ) { [weak self] response in
-            switch response.result {
-            case .success(let image):
-                self?.placeholderImageView.isHidden = true
-                self?.reflectionImageView.image = image
-                self?.accessibilityLabel = "Album artwork loaded"
-            case .failure:
-                self?.showPlaceholder()
+        let request = ImageRequest(url: url)
+        NukeExtensions.loadImage(
+            with: request,
+            options: ImageLoadingOptions(
+                transition: .fadeIn(duration: 0.3)
+            ),
+            into: imageView,
+            completion: { [weak self] result in
+                switch result {
+                case .success(let response):
+                    self?.placeholderImageView.isHidden = true
+                    self?.reflectionImageView.image = response.image
+                    self?.accessibilityLabel = "Album artwork loaded"
+                case .failure:
+                    self?.showPlaceholder()
+                }
             }
-        }
+        )
     }
 
     /// Set the album art directly from an image
@@ -154,6 +159,8 @@ final class AlbumArtView: UIView {
     }
 
     private func showPlaceholder() {
+        // Cancel any in-flight Nuke request so it can't later overwrite the placeholder.
+        NukeExtensions.cancelRequest(for: imageView)
         imageView.image = nil
         reflectionImageView.image = nil
         placeholderImageView.isHidden = false

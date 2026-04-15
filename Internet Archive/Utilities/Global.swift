@@ -8,12 +8,9 @@
 
 import Foundation
 import UIKit
-// import AlamofireImage
 
 @MainActor
 class Global: NSObject {
-
-    //    static let downloaderNotCached = ImageDownloader(configuration: URLSessionConfiguration.default, downloadPrioritization: .fifo, maximumActiveDownloads: 10, imageCache: nil)
 
     // Save UserData
     static func saveUserData(userData: [String: Any?]) {

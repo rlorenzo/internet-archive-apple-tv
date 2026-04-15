@@ -323,6 +323,219 @@ final class VideoViewModelTests: XCTestCase {
     func testLoadCollection_hasLoadedFalse_beforeLoad() {
         XCTAssertFalse(viewModel.state.hasLoaded)
     }
+
+    // MARK: - Paginated Loading Tests
+
+    func testLoadInitialPage_callsServiceWithCorrectParameters() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 100,
+            docs: TestFixtures.makeVideoResults(count: 24)
+        )
+
+        await viewModel.loadInitialPage()
+
+        XCTAssertTrue(mockService.getCollectionPageCalled)
+        XCTAssertEqual(mockService.lastCollection, "movies")
+        XCTAssertEqual(mockService.lastResultType, "collection")
+        XCTAssertEqual(mockService.lastPage, 0)
+        XCTAssertEqual(mockService.lastPageSize, 24)
+        XCTAssertEqual(mockService.lastSort, "week desc")
+    }
+
+    func testLoadInitialPage_populatesItemsFromFirstPage() async {
+        let docs = TestFixtures.makeVideoResults(count: 24)
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(numFound: 100, docs: docs)
+
+        await viewModel.loadInitialPage()
+
+        XCTAssertEqual(viewModel.state.items.count, 24)
+        XCTAssertEqual(viewModel.state.items.first?.identifier, "video_0")
+        XCTAssertEqual(viewModel.state.totalFound, 100)
+        XCTAssertTrue(viewModel.state.hasLoaded)
+        XCTAssertFalse(viewModel.state.isLoading)
+    }
+
+    func testLoadInitialPage_setsHasMoreTrue_whenMorePagesExist() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 100,
+            docs: TestFixtures.makeVideoResults(count: 24)
+        )
+
+        await viewModel.loadInitialPage()
+
+        XCTAssertTrue(viewModel.state.hasMore)
+    }
+
+    func testLoadInitialPage_setsHasMoreFalse_whenAllItemsReturned() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 10,
+            docs: TestFixtures.makeVideoResults(count: 10)
+        )
+
+        await viewModel.loadInitialPage()
+
+        XCTAssertFalse(viewModel.state.hasMore)
+    }
+
+    func testLoadInitialPage_setsErrorMessage_onFailure() async {
+        mockService.errorToThrow = NetworkError.noConnection
+
+        await viewModel.loadInitialPage()
+
+        XCTAssertNotNil(viewModel.state.errorMessage)
+        XCTAssertFalse(viewModel.state.isLoading)
+        XCTAssertTrue(viewModel.state.hasLoaded)
+        XCTAssertTrue(viewModel.state.items.isEmpty)
+    }
+
+    func testLoadInitialPage_resetsItemsFromPreviousLoad() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 50,
+            docs: TestFixtures.makeVideoResults(count: 24)
+        )
+        await viewModel.loadInitialPage()
+        XCTAssertEqual(viewModel.state.items.count, 24)
+
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 5,
+            docs: TestFixtures.makeVideoResults(count: 5, startIndex: 100)
+        )
+        await viewModel.loadInitialPage()
+
+        XCTAssertEqual(viewModel.state.items.count, 5)
+        XCTAssertEqual(viewModel.state.items.first?.identifier, "video_100")
+        XCTAssertEqual(viewModel.state.currentPage, 0)
+    }
+
+    func testLoadNextPageIfNeeded_appendsResults_whenNearEnd() async {
+        mockService.mockPageResponses[0] = TestFixtures.makeSearchResponse(
+            numFound: 100,
+            docs: TestFixtures.makeVideoResults(count: 24)
+        )
+        mockService.mockPageResponses[1] = TestFixtures.makeSearchResponse(
+            numFound: 100,
+            docs: TestFixtures.makeVideoResults(count: 24, startIndex: 24)
+        )
+        await viewModel.loadInitialPage()
+        XCTAssertEqual(viewModel.state.items.count, 24)
+
+        let nearEndItem = viewModel.state.items[20]
+        await viewModel.loadNextPageIfNeeded(currentItem: nearEndItem)
+
+        XCTAssertEqual(viewModel.state.items.count, 48)
+        XCTAssertEqual(viewModel.state.currentPage, 1)
+        XCTAssertEqual(mockService.lastPage, 1)
+    }
+
+    func testLoadNextPageIfNeeded_doesNotFetch_whenItemFarFromEnd() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 100,
+            docs: TestFixtures.makeVideoResults(count: 24)
+        )
+        await viewModel.loadInitialPage()
+
+        mockService.getCollectionPageCalled = false
+
+        let firstItem = viewModel.state.items[0]
+        await viewModel.loadNextPageIfNeeded(currentItem: firstItem)
+
+        XCTAssertFalse(mockService.getCollectionPageCalled)
+        XCTAssertEqual(viewModel.state.items.count, 24)
+    }
+
+    func testLoadNextPageIfNeeded_doesNotFetch_whenHasMoreFalse() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 10,
+            docs: TestFixtures.makeVideoResults(count: 10)
+        )
+        await viewModel.loadInitialPage()
+        XCTAssertFalse(viewModel.state.hasMore)
+
+        mockService.getCollectionPageCalled = false
+
+        let lastItem = viewModel.state.items[9]
+        await viewModel.loadNextPageIfNeeded(currentItem: lastItem)
+
+        XCTAssertFalse(mockService.getCollectionPageCalled)
+    }
+
+    func testLoadNextPageIfNeeded_setsHasMoreFalse_onLastPage() async {
+        mockService.mockPageResponses[0] = TestFixtures.makeSearchResponse(
+            numFound: 30,
+            docs: TestFixtures.makeVideoResults(count: 24)
+        )
+        mockService.mockPageResponses[1] = TestFixtures.makeSearchResponse(
+            numFound: 30,
+            docs: TestFixtures.makeVideoResults(count: 6, startIndex: 24)
+        )
+        await viewModel.loadInitialPage()
+        XCTAssertTrue(viewModel.state.hasMore)
+
+        let nearEndItem = viewModel.state.items[20]
+        await viewModel.loadNextPageIfNeeded(currentItem: nearEndItem)
+
+        XCTAssertEqual(viewModel.state.items.count, 30)
+        XCTAssertFalse(viewModel.state.hasMore)
+    }
+
+    // MARK: - Sort Option Tests
+
+    func testInitialState_defaultSortIsWeeklyViews() {
+        XCTAssertEqual(viewModel.state.sortOption, .weeklyViews)
+    }
+
+    func testSetSortOption_updatesSortAndReloads() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 50,
+            docs: TestFixtures.makeVideoResults(count: 24)
+        )
+
+        await viewModel.setSortOption(.allTimeDownloads)
+
+        XCTAssertEqual(viewModel.state.sortOption, .allTimeDownloads)
+        XCTAssertEqual(mockService.lastSort, "downloads desc")
+        XCTAssertTrue(mockService.getCollectionPageCalled)
+    }
+
+    func testSetSortOption_sameOption_doesNotReload() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 50,
+            docs: TestFixtures.makeVideoResults(count: 24)
+        )
+        await viewModel.loadInitialPage()
+
+        mockService.getCollectionPageCalled = false
+
+        await viewModel.setSortOption(.weeklyViews)
+
+        XCTAssertFalse(mockService.getCollectionPageCalled)
+    }
+
+    func testLoadNextPage_usesCurrentSortOption() async {
+        mockService.mockPageResponses[0] = TestFixtures.makeSearchResponse(
+            numFound: 100,
+            docs: TestFixtures.makeVideoResults(count: 24)
+        )
+        mockService.mockPageResponses[1] = TestFixtures.makeSearchResponse(
+            numFound: 100,
+            docs: TestFixtures.makeVideoResults(count: 24, startIndex: 24)
+        )
+
+        await viewModel.setSortOption(.monthlyViews)
+
+        // Clear state set by the initial load so the next assertions can only
+        // be satisfied by the next-page fetch.
+        mockService.lastSort = nil
+        mockService.lastPage = nil
+        mockService.getCollectionPageCalled = false
+
+        let nearEndItem = viewModel.state.items[20]
+        await viewModel.loadNextPageIfNeeded(currentItem: nearEndItem)
+
+        XCTAssertTrue(mockService.getCollectionPageCalled)
+        XCTAssertEqual(mockService.lastPage, 1)
+        XCTAssertEqual(mockService.lastSort, "month desc")
+    }
 }
 
 // MARK: - VideoViewState Tests

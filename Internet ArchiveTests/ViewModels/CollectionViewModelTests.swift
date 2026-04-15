@@ -13,11 +13,19 @@ import XCTest
 final class MockCollectionService: CollectionServiceProtocol, @unchecked Sendable {
     var getCollectionsCalled = false
     var getMetadataCalled = false
+    var getCollectionPageCalled = false
     var lastCollection: String?
     var lastResultType: String?
     var lastIdentifier: String?
+    var lastPage: Int?
+    var lastPageSize: Int?
+    var lastSort: String?
     var mockCollectionsResponse: (collection: String, results: [SearchResult])?
     var mockMetadataResponse: ItemMetadataResponse?
+    /// Per-page responses keyed by page number. If set, takes precedence over mockPageResponse.
+    var mockPageResponses: [Int: SearchResponse] = [:]
+    /// Fallback single response used when mockPageResponses has no entry for the requested page.
+    var mockPageResponse: SearchResponse?
     var errorToThrow: Error?
 
     func getCollections(collection: String, resultType: String, limit: Int?) async throws -> (collection: String, results: [SearchResult]) {
@@ -51,14 +59,52 @@ final class MockCollectionService: CollectionServiceProtocol, @unchecked Sendabl
         return response
     }
 
+    func getCollectionPage(
+        collection: String,
+        resultType: String,
+        page: Int,
+        pageSize: Int,
+        sort: String
+    ) async throws -> SearchResponse {
+        getCollectionPageCalled = true
+        lastCollection = collection
+        lastResultType = resultType
+        lastPage = page
+        lastPageSize = pageSize
+        lastSort = sort
+
+        if let error = errorToThrow {
+            throw error
+        }
+
+        if let keyed = mockPageResponses[page] {
+            return keyed
+        }
+
+        if let response = mockPageResponse {
+            return response
+        }
+
+        return SearchResponse(
+            responseHeader: nil,
+            response: SearchResponse.SearchResults(numFound: 0, start: 0, docs: [])
+        )
+    }
+
     func reset() {
         getCollectionsCalled = false
         getMetadataCalled = false
+        getCollectionPageCalled = false
         lastCollection = nil
         lastResultType = nil
         lastIdentifier = nil
+        lastPage = nil
+        lastPageSize = nil
+        lastSort = nil
         mockCollectionsResponse = nil
         mockMetadataResponse = nil
+        mockPageResponses = [:]
+        mockPageResponse = nil
         errorToThrow = nil
     }
 }

@@ -21,18 +21,9 @@ struct ContentView: View {
     /// The currently selected tab (persisted for focus restoration)
     @SceneStorage("selectedTab") private var selectedTab: Tab = .videos
 
-    /// Track if Video tab has navigation history
-    @State private var videoHasNavigation = false
-
-    /// Track if Music tab has navigation history
-    @State private var musicHasNavigation = false
-
-    /// Track if Search tab has navigation history
-    @State private var searchHasNavigation = false
-
     var body: some View {
         TabView(selection: $selectedTab) {
-            VideoHomeView(hasNavigationHistory: $videoHasNavigation)
+            VideoHomeView()
                 .tabItem {
                     Label("Videos", systemImage: "film")
                 }
@@ -40,7 +31,7 @@ struct ContentView: View {
                 .accessibilityLabel(Tab.videos.accessibilityLabel)
                 .accessibilityHint(Tab.videos.accessibilityHint)
 
-            MusicHomeView(hasNavigationHistory: $musicHasNavigation)
+            MusicHomeView()
                 .tabItem {
                     Label("Music", systemImage: "music.note")
                 }
@@ -48,7 +39,7 @@ struct ContentView: View {
                 .accessibilityLabel(Tab.music.accessibilityLabel)
                 .accessibilityHint(Tab.music.accessibilityHint)
 
-            SearchView(hasNavigationHistory: $searchHasNavigation)
+            SearchView()
                 .tabItem {
                     Label("Search", systemImage: "magnifyingglass")
                 }
@@ -72,27 +63,6 @@ struct ContentView: View {
                     .tag(Tab.account)
                     .accessibilityLabel(Tab.account.accessibilityLabel)
                     .accessibilityHint(Tab.account.accessibilityHint)
-            }
-        }
-        .onExitCommand {
-            // Handle Menu button at TabView level
-            // If the current tab has navigation history, pop it back
-            switch selectedTab {
-            case .videos:
-                if videoHasNavigation {
-                    NotificationCenter.default.post(name: .popVideoNavigation, object: nil)
-                }
-            case .music:
-                if musicHasNavigation {
-                    NotificationCenter.default.post(name: .popMusicNavigation, object: nil)
-                }
-            case .search:
-                if searchHasNavigation {
-                    NotificationCenter.default.post(name: .popSearchNavigation, object: nil)
-                }
-            default:
-                // Other tabs don't have navigation stacks yet
-                break
             }
         }
     }

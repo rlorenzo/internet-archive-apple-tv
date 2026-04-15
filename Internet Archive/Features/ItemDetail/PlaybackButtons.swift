@@ -72,8 +72,9 @@ struct PlaybackButtons: View {
                 Text("Play")
                     .font(.title3)
                     .fontWeight(.semibold)
+                    .lineLimit(1)
             }
-            .frame(minWidth: 200)
+            .fixedSize()
             .padding(.horizontal, 40)
             .padding(.vertical, 20)
         }
@@ -96,8 +97,9 @@ struct PlaybackButtons: View {
                         Text("Resume")
                             .font(.title3)
                             .fontWeight(.semibold)
+                            .lineLimit(1)
                     }
-                    .frame(minWidth: 180)
+                    .fixedSize()
                     .padding(.horizontal, 40)
                     .padding(.vertical, 20)
                 }
@@ -114,8 +116,9 @@ struct PlaybackButtons: View {
                         Text("Start Over")
                             .font(.title3)
                             .fontWeight(.medium)
+                            .lineLimit(1)
                     }
-                    .frame(minWidth: 180)
+                    .fixedSize()
                     .padding(.horizontal, 40)
                     .padding(.vertical, 20)
                 }
