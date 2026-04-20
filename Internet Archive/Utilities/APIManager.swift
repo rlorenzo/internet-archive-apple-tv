@@ -216,7 +216,10 @@ final class APIManager: NSObject {
             URLQueryItem(name: "q", value: finalQuery),
             URLQueryItem(name: "output", value: "json")
         ]
-        for (key, value) in modifiedOptions {
+        // Reserved keys are controlled here; skip any caller-supplied duplicates so
+        // `options` cannot override the query or change the response format.
+        let reservedKeys: Set<String> = ["q", "output"]
+        for (key, value) in modifiedOptions where !reservedKeys.contains(key) {
             queryItems.append(URLQueryItem(name: key, value: value))
         }
         components.queryItems = queryItems

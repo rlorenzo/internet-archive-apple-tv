@@ -473,6 +473,26 @@ struct APIManagerTests {
         #expect(items.filter { $0.name == "q" }.count == 1)
         #expect(items.filter { $0.name == "output" }.compactMap { $0.value } == ["json"])
     }
+
+    /// Caller-supplied `options` must not be able to override the reserved
+    /// `q` or `output` query items — otherwise the server could receive
+    /// `output=xml` (breaking JSON decoding) or a second `q` value.
+    @Test func buildSearchURLIgnoresReservedKeysInOptions() throws {
+        let manager = APIManager.sharedManager
+
+        let url = try #require(manager.buildSearchURL(
+            query: "cats",
+            options: ["output": "xml", "q": "dogs", "rows": "5"],
+            applyContentFilter: false
+        ))
+
+        let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
+        let items = components.queryItems ?? []
+
+        #expect(items.filter { $0.name == "q" }.compactMap { $0.value } == ["cats"])
+        #expect(items.filter { $0.name == "output" }.compactMap { $0.value } == ["json"])
+        #expect(items.filter { $0.name == "rows" }.compactMap { $0.value } == ["5"])
+    }
 }
 
 // MARK: - Extended Error Tests
