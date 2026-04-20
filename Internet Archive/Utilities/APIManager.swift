@@ -141,8 +141,6 @@ final class APIManager: NSObject {
         options: [String: String],
         applyContentFilter: Bool = true
     ) async throws -> SearchResponse {
-        var strOption = "&output=json"
-
         // Ensure collection and licenseurl fields are in the list for content filtering
         var modifiedOptions = options
         if applyContentFilter, let existingFields = options["fl[]"] {
@@ -156,10 +154,6 @@ final class APIManager: NSObject {
             modifiedOptions["fl[]"] = fields
         }
 
-        for (key, value) in modifiedOptions {
-            strOption += "&\(key)=\(value)"
-        }
-
         // Build the final query with content filter exclusions
         var finalQuery = query
         if applyContentFilter {
@@ -169,8 +163,21 @@ final class APIManager: NSObject {
             }
         }
 
-        let url = "\(baseURL)advancedsearch.php?q=\(finalQuery)\(strOption)"
-        guard let encodedURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+        // Use URLComponents so reserved characters (&, =, ?, etc.) in caller-supplied
+        // query and options cannot inject additional parameters into the request.
+        guard var components = URLComponents(string: "\(baseURL)advancedsearch.php") else {
+            throw NetworkError.invalidParameters
+        }
+        var queryItems: [URLQueryItem] = [
+            URLQueryItem(name: "q", value: finalQuery),
+            URLQueryItem(name: "output", value: "json")
+        ]
+        for (key, value) in modifiedOptions {
+            queryItems.append(URLQueryItem(name: key, value: value))
+        }
+        components.queryItems = queryItems
+
+        guard let encodedURL = components.url?.absoluteString else {
             throw NetworkError.invalidParameters
         }
 
