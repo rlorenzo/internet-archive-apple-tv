@@ -34,7 +34,7 @@ final class ErrorPresenter {
         AppProgressHUD.sharedManager.hide()
 
         // Get user-friendly message
-        let userMessage = getUserFriendlyMessage(for: error, context: context)
+        let userMessage = getUserFriendlyMessage(for: error)
 
         // Log the error for debugging
         ErrorLogger.shared.log(error: error, context: context)
@@ -58,9 +58,9 @@ final class ErrorPresenter {
 
     // MARK: - User-Friendly Messages
 
-    private func getUserFriendlyMessage(for error: Error, context: ErrorContext) -> String {
+    private func getUserFriendlyMessage(for error: Error) -> String {
         if let networkError = error as? NetworkError {
-            return userFriendlyMessage(for: networkError, context: context)
+            return userFriendlyMessage(for: networkError)
         }
 
         // Generic error message
@@ -69,7 +69,7 @@ final class ErrorPresenter {
 
     /// Returns a user-friendly message for a network error.
     /// Exposed for testing purposes.
-    func userFriendlyMessage(for networkError: NetworkError, context _: ErrorContext = ErrorContext(operation: .unknown)) -> String {
+    func userFriendlyMessage(for networkError: NetworkError) -> String {
         switch networkError {
         case .noConnection:
             return "No internet connection. Please check your network settings and try again."
