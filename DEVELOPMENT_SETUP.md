@@ -7,6 +7,8 @@ This guide explains how to set up your development environment for the Internet 
 - **Xcode 16.0+** (for Swift 6.0 support)
 - **tvOS 26.0 SDK**
 - **SwiftLint** (`brew install swiftlint`)
+- **Periphery** (`brew install periphery`) — unused code detection
+- **Lizard** (`pipx install lizard`) — cyclomatic complexity
 
 ## Initial Setup
 
@@ -93,6 +95,47 @@ The SwiftLint configuration includes custom rules to catch:
 - Deprecated type names (UIApplicationLaunchOptionsKey, NSAttributedStringKey)
 - NSDate usage (should be Date)
 - Hardcoded credentials
+
+## Periphery
+
+Periphery uses SourceKit to find unused declarations (functions, properties,
+types, enum cases). Configuration lives in `.periphery.yml`.
+
+```bash
+# Full scan (builds the project first, ~60s on a cold cache)
+periphery scan
+
+# Fast re-scan using an existing DerivedData index (~3s)
+periphery scan --skip-build \
+  --index-store-path ~/Library/Developer/Xcode/DerivedData/Internet_Archive-*/Index.noindex/DataStore
+```
+
+CI runs `periphery scan --strict` and blocks PRs with any unused code.
+
+## Lizard
+
+Lizard reports cyclomatic complexity (CCN) and function size.
+
+```bash
+# Full report (all functions, with warnings table)
+lizard "Internet Archive" -l swift
+
+# Match CI threshold (warns if CCN > 15)
+lizard "Internet Archive" -l swift -C 15 --warnings_only
+```
+
+CI fails the PR if any function exceeds CCN 15.
+
+## Git Blame Exclusions
+
+Bulk-mechanical commits (formatting, renames, auto-fixes) listed in
+`.git-blame-ignore-revs` are skipped by `git blame`. Enable locally with:
+
+```bash
+git config blame.ignoreRevsFile .git-blame-ignore-revs
+```
+
+GitHub's blame UI applies the file automatically.
 
 ## Build Configuration
 

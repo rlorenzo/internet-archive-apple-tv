@@ -1,0 +1,11 @@
+# Commits listed here are skipped by `git blame`.
+#
+# Enable locally with:
+#   git config blame.ignoreRevsFile .git-blame-ignore-revs
+#
+# GitHub's blame UI applies this file automatically.
+#
+# Only add commits that are pure-mechanical refactors (formatting, bulk
+# renames, auto-fixes) where the original authors should still show up in
+# blame for the surrounding code. Semantic changes (deleting dead code,
+# consolidating duplicated logic) do not belong here.

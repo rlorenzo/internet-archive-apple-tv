@@ -1,0 +1,74 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+jobs:
+  periphery:
+    name: Periphery (Unused Code)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_26.1.app
+
+      - name: Install Periphery
+        run: brew install periphery
+
+      - name: Cache SPM packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+            .swiftpm
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Run Periphery
+        run: periphery scan --strict --format github-actions --disable-update-check
+
+  lizard:
+    name: Lizard (Complexity)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Lizard
+        run: |
+          python3 -m pip install --user lizard
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Run Lizard (fail if any function has CCN > 15)
+        run: |
+          set -e
+          lizard "Internet Archive" -l swift -C 15 | tee lizard-report.txt
+          WARN_COUNT=$(awk 'END{print $6}' lizard-report.txt)
+          if [ "${WARN_COUNT:-0}" -gt 0 ]; then
+            echo "::error::Lizard found $WARN_COUNT function(s) with CCN > 15"
+            lizard "Internet Archive" -l swift -C 15 --warnings_only
+            exit 1
+          fi
+          echo "No complexity warnings"
+
+  code-quality-success:
+    name: Code Quality Success
+    needs: [periphery, lizard]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all jobs
+        run: |
+          echo "Periphery: ${{ needs.periphery.result }}"
+          echo "Lizard:    ${{ needs.lizard.result }}"
+          if [ "${{ needs.periphery.result }}" == "success" ] && [ "${{ needs.lizard.result }}" == "success" ]; then
+            exit 0
+          else
+            exit 1
+          fi
