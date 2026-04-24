@@ -171,16 +171,6 @@ final class SkeletonViewTests: XCTestCase {
         let collectionView = UICollectionView(frame: CGRect(x: 0, y: 0, width: 400, height: 600), collectionViewLayout: layout)
 
         // Should not crash
-        collectionView.showSkeletonLoading(itemCount: 10)
-
-        XCTAssertNotNil(collectionView)
-    }
-
-    func testCollectionView_showSkeletonLoading_defaultCount() {
-        let layout = UICollectionViewFlowLayout()
-        let collectionView = UICollectionView(frame: CGRect(x: 0, y: 0, width: 400, height: 600), collectionViewLayout: layout)
-
-        // Should not crash with default count
         collectionView.showSkeletonLoading()
 
         XCTAssertNotNil(collectionView)

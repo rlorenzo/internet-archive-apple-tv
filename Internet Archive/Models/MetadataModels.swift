@@ -58,7 +58,7 @@ struct ItemMetadataResponse: Codable, Sendable {
 }
 
 /// Metadata information for an item
-public struct ItemMetadata: Codable, Sendable {
+struct ItemMetadata: Codable, Sendable {
     let identifier: String?
     let title: String?
     let mediatype: String?

@@ -40,7 +40,7 @@ jobs:
             ${{ runner.os }}-spm-
 
       - name: Run Periphery
-        run: periphery scan --strict --format github-actions --disable-update-check
+        run: periphery scan --strict --format github-actions --relative-results --disable-update-check
 
   lizard:
     name: Lizard (Complexity)
@@ -56,7 +56,7 @@ jobs:
 
       - name: Run Lizard (fail if any function has CCN > 15)
         run: |
-          set -e
+          set -eo pipefail
           lizard "Internet Archive" -l swift -C 15 --warnings_only | tee lizard-warnings.txt
           WARN_COUNT=$(grep -c "warning:" lizard-warnings.txt || true)
           if [ "${WARN_COUNT:-0}" -gt 0 ]; then

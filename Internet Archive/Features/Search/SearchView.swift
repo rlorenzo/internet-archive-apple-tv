@@ -229,7 +229,6 @@ struct SearchView: View {
                             onItemAppear: checkLoadMoreVideos,
                             onSeeAll: {
                                 navigationPath.append(SearchResultsDestination(
-                                    title: "Videos",
                                     query: searchText,
                                     mediaType: .video
                                 ))
@@ -247,7 +246,6 @@ struct SearchView: View {
                             onItemAppear: checkLoadMoreMusic,
                             onSeeAll: {
                                 navigationPath.append(SearchResultsDestination(
-                                    title: "Music",
                                     query: searchText,
                                     mediaType: .music
                                 ))

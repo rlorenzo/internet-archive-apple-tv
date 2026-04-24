@@ -203,7 +203,6 @@ struct SearchResultsGridView: View {
 
 /// A hashable struct for navigating to the search results grid
 struct SearchResultsDestination: Hashable {
-    let title: String
     let query: String
     let mediaType: MediaItemCard.MediaType
 }
