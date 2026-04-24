@@ -6,6 +6,9 @@ on:
   pull_request:
     branches: [ master, main ]
 
+env:
+  XCODE_VERSION: "26.1"
+
 jobs:
   periphery:
     name: Periphery (Unused Code)
@@ -16,7 +19,7 @@ jobs:
 
       - name: Select Xcode version
         run: |
-          XCODE_DEVELOPER_DIR="/Applications/Xcode_26.1.app/Contents/Developer"
+          XCODE_DEVELOPER_DIR="/Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer"
           if [ ! -d "$XCODE_DEVELOPER_DIR" ]; then
             echo "::error::Xcode developer directory not found: $XCODE_DEVELOPER_DIR"
             exit 1

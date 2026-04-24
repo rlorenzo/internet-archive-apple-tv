@@ -29,7 +29,7 @@ enum ContentFilterReason: Sendable {
 }
 
 /// Result of content filtering check
-public struct ContentFilterResult: Sendable {
+struct ContentFilterResult: Sendable {
     let isFiltered: Bool
     let reason: ContentFilterReason?
 
@@ -55,7 +55,7 @@ struct ContentFilterPreferences: Codable, Sendable {
 }
 
 /// Statistics about filtered content (for debugging/logging)
-public struct ContentFilterStats: Sendable {
+struct ContentFilterStats: Sendable {
     var totalItemsChecked: Int
     var totalItemsFiltered: Int
     var filterReasons: [String: Int]
