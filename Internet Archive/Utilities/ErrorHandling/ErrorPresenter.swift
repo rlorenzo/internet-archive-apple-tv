@@ -34,7 +34,7 @@ final class ErrorPresenter {
         AppProgressHUD.sharedManager.hide()
 
         // Get user-friendly message
-        let userMessage = getUserFriendlyMessage(for: error, context: context)
+        let userMessage = getUserFriendlyMessage(for: error)
 
         // Log the error for debugging
         ErrorLogger.shared.log(error: error, context: context)
@@ -56,17 +56,11 @@ final class ErrorPresenter {
         }
     }
 
-    /// Present a service unavailable error (Internet Archive maintenance/outage)
-    func presentServiceUnavailable(on viewController: UIViewController) {
-        AppProgressHUD.sharedManager.hide()
-        Global.showServiceUnavailableAlert(target: viewController)
-    }
-
     // MARK: - User-Friendly Messages
 
-    private func getUserFriendlyMessage(for error: Error, context: ErrorContext) -> String {
+    private func getUserFriendlyMessage(for error: Error) -> String {
         if let networkError = error as? NetworkError {
-            return userFriendlyMessage(for: networkError, context: context)
+            return userFriendlyMessage(for: networkError)
         }
 
         // Generic error message
@@ -75,7 +69,7 @@ final class ErrorPresenter {
 
     /// Returns a user-friendly message for a network error.
     /// Exposed for testing purposes.
-    func userFriendlyMessage(for networkError: NetworkError, context: ErrorContext = ErrorContext(operation: .unknown)) -> String {
+    func userFriendlyMessage(for networkError: NetworkError) -> String {
         switch networkError {
         case .noConnection:
             return "No internet connection. Please check your network settings and try again."
@@ -84,15 +78,7 @@ final class ErrorPresenter {
             return "The request took too long. Please check your connection and try again."
 
         case .serverError(let statusCode):
-            if statusCode >= 500 {
-                return "Internet Archive servers are experiencing issues. Please try again later."
-            } else if statusCode == 404 {
-                return "The requested content could not be found."
-            } else if statusCode == 429 {
-                return "Too many requests. Please wait a moment and try again."
-            } else {
-                return "Server error (HTTP \(statusCode)). Please try again later."
-            }
+            return serverErrorMessage(statusCode: statusCode)
 
         case .unauthorized, .authenticationFailed, .invalidCredentials:
             return "Your login credentials are invalid. Please log in again."
@@ -121,6 +107,19 @@ final class ErrorPresenter {
 
         case .unknown:
             return "An unexpected error occurred. Please try again."
+        }
+    }
+
+    private func serverErrorMessage(statusCode: Int) -> String {
+        switch statusCode {
+        case 500...:
+            return "Internet Archive servers are experiencing issues. Please try again later."
+        case 404:
+            return "The requested content could not be found."
+        case 429:
+            return "Too many requests. Please wait a moment and try again."
+        default:
+            return "Server error (HTTP \(statusCode)). Please try again later."
         }
     }
 

@@ -366,14 +366,6 @@ final class ErrorPresenterPresentTests: XCTestCase {
         XCTAssertEqual(message, "This content is not available.")
     }
 
-    func testUserFriendlyMessage_withCustomContext() {
-        let message = ErrorPresenter.shared.userFriendlyMessage(
-            for: .timeout,
-            context: ErrorContext(operation: .playVideo, userFacingTitle: "Playback Error")
-        )
-        XCTAssertTrue(message.contains("took too long"))
-    }
-
     func testServerError_genericStatusCode() {
         // Test a status code not specifically handled (not 404, 429, 500+)
         let message = ErrorPresenter.shared.userFriendlyMessage(for: .serverError(statusCode: 403))

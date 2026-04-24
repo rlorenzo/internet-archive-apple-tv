@@ -94,12 +94,6 @@ extension View {
         self.buttonStyle(TVCardButtonStyle())
     }
 
-    /// Applies the tvOS card button style with custom scale
-    ///
-    /// - Parameter scale: Scale factor when focused (default: 1.08)
-    func tvCardStyle(scale: CGFloat) -> some View {
-        self.buttonStyle(TVCardButtonStyle(focusedScale: scale))
-    }
 }
 
 // MARK: - Preview

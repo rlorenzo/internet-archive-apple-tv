@@ -15,7 +15,6 @@ import SwiftUI
 struct VideoHomeView: View {
     // MARK: - Environment & State
 
-    @EnvironmentObject private var appState: AppState
     @StateObject private var viewModel = VideoViewModel(collectionService: DefaultCollectionService())
 
     /// Continue watching items from PlaybackProgressManager

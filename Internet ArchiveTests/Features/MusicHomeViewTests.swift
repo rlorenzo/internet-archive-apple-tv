@@ -8,4 +8,5 @@
 //
 
 import XCTest
+// periphery:ignore - @testable import retained for access to internal types in tests
 @testable import Internet_Archive

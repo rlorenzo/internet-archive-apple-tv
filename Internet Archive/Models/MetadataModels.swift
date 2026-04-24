@@ -58,7 +58,7 @@ struct ItemMetadataResponse: Codable, Sendable {
 }
 
 /// Metadata information for an item
-public struct ItemMetadata: Codable, Sendable {
+struct ItemMetadata: Codable, Sendable {
     let identifier: String?
     let title: String?
     let mediatype: String?
@@ -68,8 +68,6 @@ public struct ItemMetadata: Codable, Sendable {
     let year: String?
     let subject: SubjectValue?
     let collection: CollectionValue?
-    let publicdate: String?
-    let addeddate: String?
     let uploader: String?
     let licenseurl: String?
 
@@ -84,8 +82,6 @@ public struct ItemMetadata: Codable, Sendable {
         year: String? = nil,
         subject: SubjectValue? = nil,
         collection: CollectionValue? = nil,
-        publicdate: String? = nil,
-        addeddate: String? = nil,
         uploader: String? = nil,
         licenseurl: String? = nil
     ) {
@@ -98,8 +94,6 @@ public struct ItemMetadata: Codable, Sendable {
         self.year = year
         self.subject = subject
         self.collection = collection
-        self.publicdate = publicdate
-        self.addeddate = addeddate
         self.uploader = uploader
         self.licenseurl = licenseurl
     }
@@ -263,21 +257,16 @@ struct FileInfo: Codable, Sendable {
     // Convert to dictionary for backward compatibility (temporary)
     func toDictionary() -> [String: Any] {
         var dict: [String: Any] = ["name": name]
-        if let source = source { dict["source"] = source }
-        if let format = format { dict["format"] = format }
-        if let original = original { dict["original"] = original }
-        if let size = size { dict["size"] = size }
-        if let md5 = md5 { dict["md5"] = md5 }
-        if let crc32 = crc32 { dict["crc32"] = crc32 }
-        if let sha1 = sha1 { dict["sha1"] = sha1 }
-        if let mtime = mtime { dict["mtime"] = mtime }
-        if let length = length { dict["length"] = length }
-        if let height = height { dict["height"] = height }
-        if let width = width { dict["width"] = width }
-        if let track = track { dict["track"] = track }
-        if let title = title { dict["title"] = title }
-        if let album = album { dict["album"] = album }
-        if let creator = creator { dict["creator"] = creator }
+        let optionals: [(String, Any?)] = [
+            ("source", source), ("format", format), ("original", original),
+            ("size", size), ("md5", md5), ("crc32", crc32), ("sha1", sha1),
+            ("mtime", mtime), ("length", length), ("height", height),
+            ("width", width), ("track", track), ("title", title),
+            ("album", album), ("creator", creator)
+        ]
+        for (key, value) in optionals {
+            if let value { dict[key] = value }
+        }
         return dict
     }
 }

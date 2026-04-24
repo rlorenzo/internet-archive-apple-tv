@@ -23,7 +23,6 @@ private final class DetailViewMockFavoritesService: PeopleFavoritesServiceProtoc
     var getFavoriteItemsCallCount = 0
     var searchCallCount = 0
     var lastUsername: String?
-    var lastQuery: String?
 
     func getFavoriteItems(username: String) async throws -> FavoritesResponse {
         getFavoriteItemsCallCount += 1
@@ -37,7 +36,6 @@ private final class DetailViewMockFavoritesService: PeopleFavoritesServiceProtoc
 
     func search(query: String, options: [String: String]) async throws -> SearchResponse {
         searchCallCount += 1
-        lastQuery = query
 
         if shouldThrowError {
             throw errorToThrow

@@ -98,29 +98,6 @@ final class FavoritesModelsTests: XCTestCase {
         XCTAssertNil(response.members)
     }
 
-    // MARK: - FavoriteMetadata Tests
-
-    func testFavoriteMetadataDecoding() throws {
-        let json = """
-        {
-            "identifier": "fav-username",
-            "mediatype": "account",
-            "title": "username's favorites",
-            "description": "User favorites collection",
-            "subject": "favorites"
-        }
-        """
-
-        let data = json.data(using: .utf8)!
-        let metadata = try JSONDecoder().decode(FavoriteMetadata.self, from: data)
-
-        XCTAssertEqual(metadata.identifier, "fav-username")
-        XCTAssertEqual(metadata.mediatype, "account")
-        XCTAssertEqual(metadata.title, "username's favorites")
-        XCTAssertEqual(metadata.description, "User favorites collection")
-        XCTAssertEqual(metadata.subject, "favorites")
-    }
-
     // MARK: - FavoriteItem Tests
 
     func testFavoriteItemDecoding() throws {

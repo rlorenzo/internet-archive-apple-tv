@@ -37,7 +37,7 @@ final class SubtitleManager {
     func extractSubtitleTracks(
         from files: [FileInfo],
         identifier: String,
-        server: String? = nil
+        server _: String? = nil
     ) -> [SubtitleTrack] {
         // Always use archive.org for subtitle downloads - specific servers may not have all files
         let baseURL = "https://archive.org"
@@ -86,62 +86,36 @@ final class SubtitleManager {
     /// - Returns: Deduplicated array with VTT preferred when both formats exist
     private func deduplicateByLanguage(_ tracks: [SubtitleTrack]) -> [SubtitleTrack] {
         var tracksByLanguage: [String: SubtitleTrack] = [:]
-
         for track in tracks {
-            // Include display name to distinguish variants like "English" vs "English (Auto)"
-            let keyBase = track.languageCode ?? track.languageDisplayName
-            let key = "\(keyBase.lowercased())|\(track.languageDisplayName.lowercased())"
-
+            let key = dedupKey(for: track)
             if let existing = tracksByLanguage[key] {
-                // Determine which track to keep based on format preference
-                let shouldReplaceExisting = track.format.isNativelySupported && !existing.format.isNativelySupported
-                let shouldTransferDefault = (existing.isDefault || track.isDefault)
-
-                if shouldReplaceExisting {
-                    // VTT replaces SRT - preserve isDefault from either track
-                    let preservedTrack = shouldTransferDefault && !track.isDefault
-                        ? SubtitleTrack(
-                            filename: track.filename,
-                            format: track.format,
-                            languageCode: track.languageCode,
-                            languageDisplayName: track.languageDisplayName,
-                            isDefault: true,
-                            url: track.url
-                        )
-                        : track
-                    tracksByLanguage[key] = preservedTrack
-                } else if !existing.format.isNativelySupported && !track.format.isNativelySupported {
-                    // Both are SRT - keep existing but transfer default flag if new track has it
-                    if track.isDefault && !existing.isDefault {
-                        tracksByLanguage[key] = SubtitleTrack(
-                            filename: existing.filename,
-                            format: existing.format,
-                            languageCode: existing.languageCode,
-                            languageDisplayName: existing.languageDisplayName,
-                            isDefault: true,
-                            url: existing.url
-                        )
-                    }
-                } else if existing.format.isNativelySupported && !track.format.isNativelySupported {
-                    // Existing is VTT, new is SRT - keep VTT but transfer default flag if SRT has it
-                    if track.isDefault && !existing.isDefault {
-                        tracksByLanguage[key] = SubtitleTrack(
-                            filename: existing.filename,
-                            format: existing.format,
-                            languageCode: existing.languageCode,
-                            languageDisplayName: existing.languageDisplayName,
-                            isDefault: true,
-                            url: existing.url
-                        )
-                    }
-                }
-                // If both are VTT, keep the first one
+                tracksByLanguage[key] = preferredTrack(existing: existing, incoming: track)
             } else {
                 tracksByLanguage[key] = track
             }
         }
-
         return Array(tracksByLanguage.values)
+    }
+
+    /// Build the dedup key for a track.
+    /// Includes display name to distinguish variants like "English" vs "English (Auto)".
+    private func dedupKey(for track: SubtitleTrack) -> String {
+        let base = track.languageCode ?? track.languageDisplayName
+        return "\(base.lowercased())|\(track.languageDisplayName.lowercased())"
+    }
+
+    /// Decide which of two same-language tracks to keep, preferring natively-supported
+    /// format (VTT over SRT) and transferring the default flag when either track had it.
+    private func preferredTrack(existing: SubtitleTrack, incoming: SubtitleTrack) -> SubtitleTrack {
+        let shouldBeDefault = existing.isDefault || incoming.isDefault
+
+        // VTT replaces SRT
+        if incoming.format.isNativelySupported && !existing.format.isNativelySupported {
+            return incoming.isDefault == shouldBeDefault ? incoming : incoming.withDefault(shouldBeDefault)
+        }
+
+        // Keep existing; transfer default flag if incoming had it and existing didn't
+        return existing.isDefault == shouldBeDefault ? existing : existing.withDefault(shouldBeDefault)
     }
 
     /// Parse language information from a subtitle filename
@@ -269,7 +243,7 @@ final class SubtitleManager {
     func buildSubtitleURL(
         filename: String,
         identifier: String,
-        server: String? = nil
+        server _: String? = nil
     ) -> URL? {
         // Always use archive.org for subtitle downloads - specific servers may not have all files
         let baseURL = "https://archive.org"
@@ -281,5 +255,18 @@ final class SubtitleManager {
         }
 
         return URL(string: "\(baseURL)/download/\(identifier)/\(encodedFilename)")
+    }
+}
+
+private extension SubtitleTrack {
+    func withDefault(_ isDefault: Bool) -> SubtitleTrack {
+        SubtitleTrack(
+            filename: filename,
+            format: format,
+            languageCode: languageCode,
+            languageDisplayName: languageDisplayName,
+            isDefault: isDefault,
+            url: url
+        )
     }
 }

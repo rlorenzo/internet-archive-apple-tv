@@ -30,9 +30,6 @@ final class VideoPlayerViewController: AVPlayerViewController {
     /// Currently selected subtitle track
     private(set) var selectedSubtitleTrack: SubtitleTrack?
 
-    /// Current subtitle cues
-    private var subtitleCues: [SubtitleCue] = []
-
     /// The item identifier for logging and progress tracking
     private var itemIdentifier: String?
 
@@ -56,9 +53,6 @@ final class VideoPlayerViewController: AVPlayerViewController {
 
     /// KVO observation token for player's currentItem
     private var playerItemObservation: NSKeyValueObservation?
-
-    /// Reference to player for cleanup in deinit (nonisolated access)
-    nonisolated(unsafe) private var playerForCleanup: AVPlayer?
 
     /// Callback invoked when the player is dismissed
     var onDismiss: (() -> Void)?
@@ -111,7 +105,6 @@ final class VideoPlayerViewController: AVPlayerViewController {
         self.needsControlSetup = true
         super.init(nibName: nil, bundle: nil)
         self.player = player
-        self.playerForCleanup = player
 
         // Override embedded metadata to suppress unwanted fields (e.g., year)
         // in the transport bar. External metadata supersedes embedded metadata
@@ -454,7 +447,6 @@ final class VideoPlayerViewController: AVPlayerViewController {
             )
         } else {
             subtitleOverlay.stop()
-            subtitleCues = []
             SubtitleManager.shared.clearTrackSelection()
             updateSubtitleButtonAppearance()
             setupTransportBarSubtitleMenu()  // Refresh menu to show "Off" selected
@@ -488,7 +480,6 @@ final class VideoPlayerViewController: AVPlayerViewController {
 
                 // Parse the VTT file
                 let cues = try await SubtitleParser.shared.parse(from: vttURL)
-                subtitleCues = cues
 
                 // Configure overlay
                 if let player = player {

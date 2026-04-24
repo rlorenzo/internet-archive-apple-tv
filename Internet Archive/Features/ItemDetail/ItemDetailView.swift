@@ -34,11 +34,6 @@ struct ItemDetailView: View {
     /// Media type determines aspect ratio and playback behavior
     let mediaType: MediaItemCard.MediaType
 
-    // MARK: - Environment
-
-    @Environment(\.dismiss) private var dismiss
-    @EnvironmentObject private var appState: AppState
-
     // MARK: - State
 
     /// Detailed metadata fetched from API

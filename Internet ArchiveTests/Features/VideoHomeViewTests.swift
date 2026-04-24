@@ -85,8 +85,6 @@ final class MockVideoCollectionService: CollectionServiceProtocol, @unchecked Se
     var errorToThrow: Error?
     var getCollectionsCalled = false
     var getCollectionPageCalled = false
-    var lastPage: Int?
-    var lastPageSize: Int?
     var delayMilliseconds: UInt64 = 0
 
     func getCollections(collection: String, resultType: String, limit: Int?) async throws -> (collection: String, results: [SearchResult]) {
@@ -116,15 +114,13 @@ final class MockVideoCollectionService: CollectionServiceProtocol, @unchecked Se
     }
 
     func getCollectionPage(
-        collection: String,
-        resultType: String,
+        collection _: String,
+        resultType _: String,
         page: Int,
-        pageSize: Int,
-        sort: String
+        pageSize _: Int,
+        sort _: String
     ) async throws -> SearchResponse {
         getCollectionPageCalled = true
-        lastPage = page
-        lastPageSize = pageSize
 
         if delayMilliseconds > 0 {
             try? await Task.sleep(nanoseconds: delayMilliseconds * 1_000_000)
@@ -146,18 +142,5 @@ final class MockVideoCollectionService: CollectionServiceProtocol, @unchecked Se
             responseHeader: nil,
             response: SearchResponse.SearchResults(numFound: 0, start: 0, docs: [])
         )
-    }
-
-    func reset() {
-        mockResults = []
-        mockMetadataResponse = nil
-        mockPageResponse = nil
-        mockPageResponses = [:]
-        errorToThrow = nil
-        getCollectionsCalled = false
-        getCollectionPageCalled = false
-        lastPage = nil
-        lastPageSize = nil
-        delayMilliseconds = 0
     }
 }

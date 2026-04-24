@@ -1,0 +1,6 @@
+project: Internet Archive.xcodeproj
+schemes:
+  - Internet Archive
+retain_swift_ui_previews: true
+retain_objc_accessible: true
+retain_unused_protocol_func_params: true

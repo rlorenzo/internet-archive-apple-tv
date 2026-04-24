@@ -125,48 +125,4 @@ final class SearchViewContentFilterTests: XCTestCase {
     }
 }
 
-// MARK: - SearchResultsDestination Tests
-
-/// Tests for SearchResultsDestination navigation model.
-final class SearchResultsDestinationTests: XCTestCase {
-
-    func testInit_setsAllProperties() {
-        let destination = SearchResultsDestination(
-            title: "Videos",
-            query: "test query",
-            mediaType: .video
-        )
-
-        XCTAssertEqual(destination.title, "Videos")
-        XCTAssertEqual(destination.query, "test query")
-        XCTAssertEqual(destination.mediaType, .video)
-    }
-
-    func testInit_withMusicMediaType() {
-        let destination = SearchResultsDestination(
-            title: "Music",
-            query: "concert",
-            mediaType: .music
-        )
-
-        XCTAssertEqual(destination.mediaType, .music)
-    }
-
-    func testHashable_conformance() {
-        let destination1 = SearchResultsDestination(title: "Test", query: "q", mediaType: .video)
-        let destination2 = SearchResultsDestination(title: "Test", query: "q", mediaType: .video)
-        let destination3 = SearchResultsDestination(title: "Different", query: "q", mediaType: .video)
-
-        XCTAssertEqual(destination1, destination2)
-        XCTAssertNotEqual(destination1, destination3)
-    }
-
-    func testHashable_canBeUsedInNavigationPath() {
-        var destinations: Set<SearchResultsDestination> = []
-
-        destinations.insert(SearchResultsDestination(title: "A", query: "1", mediaType: .video))
-        destinations.insert(SearchResultsDestination(title: "B", query: "2", mediaType: .music))
-
-        XCTAssertEqual(destinations.count, 2)
-    }
-}
+// SearchResultsDestination tests live in SearchResultsGridViewTests (Swift Testing suite).

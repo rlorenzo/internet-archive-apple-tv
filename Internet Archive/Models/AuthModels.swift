@@ -9,14 +9,14 @@
 import Foundation
 
 /// Response from authentication API (login, register)
-public struct AuthResponse: Codable, Sendable {
+struct AuthResponse: Codable, Sendable {
     let success: Bool?
     let version: Int?
     let values: AuthValues?
     let error: String?
 
     /// Authentication values returned on success
-    public struct AuthValues: Codable, Sendable {
+    struct AuthValues: Codable, Sendable {
         let email: String?
         let itemname: String?
         let screenname: String?

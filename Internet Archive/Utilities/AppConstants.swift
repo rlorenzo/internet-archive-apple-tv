@@ -7,9 +7,3 @@
 //
 
 import Foundation
-
-let errors = [
-    301: "Login is required",
-    302: "Login failed",
-    400: "Cannot connect to server. Please check your internet connection."
-]

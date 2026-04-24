@@ -90,23 +90,6 @@ final class MockCollectionService: CollectionServiceProtocol, @unchecked Sendabl
             response: SearchResponse.SearchResults(numFound: 0, start: 0, docs: [])
         )
     }
-
-    func reset() {
-        getCollectionsCalled = false
-        getMetadataCalled = false
-        getCollectionPageCalled = false
-        lastCollection = nil
-        lastResultType = nil
-        lastIdentifier = nil
-        lastPage = nil
-        lastPageSize = nil
-        lastSort = nil
-        mockCollectionsResponse = nil
-        mockMetadataResponse = nil
-        mockPageResponses = [:]
-        mockPageResponse = nil
-        errorToThrow = nil
-    }
 }
 
 // MARK: - CollectionViewModel Tests

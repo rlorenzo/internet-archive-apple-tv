@@ -15,7 +15,6 @@ final class MockSliderDelegate: SliderDelegate {
     var didChangeValueCalled = false
     var lastChangedValue: Double?
     var textForValueCalled = false
-    var lastTextForValue: Double?
     var customTextToReturn: String?
     var didBeginScrubbingCalled = false
     var didEndScrubbingCalled = false
@@ -26,7 +25,6 @@ final class MockSliderDelegate: SliderDelegate {
 
     func slider(_ slider: Slider, textWithValue value: Double) -> String {
         textForValueCalled = true
-        lastTextForValue = value
         return customTextToReturn ?? "\(Int(value))"
     }
 
@@ -37,10 +35,6 @@ final class MockSliderDelegate: SliderDelegate {
     func slider(_ slider: Slider, didChangeValue value: Double) {
         didChangeValueCalled = true
         lastChangedValue = value
-    }
-
-    func slider(_ slider: Slider, didUpdateFocusInContext context: UIFocusUpdateContext, withAnimationCoordinator coordinator: UIFocusAnimationCoordinator) {
-        // Focus update handling
     }
 
     func sliderDidBeginScrubbing(_ slider: Slider) {
@@ -63,7 +57,6 @@ final class MockSliderDelegate: SliderDelegate {
         didChangeValueCalled = false
         lastChangedValue = nil
         textForValueCalled = false
-        lastTextForValue = nil
         customTextToReturn = nil
         didBeginScrubbingCalled = false
         didEndScrubbingCalled = false

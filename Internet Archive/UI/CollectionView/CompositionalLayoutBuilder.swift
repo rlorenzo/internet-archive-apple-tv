@@ -237,7 +237,7 @@ extension CompositionalLayoutBuilder {
     /// Creates a horizontal scrolling section for Continue Watching/Listening
     /// - Parameter environment: Layout environment
     /// - Returns: Configured section for horizontal scrolling
-    static func createContinueWatchingSection(environment: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
+    static func createContinueWatchingSection(environment _: NSCollectionLayoutEnvironment) -> NSCollectionLayoutSection {
         // Item size - larger for featured appearance
         let itemSize = NSCollectionLayoutSize(
             widthDimension: .absolute(400),

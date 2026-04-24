@@ -13,11 +13,11 @@ import Foundation
 /// Adult content filtering is always active and cannot be disabled.
 /// License filtering is optional and can be enabled by users who want only openly-licensed content.
 @MainActor
-public final class ContentFilterService {
+final class ContentFilterService {
 
     // MARK: - Singleton
 
-    public static let shared = ContentFilterService()
+    static let shared = ContentFilterService()
 
     // MARK: - Constants
 
@@ -93,19 +93,19 @@ public final class ContentFilterService {
 
     /// Whether license filtering is enabled (only show open-licensed content)
     /// This is an optional user preference
-    public var isLicenseFilteringEnabled: Bool {
+    var isLicenseFilteringEnabled: Bool {
         preferences.requireOpenLicense
     }
 
     /// Get current filter statistics
-    public var filterStatistics: ContentFilterStats {
+    var filterStatistics: ContentFilterStats {
         stats
     }
 
     // MARK: - Content Filtering
 
     /// Check if a search result should be filtered
-    public func shouldFilter(_ result: SearchResult) -> ContentFilterResult {
+    func shouldFilter(_ result: SearchResult) -> ContentFilterResult {
         stats.totalItemsChecked += 1
 
         // Always check for blocked collections (adult content - cannot be disabled)
@@ -148,7 +148,7 @@ public final class ContentFilterService {
     }
 
     /// Check if metadata should be filtered
-    public func shouldFilter(_ metadata: ItemMetadata) -> ContentFilterResult {
+    func shouldFilter(_ metadata: ItemMetadata) -> ContentFilterResult {
         stats.totalItemsChecked += 1
 
         // Always check for blocked collections
@@ -192,14 +192,14 @@ public final class ContentFilterService {
     }
 
     /// Filter an array of search results
-    public func filter(_ results: [SearchResult]) -> [SearchResult] {
+    func filter(_ results: [SearchResult]) -> [SearchResult] {
         results.filter { !shouldFilter($0).isFiltered }
     }
 
     // MARK: - License Validation
 
     /// Check if a license URL represents an open/free license
-    public func isOpenLicense(_ licenseURL: String) -> Bool {
+    func isOpenLicense(_ licenseURL: String) -> Bool {
         let lowercased = licenseURL.lowercased()
         return allowedLicensePatterns.contains { pattern in
             lowercased.contains(pattern.lowercased())
@@ -207,7 +207,7 @@ public final class ContentFilterService {
     }
 
     /// Get the license type from a URL
-    public func getLicenseType(_ licenseURL: String) -> String {
+    func getLicenseType(_ licenseURL: String) -> String {
         let lowercased = licenseURL.lowercased()
 
         if lowercased.contains("publicdomain/zero") {
@@ -237,17 +237,17 @@ public final class ContentFilterService {
     // MARK: - Collection Checks
 
     /// Check if a collection identifier is blocked
-    public func isCollectionBlocked(_ collection: String) -> Bool {
+    func isCollectionBlocked(_ collection: String) -> Bool {
         blockedCollections.contains(collection.lowercased())
     }
 
     /// Check if a collection has Internet Archive's content warning
-    public func hasContentWarning(_ collections: [String]) -> Bool {
+    func hasContentWarning(_ collections: [String]) -> Bool {
         collections.contains { contentWarningCollections.contains($0.lowercased()) }
     }
 
     /// Build a search query exclusion string for API calls
-    public func buildExclusionQuery() -> String {
+    func buildExclusionQuery() -> String {
         let exclusions = blockedCollections.map { "-collection:(\($0))" }
         return exclusions.joined(separator: " ")
     }
@@ -255,19 +255,19 @@ public final class ContentFilterService {
     // MARK: - Preferences Management
 
     /// Enable or disable license filtering (optional user preference)
-    public func setLicenseFilteringEnabled(_ enabled: Bool) {
+    func setLicenseFilteringEnabled(_ enabled: Bool) {
         preferences.requireOpenLicense = enabled
         savePreferences()
     }
 
     /// Reset preferences to defaults
-    public func resetToDefaults() {
+    func resetToDefaults() {
         preferences = .default
         savePreferences()
     }
 
     /// Reset filter statistics
-    public func resetStatistics() {
+    func resetStatistics() {
         stats = .empty
     }
 
@@ -289,25 +289,5 @@ public final class ContentFilterService {
             return .default
         }
         return preferences
-    }
-}
-
-// MARK: - SearchResult Extension for Filtering
-
-extension SearchResult {
-    /// Check if this result should be filtered based on content filter settings
-    @MainActor
-    var isFiltered: Bool {
-        ContentFilterService.shared.shouldFilter(self).isFiltered
-    }
-}
-
-// MARK: - ItemMetadata Extension for Filtering
-
-extension ItemMetadata {
-    /// Check if this metadata should be filtered based on content filter settings
-    @MainActor
-    var isFiltered: Bool {
-        ContentFilterService.shared.shouldFilter(self).isFiltered
     }
 }

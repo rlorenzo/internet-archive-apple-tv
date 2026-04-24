@@ -23,10 +23,4 @@ final class AtomicCounter: @unchecked Sendable {
         defer { lock.unlock() }
         _value += 1
     }
-
-    func reset() {
-        lock.lock()
-        defer { lock.unlock() }
-        _value = 0
-    }
 }

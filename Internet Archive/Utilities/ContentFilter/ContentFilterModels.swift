@@ -8,7 +8,7 @@
 import Foundation
 
 /// Reason why content was filtered
-public enum ContentFilterReason: Sendable {
+enum ContentFilterReason: Sendable {
     case blockedCollection(String)
     case blockedKeyword(String)
     case restrictedLicense(String)
@@ -29,7 +29,7 @@ public enum ContentFilterReason: Sendable {
 }
 
 /// Result of content filtering check
-public struct ContentFilterResult: Sendable {
+struct ContentFilterResult: Sendable {
     let isFiltered: Bool
     let reason: ContentFilterReason?
 
@@ -42,7 +42,7 @@ public struct ContentFilterResult: Sendable {
 
 /// User preferences for content filtering
 /// Note: Adult content filtering is always enabled and cannot be disabled (App Store requirement)
-public struct ContentFilterPreferences: Codable, Sendable {
+struct ContentFilterPreferences: Codable, Sendable {
     /// Whether to require open licenses (CC, public domain, etc.)
     /// When enabled, only content with recognized open licenses is shown
     /// Default: OFF because most IA content (~93%) lacks license metadata
@@ -55,7 +55,7 @@ public struct ContentFilterPreferences: Codable, Sendable {
 }
 
 /// Statistics about filtered content (for debugging/logging)
-public struct ContentFilterStats: Sendable {
+struct ContentFilterStats: Sendable {
     var totalItemsChecked: Int
     var totalItemsFiltered: Int
     var filterReasons: [String: Int]

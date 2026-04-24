@@ -274,17 +274,13 @@ final class NowPlayingViewController: UIViewController {
         return false
     }
 
-    /// Menu button tap gesture recognizer
-    private var menuTapRecognizer: UITapGestureRecognizer?
-
     private func setupMenuButtonHandler() {
         let tapRecognizer = UITapGestureRecognizer(target: self, action: #selector(handleMenuButton))
         tapRecognizer.allowedPressTypes = [NSNumber(value: UIPress.PressType.menu.rawValue)]
         view.addGestureRecognizer(tapRecognizer)
-        menuTapRecognizer = tapRecognizer
     }
 
-    @objc private func handleMenuButton(_ recognizer: UITapGestureRecognizer) {
+    @objc private func handleMenuButton(_: UITapGestureRecognizer) {
         if isFocusInTrackList {
             // Move focus back to controls instead of dismissing
             setNeedsFocusUpdate()

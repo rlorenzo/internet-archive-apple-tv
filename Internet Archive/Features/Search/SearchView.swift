@@ -15,8 +15,6 @@ import SwiftUI
 /// - Dual-section results display (Videos and Music)
 /// - Pagination with infinite scroll
 struct SearchView: View {
-    @EnvironmentObject private var appState: AppState
-
     // MARK: - State
 
     @State private var searchText = ""
@@ -68,7 +66,6 @@ struct SearchView: View {
                 }
                 .navigationDestination(for: SearchResultsDestination.self) { destination in
                     SearchResultsGridView(
-                        title: destination.title,
                         query: destination.query,
                         mediaType: destination.mediaType,
                         navigationPath: $navigationPath
@@ -232,7 +229,6 @@ struct SearchView: View {
                             onItemAppear: checkLoadMoreVideos,
                             onSeeAll: {
                                 navigationPath.append(SearchResultsDestination(
-                                    title: "Videos",
                                     query: searchText,
                                     mediaType: .video
                                 ))
@@ -250,7 +246,6 @@ struct SearchView: View {
                             onItemAppear: checkLoadMoreMusic,
                             onSeeAll: {
                                 navigationPath.append(SearchResultsDestination(
-                                    title: "Music",
                                     query: searchText,
                                     mediaType: .music
                                 ))

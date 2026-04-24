@@ -26,7 +26,7 @@ final class BackgroundAudioTests: XCTestCase {
     // MARK: - Helpers
 
     /// Navigate to Music tab and enter first item.
-    private func navigateToMusicItem(app: XCUIApplication) {
+    private func navigateToMusicItem(app _: XCUIApplication) {
         let remote = XCUIRemote.shared
 
         // Navigate to Music tab

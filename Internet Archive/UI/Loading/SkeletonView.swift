@@ -151,16 +151,13 @@ final class SkeletonItemCell: UICollectionViewCell {
 
 extension UICollectionView {
 
-    /// Show skeleton loading state
-    /// - Parameter itemCount: Number of skeleton items to show
-    func showSkeletonLoading(itemCount: Int = 20) {
-        // Register skeleton cell if not already registered
+    /// Register the skeleton cell for later dequeue. View controllers are
+    /// responsible for inserting skeleton items into their data source to
+    /// actually display the loading state.
+    func showSkeletonLoading() {
         register(
             SkeletonItemCell.self,
             forCellWithReuseIdentifier: SkeletonItemCell.reuseIdentifier
         )
-
-        // Implementation note: View controllers should handle showing skeleton cells
-        // by providing skeleton data in their data source
     }
 }

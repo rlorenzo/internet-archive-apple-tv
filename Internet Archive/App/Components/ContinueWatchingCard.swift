@@ -139,12 +139,6 @@ struct ContinueWatchingCard: View {
         }
     }
 
-    /// Placeholder view with aspect ratio (for standalone use)
-    private var placeholderView: some View {
-        placeholderContent
-            .aspectRatio(aspectRatio, contentMode: .fit)
-    }
-
     private var progressOverlay: some View {
         GeometryReader { geometry in
             VStack {

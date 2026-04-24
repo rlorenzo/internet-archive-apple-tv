@@ -15,7 +15,6 @@ import SwiftUI
 struct MusicHomeView: View {
     // MARK: - Environment & State
 
-    @EnvironmentObject private var appState: AppState
     @StateObject private var viewModel = MusicViewModel(collectionService: DefaultCollectionService())
 
     /// Continue listening items from PlaybackProgressManager

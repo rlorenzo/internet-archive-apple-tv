@@ -104,7 +104,7 @@ final class UITestingHelper {
     }
 
     /// Mock favorites response for UI tests
-    func mockFavoritesResponse(username: String) -> FavoritesResponse {
+    func mockFavoritesResponse(username _: String) -> FavoritesResponse {
         let members = (0..<10).map { index in
             FavoriteItem(
                 identifier: "favorite_\(index)",

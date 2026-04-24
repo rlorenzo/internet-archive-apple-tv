@@ -321,7 +321,6 @@ struct LoginFormView: View {
 
 /// Registration form for creating a new Internet Archive account.
 struct RegisterFormView: View {
-    @EnvironmentObject private var appState: AppState
     @Environment(\.dismiss) private var dismiss
 
     // MARK: - Form State

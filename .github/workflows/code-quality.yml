@@ -1,0 +1,82 @@
+name: Code Quality
+
+on:
+  push:
+    branches: [ master, main ]
+  pull_request:
+    branches: [ master, main ]
+
+env:
+  XCODE_VERSION: "26.1"
+
+jobs:
+  periphery:
+    name: Periphery (Unused Code)
+    runs-on: macos-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Select Xcode version
+        run: |
+          XCODE_DEVELOPER_DIR="/Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer"
+          if [ ! -d "$XCODE_DEVELOPER_DIR" ]; then
+            echo "::error::Xcode developer directory not found: $XCODE_DEVELOPER_DIR"
+            exit 1
+          fi
+          sudo xcode-select -s "$XCODE_DEVELOPER_DIR"
+
+      - name: Install Periphery
+        run: brew install periphery
+
+      - name: Cache SPM packages
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+            .swiftpm
+          key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+          restore-keys: |
+            ${{ runner.os }}-spm-
+
+      - name: Run Periphery
+        run: periphery scan --strict --format github-actions --relative-results --disable-update-check
+
+  lizard:
+    name: Lizard (Complexity)
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Install Lizard
+        run: |
+          python3 -m pip install --user lizard
+          echo "$HOME/.local/bin" >> "$GITHUB_PATH"
+
+      - name: Run Lizard (fail if any function has CCN > 15)
+        run: |
+          set -eo pipefail
+          lizard "Internet Archive" -l swift -C 15 --warnings_only | tee lizard-warnings.txt
+          WARN_COUNT=$(grep -c "warning:" lizard-warnings.txt || true)
+          if [ "${WARN_COUNT:-0}" -gt 0 ]; then
+            echo "::error::Lizard found $WARN_COUNT function(s) with CCN > 15"
+            exit 1
+          fi
+          echo "No complexity warnings"
+
+  code-quality-success:
+    name: Code Quality Success
+    needs: [periphery, lizard]
+    runs-on: ubuntu-latest
+    if: always()
+    steps:
+      - name: Check all jobs
+        run: |
+          echo "Periphery: ${{ needs.periphery.result }}"
+          echo "Lizard:    ${{ needs.lizard.result }}"
+          if [ "${{ needs.periphery.result }}" == "success" ] && [ "${{ needs.lizard.result }}" == "success" ]; then
+            exit 0
+          else
+            exit 1
+          fi

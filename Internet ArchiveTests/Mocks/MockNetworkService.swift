@@ -25,12 +25,6 @@ final class MockNetworkService: NetworkServiceProtocol {
     var getCollectionsCalled = false
     var getMetadataCalled = false
     var getFavoritesCalled = false
-    var saveFavoriteCalled = false
-
-    var lastSearchQuery: String?
-    var lastSearchOptions: [String: String]?
-    var lastCollectionParams: (collection: String, resultType: String, limit: Int?)?
-    var lastMetadataIdentifier: String?
 
     // MARK: - Mock Responses
 
@@ -88,8 +82,6 @@ final class MockNetworkService: NetworkServiceProtocol {
 
     func search(query: String, options: [String: String]) async throws -> SearchResponse {
         searchCalled = true
-        lastSearchQuery = query
-        lastSearchOptions = options
 
         if shouldThrowError {
             throw errorToThrow
@@ -104,7 +96,6 @@ final class MockNetworkService: NetworkServiceProtocol {
 
     func getCollections(collection: String, resultType: String, limit: Int?) async throws -> (collection: String, results: [SearchResult]) {
         getCollectionsCalled = true
-        lastCollectionParams = (collection, resultType, limit)
 
         if shouldThrowError {
             throw errorToThrow
@@ -119,7 +110,6 @@ final class MockNetworkService: NetworkServiceProtocol {
 
     func getMetadata(identifier: String) async throws -> ItemMetadataResponse {
         getMetadataCalled = true
-        lastMetadataIdentifier = identifier
 
         if shouldThrowError {
             throw errorToThrow
@@ -146,39 +136,4 @@ final class MockNetworkService: NetworkServiceProtocol {
         return response
     }
 
-    func saveFavoriteItem(email: String, password: String, item: FavoriteItemParams) async throws {
-        saveFavoriteCalled = true
-
-        if shouldThrowError {
-            throw errorToThrow
-        }
-    }
-
-    // MARK: - Helper Methods
-
-    func reset() {
-        shouldThrowError = false
-        errorToThrow = NetworkError.unknown(nil)
-
-        registerCalled = false
-        loginCalled = false
-        searchCalled = false
-        getCollectionsCalled = false
-        getMetadataCalled = false
-        getFavoritesCalled = false
-        saveFavoriteCalled = false
-
-        lastSearchQuery = nil
-        lastSearchOptions = nil
-        lastCollectionParams = nil
-        lastMetadataIdentifier = nil
-
-        mockAuthResponse = nil
-        mockAccountInfoResponse = nil
-        mockSearchResponse = nil
-        mockCollectionsResponse = nil
-        mockMetadataResponse = nil
-        mockFavoritesResponse = nil
-        getAccountInfoCalled = false
-    }
 }
