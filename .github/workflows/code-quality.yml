@@ -54,11 +54,10 @@ jobs:
       - name: Run Lizard (fail if any function has CCN > 15)
         run: |
           set -e
-          lizard "Internet Archive" -l swift -C 15 | tee lizard-report.txt
-          WARN_COUNT=$(awk 'END{print $6}' lizard-report.txt)
+          lizard "Internet Archive" -l swift -C 15 --warnings_only | tee lizard-warnings.txt
+          WARN_COUNT=$(grep -c "warning:" lizard-warnings.txt || true)
           if [ "${WARN_COUNT:-0}" -gt 0 ]; then
             echo "::error::Lizard found $WARN_COUNT function(s) with CCN > 15"
-            lizard "Internet Archive" -l swift -C 15 --warnings_only
             exit 1
           fi
           echo "No complexity warnings"
