@@ -8,14 +8,11 @@
 
 /* Begin PBXBuildFile section */
 		48B242C72F0DE75A00A59F96 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00001 /* Alamofire */; };
-		48B242C82F0DE75A00A59F96 /* AlamofireImage in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00002 /* AlamofireImage */; };
-		48B242C92F0DE75A00A59F96 /* SVProgressHUD in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00003 /* SVProgressHUD */; };
-		48B242CA2F0DE75A00A59F96 /* MBProgressHUD in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00004 /* MBProgressHUD */; };
+		48B242C82F0DE75A00A59F96 /* Nuke in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00002 /* Nuke */; };
+		48B242C8AF0DE75A00A59F96 /* NukeUI in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00009 /* NukeUI */; };
+		48B242C8BF0DE75A00A59F96 /* NukeExtensions in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00010 /* NukeExtensions */; };
 		48B242CB2F0DE75A00A59F96 /* SwiftSoup in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00005 /* SwiftSoup */; };
-		48B242CC2F0DE75A00A59F96 /* TvOSMoreButton in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00006 /* TvOSMoreButton */; };
-		48B242CD2F0DE75A00A59F96 /* TvOSTextViewer in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00007 /* TvOSTextViewer */; };
 		48B242CE2F0DE75A00A59F96 /* Alamofire in Frameworks */ = {isa = PBXBuildFile; productRef = SPM00008 /* Alamofire */; };
-		5B209B3244745CCDF1B7349B /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = C0C3712C0BC3B5ECEE64F311 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -78,8 +75,6 @@
 		};
 		48AC81C72ED1181A004C9F77 /* Internet ArchiveUITests */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-			);
 			path = "Internet ArchiveUITests";
 			sourceTree = "<group>";
 		};
@@ -105,12 +100,10 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				48B242CD2F0DE75A00A59F96 /* TvOSTextViewer in Frameworks */,
-				48B242CC2F0DE75A00A59F96 /* TvOSMoreButton in Frameworks */,
 				48B242CB2F0DE75A00A59F96 /* SwiftSoup in Frameworks */,
-				48B242CA2F0DE75A00A59F96 /* MBProgressHUD in Frameworks */,
-				48B242C92F0DE75A00A59F96 /* SVProgressHUD in Frameworks */,
-				48B242C82F0DE75A00A59F96 /* AlamofireImage in Frameworks */,
+				48B242C82F0DE75A00A59F96 /* Nuke in Frameworks */,
+				48B242C8AF0DE75A00A59F96 /* NukeUI in Frameworks */,
+				48B242C8BF0DE75A00A59F96 /* NukeExtensions in Frameworks */,
 				48B242C72F0DE75A00A59F96 /* Alamofire in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
@@ -206,12 +199,10 @@
 			name = "Internet Archive";
 			packageProductDependencies = (
 				SPM00001 /* Alamofire */,
-				SPM00002 /* AlamofireImage */,
-				SPM00003 /* SVProgressHUD */,
-				SPM00004 /* MBProgressHUD */,
+				SPM00002 /* Nuke */,
+				SPM00009 /* NukeUI */,
+				SPM00010 /* NukeExtensions */,
 				SPM00005 /* SwiftSoup */,
-				SPM00006 /* TvOSMoreButton */,
-				SPM00007 /* TvOSTextViewer */,
 			);
 			productName = "Internet Archive";
 			productReference = C3260C6620A2287F00C32ACA /* Internet Archive.app */;
@@ -257,12 +248,8 @@
 			mainGroup = C3260C5D20A2287E00C32ACA;
 			packageReferences = (
 				PKG00001 /* XCRemoteSwiftPackageReference "Alamofire" */,
-				PKG00002 /* XCRemoteSwiftPackageReference "AlamofireImage" */,
-				PKG00003 /* XCRemoteSwiftPackageReference "SVProgressHUD" */,
-				PKG00004 /* XCRemoteSwiftPackageReference "MBProgressHUD" */,
+				PKG00002 /* XCRemoteSwiftPackageReference "Nuke" */,
 				PKG00005 /* XCRemoteSwiftPackageReference "SwiftSoup" */,
-				PKG00006 /* XCRemoteSwiftPackageReference "TvOSMoreButton" */,
-				PKG00007 /* XCRemoteSwiftPackageReference "TvOSTextViewer" */,
 			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = C3260C6720A2287F00C32ACA /* Products */;
@@ -295,7 +282,6 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
-				5B209B3244745CCDF1B7349B /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -496,7 +482,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -526,7 +512,7 @@
 				DEBUG_INFORMATION_FORMAT = dwarf;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
 				ENABLE_TESTABILITY = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_DYNAMIC_NO_PIC = NO;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_OPTIMIZATION_LEVEL = 0;
@@ -557,7 +543,7 @@
 				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
 				CLANG_ANALYZER_NONNULL = YES;
 				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
-				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
 				CLANG_CXX_LIBRARY = "libc++";
 				CLANG_ENABLE_MODULES = YES;
 				CLANG_ENABLE_OBJC_ARC = YES;
@@ -587,7 +573,7 @@
 				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
 				ENABLE_NS_ASSERTIONS = NO;
 				ENABLE_STRICT_OBJC_MSGSEND = YES;
-				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
 				GCC_NO_COMMON_BLOCKS = YES;
 				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
 				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
@@ -699,28 +685,12 @@
 				minimumVersion = 5.9.0;
 			};
 		};
-		PKG00002 /* XCRemoteSwiftPackageReference "AlamofireImage" */ = {
+		PKG00002 /* XCRemoteSwiftPackageReference "Nuke" */ = {
 			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/Alamofire/AlamofireImage.git";
+			repositoryURL = "https://github.com/kean/Nuke.git";
 			requirement = {
 				kind = upToNextMajorVersion;
-				minimumVersion = 4.3.0;
-			};
-		};
-		PKG00003 /* XCRemoteSwiftPackageReference "SVProgressHUD" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/SVProgressHUD/SVProgressHUD.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 2.3.1;
-			};
-		};
-		PKG00004 /* XCRemoteSwiftPackageReference "MBProgressHUD" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/jdg/MBProgressHUD.git";
-			requirement = {
-				kind = upToNextMajorVersion;
-				minimumVersion = 1.2.0;
+				minimumVersion = 12.0.0;
 			};
 		};
 		PKG00005 /* XCRemoteSwiftPackageReference "SwiftSoup" */ = {
@@ -731,22 +701,6 @@
 				minimumVersion = 2.7.0;
 			};
 		};
-		PKG00006 /* XCRemoteSwiftPackageReference "TvOSMoreButton" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/cgoldsby/TvOSMoreButton.git";
-			requirement = {
-				kind = revision;
-				revision = afd4fa478d8a214a17152caa6209b49a08066ea3;
-			};
-		};
-		PKG00007 /* XCRemoteSwiftPackageReference "TvOSTextViewer" */ = {
-			isa = XCRemoteSwiftPackageReference;
-			repositoryURL = "https://github.com/dcordero/TvOSTextViewer.git";
-			requirement = {
-				kind = revision;
-				revision = 87829515d7f9246a68a7f777b227d996dae28417;
-			};
-		};
 /* End XCRemoteSwiftPackageReference section */
 
 /* Begin XCSwiftPackageProductDependency section */
@@ -755,40 +709,30 @@
 			package = PKG00001 /* XCRemoteSwiftPackageReference "Alamofire" */;
 			productName = Alamofire;
 		};
-		SPM00002 /* AlamofireImage */ = {
+		SPM00002 /* Nuke */ = {
 			isa = XCSwiftPackageProductDependency;
-			package = PKG00002 /* XCRemoteSwiftPackageReference "AlamofireImage" */;
-			productName = AlamofireImage;
-		};
-		SPM00003 /* SVProgressHUD */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = PKG00003 /* XCRemoteSwiftPackageReference "SVProgressHUD" */;
-			productName = SVProgressHUD;
-		};
-		SPM00004 /* MBProgressHUD */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = PKG00004 /* XCRemoteSwiftPackageReference "MBProgressHUD" */;
-			productName = MBProgressHUD;
+			package = PKG00002 /* XCRemoteSwiftPackageReference "Nuke" */;
+			productName = Nuke;
 		};
 		SPM00005 /* SwiftSoup */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = PKG00005 /* XCRemoteSwiftPackageReference "SwiftSoup" */;
 			productName = SwiftSoup;
 		};
-		SPM00006 /* TvOSMoreButton */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = PKG00006 /* XCRemoteSwiftPackageReference "TvOSMoreButton" */;
-			productName = TvOSMoreButton;
-		};
-		SPM00007 /* TvOSTextViewer */ = {
-			isa = XCSwiftPackageProductDependency;
-			package = PKG00007 /* XCRemoteSwiftPackageReference "TvOSTextViewer" */;
-			productName = TvOSTextViewer;
-		};
 		SPM00008 /* Alamofire */ = {
 			isa = XCSwiftPackageProductDependency;
 			package = PKG00001 /* XCRemoteSwiftPackageReference "Alamofire" */;
 			productName = Alamofire;
+		};
+		SPM00009 /* NukeUI */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = PKG00002 /* XCRemoteSwiftPackageReference "Nuke" */;
+			productName = NukeUI;
+		};
+		SPM00010 /* NukeExtensions */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = PKG00002 /* XCRemoteSwiftPackageReference "Nuke" */;
+			productName = NukeExtensions;
 		};
 /* End XCSwiftPackageProductDependency section */
 	};

@@ -23,8 +23,8 @@ struct VideoHomeView: View {
     /// Navigation path for programmatic navigation control
     @State private var navigationPath = NavigationPath()
 
-    /// Binding to expose navigation depth to parent for exit command handling
-    @Binding var hasNavigationHistory: Bool
+    /// Selected sort order for the featured videos grid
+    @State private var selectedSort: CollectionSortOption = .weeklyViews
 
     // MARK: - Body
 
@@ -59,21 +59,14 @@ struct VideoHomeView: View {
                 )
             }
         }
-        .onChange(of: navigationPath.count) { _, newCount in
-            // Sync navigation state with parent
-            hasNavigationHistory = newCount > 0
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .popVideoNavigation)) { _ in
-            // Handle pop request from parent (when Menu pressed on tab bar)
-            if !navigationPath.isEmpty {
-                navigationPath.removeLast()
-            }
-        }
         .task {
             await loadContent()
         }
         .onAppear {
             refreshContinueWatching()
+        }
+        .onChange(of: selectedSort) { _, newValue in
+            Task { await viewModel.setSortOption(newValue) }
         }
     }
 
@@ -113,22 +106,57 @@ struct VideoHomeView: View {
 
     // MARK: - Featured Videos Section
 
-    /// Card width for video items (determines height via 16:9 aspect ratio)
-    private let videoCardWidth: CGFloat = 380
-
     private var featuredVideosSection: some View {
         VStack(alignment: .leading, spacing: 20) {
-            SectionHeader("Featured Videos")
-                .accessibilityAddTraits(.isHeader)
+            HStack {
+                Text("Featured Videos")
+                    .font(.title2)
+                    .fontWeight(.semibold)
+                    .foregroundStyle(.secondary)
+                    .accessibilityAddTraits(.isHeader)
 
-            if viewModel.state.hasItems {
-                // Use horizontal scroll rows for proper aspect ratio support
-                VStack(alignment: .leading, spacing: 48) {
-                    videoRow(items: Array(viewModel.state.items.prefix(4)))
-                    videoRow(items: Array(viewModel.state.items.dropFirst(4).prefix(4)))
-                    videoRow(items: Array(viewModel.state.items.dropFirst(8).prefix(4)))
+                Spacer()
+
+                Picker("Sort by", selection: $selectedSort) {
+                    ForEach(CollectionSortOption.allCases) { option in
+                        Text(option.displayName).tag(option)
+                    }
                 }
-            } else {
+                .pickerStyle(.segmented)
+                .frame(width: 400)
+                .accessibilityLabel("Sort order")
+            }
+
+            if viewModel.state.isLoading && !viewModel.state.hasItems {
+                SkeletonGrid(cardType: .video, columns: 4, rows: 3)
+            } else if viewModel.state.hasItems {
+                LazyVGrid(
+                    columns: SearchResultsGridHelpers.gridColumns(for: .video),
+                    spacing: 48
+                ) {
+                    ForEach(viewModel.state.items) { item in
+                        Button {
+                            navigationPath.append(item)
+                        } label: {
+                            SearchResultCard(item: item, mediaType: .video)
+                        }
+                        .tvCardStyle()
+                        .onAppear {
+                            Task { await viewModel.loadNextPageIfNeeded(currentItem: item) }
+                        }
+                    }
+
+                    if viewModel.state.isLoadingMore {
+                        ForEach(0..<SearchResultsGridHelpers.skeletonCardCount(for: .video), id: \.self) { _ in
+                            SkeletonCard.video
+                        }
+                    }
+                }
+
+                if !viewModel.state.hasMore && viewModel.state.hasLoaded {
+                    noMoreContentView
+                }
+            } else if viewModel.state.hasLoaded {
                 EmptyContentView.emptyCollection(collectionName: "videos")
             }
         }
@@ -136,55 +164,12 @@ struct VideoHomeView: View {
         .accessibilityLabel("Featured videos section with \(viewModel.state.items.count) items")
     }
 
-    private func videoRow(items: [SearchResult]) -> some View {
-        HStack(alignment: .top, spacing: 48) {
-            ForEach(items) { item in
-                Button {
-                    navigationPath.append(item)
-                } label: {
-                    VStack(alignment: .leading, spacing: 12) {
-                        // Thumbnail with fixed aspect ratio
-                        MediaThumbnailView(
-                            identifier: item.identifier,
-                            mediaType: .video,
-                            size: CGSize(width: videoCardWidth, height: videoCardWidth * 9 / 16)
-                        )
-
-                        // Text content - fixed height for consistent alignment
-                        VStack(alignment: .leading, spacing: 4) {
-                            Text(item.safeTitle)
-                                .font(.callout)
-                                .fontWeight(.medium)
-                                .lineLimit(2)
-                                .foregroundStyle(.primary)
-                                .frame(height: 56, alignment: .bottomLeading)
-
-                            Text(item.creator ?? item.year ?? " ")
-                                .font(.caption)
-                                .foregroundStyle(.secondary)
-                                .lineLimit(1)
-                        }
-                    }
-                    .frame(width: videoCardWidth)
-                }
-                .tvCardStyle()
-                .accessibilityElement(children: .combine)
-                .accessibilityLabel(videoAccessibilityLabel(for: item))
-                .accessibilityHint("Double-tap to view details")
-            }
-        }
-        .padding(.vertical, 50)
-    }
-
-    /// Generate accessibility label for a video item
-    private func videoAccessibilityLabel(for item: SearchResult) -> String {
-        var components = [item.safeTitle, "Video"]
-        if let creator = item.creator {
-            components.insert(creator, at: 1)
-        } else if let year = item.year {
-            components.insert(year, at: 1)
-        }
-        return components.joined(separator: ", ")
+    private var noMoreContentView: some View {
+        Text("No More Content")
+            .font(.callout)
+            .foregroundStyle(.secondary)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 40)
     }
 
     // MARK: - Loading View
@@ -199,7 +184,7 @@ struct VideoHomeView: View {
 
                 VStack(alignment: .leading, spacing: 20) {
                     SectionHeader("Featured Videos")
-                    SkeletonGrid(cardType: .video, columns: 4, rows: 2)
+                    SkeletonGrid(cardType: .video, columns: 4, rows: 3)
                 }
                 .padding(.horizontal, 80)
             }
@@ -210,7 +195,7 @@ struct VideoHomeView: View {
     // MARK: - Data Loading
 
     private func loadContent() async {
-        await viewModel.loadCollection()
+        await viewModel.loadInitialPage()
     }
 
     private func refreshContinueWatching() {
@@ -233,13 +218,6 @@ struct VideoHomeView: View {
 // MARK: - Preview
 
 #Preview {
-    VideoHomeView(hasNavigationHistory: .constant(false))
+    VideoHomeView()
         .environmentObject(AppState())
-}
-
-// MARK: - Notification Names
-
-extension Notification.Name {
-    /// Posted when parent requests video navigation to pop back
-    static let popVideoNavigation = Notification.Name("popVideoNavigation")
 }

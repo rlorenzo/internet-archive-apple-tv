@@ -387,6 +387,181 @@ final class MusicViewModelTests: XCTestCase {
     func testHasTitleLoadAttempted_falseBeforeLoad() {
         XCTAssertFalse(viewModel.state.hasTitleLoadAttempted)
     }
+
+    // MARK: - Paginated Loading Tests
+
+    func testLoadInitialPage_callsServiceWithMusicPageSize() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 100,
+            docs: TestFixtures.makeMusicResults(count: 30)
+        )
+        mockService.mockMetadataResponse = TestFixtures.makeMusicMetadataResponse()
+
+        await viewModel.loadInitialPage()
+
+        XCTAssertTrue(mockService.getCollectionPageCalled)
+        XCTAssertEqual(mockService.lastCollection, "etree")
+        XCTAssertEqual(mockService.lastPage, 0)
+        XCTAssertEqual(mockService.lastPageSize, 30)
+        XCTAssertEqual(mockService.lastSort, "week desc")
+    }
+
+    func testLoadInitialPage_populatesItemsAndLoadsTitle() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 100,
+            docs: TestFixtures.makeMusicResults(count: 30)
+        )
+        mockService.mockMetadataResponse = TestFixtures.makeMusicMetadataResponse(
+            title: "Live Music Archive"
+        )
+
+        await viewModel.loadInitialPage()
+
+        XCTAssertEqual(viewModel.state.items.count, 30)
+        XCTAssertEqual(viewModel.state.totalFound, 100)
+        XCTAssertTrue(viewModel.state.hasMore)
+        XCTAssertTrue(viewModel.state.hasTitleLoadAttempted)
+        XCTAssertEqual(viewModel.state.collectionTitle, "Live Music Archive")
+    }
+
+    func testLoadInitialPage_setsHasMoreFalse_whenAllItemsReturned() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 15,
+            docs: TestFixtures.makeMusicResults(count: 15)
+        )
+        mockService.mockMetadataResponse = TestFixtures.makeMusicMetadataResponse()
+
+        await viewModel.loadInitialPage()
+
+        XCTAssertFalse(viewModel.state.hasMore)
+    }
+
+    func testLoadInitialPage_setsErrorMessage_onFailure() async {
+        mockService.errorToThrow = NetworkError.noConnection
+
+        await viewModel.loadInitialPage()
+
+        XCTAssertNotNil(viewModel.state.errorMessage)
+        XCTAssertFalse(viewModel.state.isLoading)
+        XCTAssertTrue(viewModel.state.hasLoaded)
+    }
+
+    func testLoadNextPageIfNeeded_appendsResults_whenNearEnd() async {
+        mockService.mockPageResponses[0] = TestFixtures.makeSearchResponse(
+            numFound: 100,
+            docs: TestFixtures.makeMusicResults(count: 30)
+        )
+        mockService.mockPageResponses[1] = TestFixtures.makeSearchResponse(
+            numFound: 100,
+            docs: TestFixtures.makeMusicResults(count: 30, startIndex: 30)
+        )
+        mockService.mockMetadataResponse = TestFixtures.makeMusicMetadataResponse()
+
+        await viewModel.loadInitialPage()
+        XCTAssertEqual(viewModel.state.items.count, 30)
+
+        let nearEndItem = viewModel.state.items[25]
+        await viewModel.loadNextPageIfNeeded(currentItem: nearEndItem)
+
+        XCTAssertEqual(viewModel.state.items.count, 60)
+        XCTAssertEqual(viewModel.state.currentPage, 1)
+    }
+
+    func testLoadNextPageIfNeeded_doesNotFetch_whenItemFarFromEnd() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 100,
+            docs: TestFixtures.makeMusicResults(count: 30)
+        )
+        mockService.mockMetadataResponse = TestFixtures.makeMusicMetadataResponse()
+        await viewModel.loadInitialPage()
+
+        mockService.getCollectionPageCalled = false
+
+        let firstItem = viewModel.state.items[0]
+        await viewModel.loadNextPageIfNeeded(currentItem: firstItem)
+
+        XCTAssertFalse(mockService.getCollectionPageCalled)
+        XCTAssertEqual(viewModel.state.items.count, 30)
+    }
+
+    func testLoadNextPageIfNeeded_doesNotFetch_whenHasMoreFalse() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 10,
+            docs: TestFixtures.makeMusicResults(count: 10)
+        )
+        mockService.mockMetadataResponse = TestFixtures.makeMusicMetadataResponse()
+        await viewModel.loadInitialPage()
+        XCTAssertFalse(viewModel.state.hasMore)
+
+        mockService.getCollectionPageCalled = false
+
+        let lastItem = viewModel.state.items[9]
+        await viewModel.loadNextPageIfNeeded(currentItem: lastItem)
+
+        XCTAssertFalse(mockService.getCollectionPageCalled)
+    }
+
+    // MARK: - Sort Option Tests
+
+    func testInitialState_defaultSortIsWeeklyViews() {
+        XCTAssertEqual(viewModel.state.sortOption, .weeklyViews)
+    }
+
+    func testSetSortOption_updatesSortAndReloads() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 50,
+            docs: TestFixtures.makeMusicResults(count: 30)
+        )
+        mockService.mockMetadataResponse = TestFixtures.makeMusicMetadataResponse()
+
+        await viewModel.setSortOption(.allTimeDownloads)
+
+        XCTAssertEqual(viewModel.state.sortOption, .allTimeDownloads)
+        XCTAssertEqual(mockService.lastSort, "downloads desc")
+        XCTAssertTrue(mockService.getCollectionPageCalled)
+    }
+
+    func testSetSortOption_sameOption_doesNotReload() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(
+            numFound: 50,
+            docs: TestFixtures.makeMusicResults(count: 30)
+        )
+        mockService.mockMetadataResponse = TestFixtures.makeMusicMetadataResponse()
+        await viewModel.loadInitialPage()
+
+        mockService.getCollectionPageCalled = false
+
+        await viewModel.setSortOption(.weeklyViews)
+
+        XCTAssertFalse(mockService.getCollectionPageCalled)
+    }
+
+    func testLoadNextPage_usesCurrentSortOption() async {
+        mockService.mockPageResponses[0] = TestFixtures.makeSearchResponse(
+            numFound: 100,
+            docs: TestFixtures.makeMusicResults(count: 30)
+        )
+        mockService.mockPageResponses[1] = TestFixtures.makeSearchResponse(
+            numFound: 100,
+            docs: TestFixtures.makeMusicResults(count: 30, startIndex: 30)
+        )
+        mockService.mockMetadataResponse = TestFixtures.makeMusicMetadataResponse()
+
+        await viewModel.setSortOption(.monthlyViews)
+
+        // Clear state set by the initial load so the next assertions can only
+        // be satisfied by the next-page fetch.
+        mockService.lastSort = nil
+        mockService.lastPage = nil
+        mockService.getCollectionPageCalled = false
+
+        let nearEndItem = viewModel.state.items[25]
+        await viewModel.loadNextPageIfNeeded(currentItem: nearEndItem)
+
+        XCTAssertTrue(mockService.getCollectionPageCalled)
+        XCTAssertEqual(mockService.lastPage, 1)
+        XCTAssertEqual(mockService.lastSort, "month desc")
+    }
 }
 
 // MARK: - MusicViewState Tests

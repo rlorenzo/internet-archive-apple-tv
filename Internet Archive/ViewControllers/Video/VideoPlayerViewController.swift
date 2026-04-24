@@ -106,6 +106,14 @@ final class VideoPlayerViewController: AVPlayerViewController {
         super.init(nibName: nil, bundle: nil)
         self.player = player
 
+        // Override embedded metadata to suppress unwanted fields (e.g., year)
+        // in the transport bar. External metadata supersedes embedded metadata
+        // for matching identifiers.
+        let blankDate = AVMutableMetadataItem()
+        blankDate.identifier = .commonIdentifierCreationDate
+        blankDate.value = "" as NSString
+        player.currentItem?.externalMetadata = [blankDate]
+
         // If viewDidLoad already ran (during super.init), we need to complete setup now
         // that player is available
         if isViewLoaded {

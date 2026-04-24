@@ -94,5 +94,4 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 - [Internet Archive](https://archive.org) for providing free access to digital content
 - [Alamofire](https://github.com/Alamofire/Alamofire) for networking
-- [AlamofireImage](https://github.com/Alamofire/AlamofireImage) for image loading
-- [SVProgressHUD](https://github.com/SVProgressHUD/SVProgressHUD) for progress indicators
+- [Nuke](https://github.com/kean/Nuke) for image loading and caching

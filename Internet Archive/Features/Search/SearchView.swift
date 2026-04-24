@@ -15,9 +15,6 @@ import SwiftUI
 /// - Dual-section results display (Videos and Music)
 /// - Pagination with infinite scroll
 struct SearchView: View {
-    /// Binding to expose navigation depth to parent for exit command handling
-    @Binding var hasNavigationHistory: Bool
-
     // MARK: - State
 
     @State private var searchText = ""
@@ -81,16 +78,6 @@ struct SearchView: View {
         .onChange(of: selectedFilter) { _, _ in
             if !searchText.isEmpty {
                 performSearch(query: searchText, resetResults: true)
-            }
-        }
-        .onChange(of: navigationPath.count) { _, newCount in
-            // Sync navigation state with parent
-            hasNavigationHistory = newCount > 0
-        }
-        .onReceive(NotificationCenter.default.publisher(for: .popSearchNavigation)) { _ in
-            // Handle pop request from parent (when Menu pressed on tab bar)
-            if !navigationPath.isEmpty {
-                navigationPath.removeLast()
             }
         }
     }
@@ -599,13 +586,6 @@ extension SearchView {
 // MARK: - Preview
 
 #Preview {
-    SearchView(hasNavigationHistory: .constant(false))
+    SearchView()
         .environmentObject(AppState())
-}
-
-// MARK: - Notification Names
-
-extension Notification.Name {
-    /// Posted when parent requests search navigation to pop back
-    static let popSearchNavigation = Notification.Name("popSearchNavigation")
 }

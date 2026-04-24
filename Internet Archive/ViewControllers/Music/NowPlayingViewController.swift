@@ -228,11 +228,11 @@ final class NowPlayingViewController: UIViewController {
             slider.trailingAnchor.constraint(equalTo: albumArtView.trailingAnchor, constant: -20),
             slider.heightAnchor.constraint(equalToConstant: 50),
 
-            // Controls below slider
+            // Controls below slider - extend beyond album art for breathing room
             controlsView.topAnchor.constraint(equalTo: slider.bottomAnchor, constant: 30),
-            controlsView.centerXAnchor.constraint(equalTo: albumArtView.centerXAnchor),
-            controlsView.heightAnchor.constraint(equalToConstant: 90),
-            controlsView.widthAnchor.constraint(equalToConstant: 400),
+            controlsView.leadingAnchor.constraint(equalTo: albumArtView.leadingAnchor, constant: -40),
+            controlsView.trailingAnchor.constraint(equalTo: albumArtView.trailingAnchor, constant: 40),
+            controlsView.heightAnchor.constraint(equalToConstant: 130),
 
             // Right side - Track list header
             trackListHeaderLabel.leadingAnchor.constraint(equalTo: albumArtView.trailingAnchor, constant: 80),

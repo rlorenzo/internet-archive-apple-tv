@@ -3,7 +3,6 @@
 //  Internet Archive
 //
 //  Custom focusable description view with "Read More" expansion
-//  Replaces TvOSMoreButton for HTML-formatted descriptions
 //
 
 import UIKit
@@ -32,7 +31,7 @@ final class DescriptionTextView: UIView {
         didSet { updateContent() }
     }
 
-    /// Plain text version for accessibility and TvOSTextViewer
+    /// Plain text version for accessibility and full-screen viewer
     var plainText: String? {
         didSet { updateAccessibility() }
     }

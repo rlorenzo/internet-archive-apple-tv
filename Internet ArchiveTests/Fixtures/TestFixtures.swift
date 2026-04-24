@@ -129,6 +129,38 @@ enum TestFixtures {
         metadata: itemMetadata
     )
 
+    // MARK: - Metadata Factories
+
+    /// Create a music ItemMetadataResponse with the given number of tracks.
+    /// Used by MusicViewModelTests pagination suite.
+    static func makeMusicMetadataResponse(
+        identifier: String = "test_music",
+        title: String = "Test Album",
+        trackCount: Int = 3
+    ) -> ItemMetadataResponse {
+        let files = (0..<trackCount).map { index in
+            FileInfo(
+                name: "track_\(index + 1).mp3",
+                source: "original",
+                format: "VBR MP3",
+                size: "\(5_000_000 + index * 1_000_000)"
+            )
+        }
+        let metadata = ItemMetadata(
+            identifier: identifier,
+            title: title,
+            mediatype: "etree",
+            creator: "Test Band",
+            description: "A test concert for unit testing",
+            date: "2025-01-01",
+            year: "2025",
+            subject: .array(["test", "music", "live"]),
+            collection: .array(["etree"]),
+            uploader: "test_uploader"
+        )
+        return ItemMetadataResponse(files: files, metadata: metadata)
+    }
+
     // MARK: - Favorites
 
     static let favoriteItem = FavoriteItem(
