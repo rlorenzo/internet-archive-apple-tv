@@ -141,41 +141,16 @@ final class APIManager: NSObject {
         options: [String: String],
         applyContentFilter: Bool = true
     ) async throws -> SearchResponse {
-        var strOption = "&output=json"
-
-        // Ensure collection and licenseurl fields are in the list for content filtering
-        var modifiedOptions = options
-        if applyContentFilter, let existingFields = options["fl[]"] {
-            var fields = existingFields
-            if !fields.contains("collection") {
-                fields += ",collection"
-            }
-            if !fields.contains("licenseurl") {
-                fields += ",licenseurl"
-            }
-            modifiedOptions["fl[]"] = fields
-        }
-
-        for (key, value) in modifiedOptions {
-            strOption += "&\(key)=\(value)"
-        }
-
-        // Build the final query with content filter exclusions
-        var finalQuery = query
-        if applyContentFilter {
-            let exclusionQuery = ContentFilterService.shared.buildExclusionQuery()
-            if !exclusionQuery.isEmpty {
-                finalQuery = "\(query) \(exclusionQuery)"
-            }
-        }
-
-        let url = "\(baseURL)advancedsearch.php?q=\(finalQuery)\(strOption)"
-        guard let encodedURL = url.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed) else {
+        guard let url = buildSearchURL(
+            query: query,
+            options: options,
+            applyContentFilter: applyContentFilter
+        ) else {
             throw NetworkError.invalidParameters
         }
 
         let response = try await AF.request(
-            encodedURL,
+            url,
             method: .get,
             encoding: URLEncoding.default,
             headers: headers
@@ -204,6 +179,51 @@ final class APIManager: NSObject {
         }
 
         return response
+    }
+
+    /// Build the advancedsearch URL using URLComponents so reserved characters
+    /// (&, =, ?, etc.) in caller-supplied query and option values cannot inject
+    /// additional parameters into the request.
+    func buildSearchURL(
+        query: String,
+        options: [String: String],
+        applyContentFilter: Bool
+    ) -> URL? {
+        var modifiedOptions = options
+        if applyContentFilter, let existingFields = options["fl[]"] {
+            var fields = existingFields
+            if !fields.contains("collection") {
+                fields += ",collection"
+            }
+            if !fields.contains("licenseurl") {
+                fields += ",licenseurl"
+            }
+            modifiedOptions["fl[]"] = fields
+        }
+
+        var finalQuery = query
+        if applyContentFilter {
+            let exclusionQuery = ContentFilterService.shared.buildExclusionQuery()
+            if !exclusionQuery.isEmpty {
+                finalQuery = "\(query) \(exclusionQuery)"
+            }
+        }
+
+        guard var components = URLComponents(string: "\(baseURL)advancedsearch.php") else {
+            return nil
+        }
+        var queryItems: [URLQueryItem] = [
+            URLQueryItem(name: "q", value: finalQuery),
+            URLQueryItem(name: "output", value: "json")
+        ]
+        // Reserved keys are controlled here; skip any caller-supplied duplicates so
+        // `options` cannot override the query or change the response format.
+        let reservedKeys: Set<String> = ["q", "output"]
+        for (key, value) in modifiedOptions where !reservedKeys.contains(key) {
+            queryItems.append(URLQueryItem(name: key, value: value))
+        }
+        components.queryItems = queryItems
+        return components.url
     }
 
     /// Get collections with typed response (async/await)

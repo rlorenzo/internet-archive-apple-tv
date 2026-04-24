@@ -415,6 +415,84 @@ struct APIManagerTests {
         let manager: Any = APIManager.sharedManager
         #expect(manager is NetworkServiceProtocol)
     }
+
+    // MARK: - Search URL Injection Tests
+
+    /// Reserved characters in the query value must not be able to introduce
+    /// additional query items into the outgoing URL.
+    @Test func buildSearchURLEscapesReservedCharactersInQuery() throws {
+        let manager = APIManager.sharedManager
+        let maliciousQuery = "cats&rows=9999999&fl[]=identifier"
+
+        let url = try #require(manager.buildSearchURL(
+            query: maliciousQuery,
+            options: ["rows": "10"],
+            applyContentFilter: false
+        ))
+
+        let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
+        let items = components.queryItems ?? []
+
+        // Exactly one `q` item, and it contains the attacker input verbatim.
+        #expect(items.filter { $0.name == "q" }.count == 1)
+        #expect(items.first { $0.name == "q" }?.value == maliciousQuery)
+
+        // The attacker's injected `rows` value must not override the caller's.
+        let rowsValues = items.filter { $0.name == "rows" }.compactMap { $0.value }
+        #expect(rowsValues == ["10"])
+
+        // No additional `fl[]` item smuggled in via the query.
+        #expect(items.filter { $0.name == "fl[]" }.isEmpty)
+
+        // Reserved characters must appear percent-encoded in the raw URL string.
+        let raw = url.absoluteString
+        #expect(raw.contains("%26"))  // &
+        #expect(raw.contains("%3D"))  // =
+    }
+
+    /// Reserved characters in option values must not be able to introduce
+    /// additional query items into the outgoing URL.
+    @Test func buildSearchURLEscapesReservedCharactersInOptionValues() throws {
+        let manager = APIManager.sharedManager
+        let maliciousRows = "10&malicious=1"
+
+        let url = try #require(manager.buildSearchURL(
+            query: "cats",
+            options: ["rows": maliciousRows],
+            applyContentFilter: false
+        ))
+
+        let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
+        let items = components.queryItems ?? []
+
+        // The injected `&malicious=1` must remain part of the `rows` value, not a new item.
+        #expect(items.filter { $0.name == "rows" }.compactMap { $0.value } == [maliciousRows])
+        #expect(items.contains { $0.name == "malicious" } == false)
+
+        // Single `q`, single `output=json`.
+        #expect(items.filter { $0.name == "q" }.count == 1)
+        #expect(items.filter { $0.name == "output" }.compactMap { $0.value } == ["json"])
+    }
+
+    /// Caller-supplied `options` must not be able to override the reserved
+    /// `q` or `output` query items — otherwise the server could receive
+    /// `output=xml` (breaking JSON decoding) or a second `q` value.
+    @Test func buildSearchURLIgnoresReservedKeysInOptions() throws {
+        let manager = APIManager.sharedManager
+
+        let url = try #require(manager.buildSearchURL(
+            query: "cats",
+            options: ["output": "xml", "q": "dogs", "rows": "5"],
+            applyContentFilter: false
+        ))
+
+        let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
+        let items = components.queryItems ?? []
+
+        #expect(items.filter { $0.name == "q" }.compactMap { $0.value } == ["cats"])
+        #expect(items.filter { $0.name == "output" }.compactMap { $0.value } == ["json"])
+        #expect(items.filter { $0.name == "rows" }.compactMap { $0.value } == ["5"])
+    }
 }
 
 // MARK: - Extended Error Tests
