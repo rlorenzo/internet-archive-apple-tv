@@ -48,15 +48,6 @@ struct FavoritesResponse: Codable, Sendable {
     }
 }
 
-/// Metadata for favorites collection
-struct FavoriteMetadata: Codable, Sendable {
-    let identifier: String?
-    let mediatype: String?
-    let title: String?
-    let description: String?
-    let subject: String?
-}
-
 /// Individual favorite item
 struct FavoriteItem: Codable, Sendable {
     let identifier: String
