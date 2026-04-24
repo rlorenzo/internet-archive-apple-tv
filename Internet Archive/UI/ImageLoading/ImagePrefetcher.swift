@@ -14,13 +14,11 @@ final class ImagePrefetcher: NSObject {
 
     // MARK: - Properties
 
-    private weak var collectionView: UICollectionView?
     private weak var dataSource: ItemDataSource?
 
     // MARK: - Initialization
 
     init(collectionView: UICollectionView, dataSource: ItemDataSource? = nil) {
-        self.collectionView = collectionView
         self.dataSource = dataSource
         super.init()
         collectionView.prefetchDataSource = self

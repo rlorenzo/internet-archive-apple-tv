@@ -12,7 +12,6 @@ import SwiftUI
 /// This view is navigated to from the "See All" button in search results sections.
 /// It displays results in a grid layout with pagination support.
 struct SearchResultsGridView: View {
-    let title: String
     let query: String
     let mediaType: MediaItemCard.MediaType
     @Binding var navigationPath: NavigationPath
@@ -64,7 +63,7 @@ struct SearchResultsGridView: View {
 
     // MARK: - Error View
 
-    private func errorView(message: String) -> some View {
+    private func errorView(message _: String) -> some View {
         VStack {
             Spacer()
             ErrorContentView.loadingFailed(contentType: "results") {
@@ -215,7 +214,6 @@ struct SearchResultsDestination: Hashable {
     @Previewable @State var path = NavigationPath()
     NavigationStack(path: $path) {
         SearchResultsGridView(
-            title: "Videos",
             query: "nature",
             mediaType: .video,
             navigationPath: $path

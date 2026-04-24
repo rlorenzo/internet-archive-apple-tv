@@ -15,8 +15,6 @@ import SwiftUI
 /// - Dual-section results display (Videos and Music)
 /// - Pagination with infinite scroll
 struct SearchView: View {
-    @EnvironmentObject private var appState: AppState
-
     /// Binding to expose navigation depth to parent for exit command handling
     @Binding var hasNavigationHistory: Bool
 
@@ -71,7 +69,6 @@ struct SearchView: View {
                 }
                 .navigationDestination(for: SearchResultsDestination.self) { destination in
                     SearchResultsGridView(
-                        title: destination.title,
                         query: destination.query,
                         mediaType: destination.mediaType,
                         navigationPath: $navigationPath

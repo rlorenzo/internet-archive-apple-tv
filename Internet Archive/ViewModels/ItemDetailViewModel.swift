@@ -260,14 +260,3 @@ final class ItemDetailViewModel: ObservableObject {
         return "An unexpected error occurred. Please try again."
     }
 }
-
-// MARK: - Default Metadata Service Implementation
-
-/// Default implementation using APIManager
-struct DefaultMetadataService: MetadataServiceProtocol {
-
-    @MainActor
-    func getMetadata(identifier: String) async throws -> ItemMetadataResponse {
-        try await APIManager.sharedManager.getMetaDataTyped(identifier: identifier)
-    }
-}

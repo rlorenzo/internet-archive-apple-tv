@@ -30,7 +30,7 @@ import Foundation
 /// All properties and methods are accessed from the main actor to ensure
 /// thread-safe access to connectivity state from UI code.
 @MainActor
-public protocol NetworkMonitorProtocol: AnyObject {
+protocol NetworkMonitorProtocol: AnyObject {
 
     // MARK: - Connection State
 
@@ -69,7 +69,7 @@ public protocol NetworkMonitorProtocol: AnyObject {
 ///
 /// This enum is used by both the protocol and implementation to describe
 /// the current network interface type.
-public enum NetworkConnectionType: Hashable, Sendable {
+enum NetworkConnectionType: Hashable, Sendable {
     /// Connected via WiFi.
     case wifi
     /// Connected via cellular data (3G, 4G, 5G).

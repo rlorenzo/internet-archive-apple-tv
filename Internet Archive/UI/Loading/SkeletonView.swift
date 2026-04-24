@@ -153,7 +153,7 @@ extension UICollectionView {
 
     /// Show skeleton loading state
     /// - Parameter itemCount: Number of skeleton items to show
-    func showSkeletonLoading(itemCount: Int = 20) {
+    func showSkeletonLoading(itemCount _: Int = 20) {
         // Register skeleton cell if not already registered
         register(
             SkeletonItemCell.self,

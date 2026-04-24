@@ -14,8 +14,6 @@ final class MockPeopleFavoritesService: PeopleFavoritesServiceProtocol, @uncheck
     var getFavoriteItemsCalled = false
     var searchCalled = false
     var lastUsername: String?
-    var lastQuery: String?
-    var lastOptions: [String: String]?
     var mockFavoritesResponse: FavoritesResponse?
     var mockSearchResponse: SearchResponse?
     var errorToThrow: Error?
@@ -37,8 +35,6 @@ final class MockPeopleFavoritesService: PeopleFavoritesServiceProtocol, @uncheck
 
     func search(query: String, options: [String: String]) async throws -> SearchResponse {
         searchCalled = true
-        lastQuery = query
-        lastOptions = options
 
         if let error = errorToThrow {
             throw error
@@ -49,17 +45,6 @@ final class MockPeopleFavoritesService: PeopleFavoritesServiceProtocol, @uncheck
         }
 
         return response
-    }
-
-    func reset() {
-        getFavoriteItemsCalled = false
-        searchCalled = false
-        lastUsername = nil
-        lastQuery = nil
-        lastOptions = nil
-        mockFavoritesResponse = nil
-        mockSearchResponse = nil
-        errorToThrow = nil
     }
 }
 

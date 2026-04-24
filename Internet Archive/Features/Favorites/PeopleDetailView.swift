@@ -39,10 +39,6 @@ struct PeopleDetailView: View {
 
     @State private var loadTask: Task<Void, Never>?
 
-    // MARK: - Environment
-
-    @Environment(\.dismiss) private var dismiss
-
     // MARK: - Body
 
     var body: some View {

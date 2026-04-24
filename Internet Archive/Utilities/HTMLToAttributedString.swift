@@ -43,11 +43,8 @@ final class HTMLToAttributedString {
 
         do {
             let document = try SwiftSoup.parse(preprocessed)
-            let attributedString = try convertElement(
-                document.body() ?? document,
-                baseFont: baseFont,
-                textColor: textColor
-            )
+            let style = TextStyle(baseFont: baseFont, textColor: textColor)
+            let attributedString = try convertElement(document.body() ?? document, style: style)
             return cleanupAttributedString(attributedString)
         } catch {
             // Fallback to plain text if parsing fails
@@ -129,98 +126,114 @@ final class HTMLToAttributedString {
         return result
     }
 
-    /// Convert a SwiftSoup element to NSAttributedString
-    private func convertElement(
-        _ element: Element,
-        baseFont: UIFont,
-        textColor: UIColor,
-        isBold: Bool = false,
-        isItalic: Bool = false
-    ) throws -> NSMutableAttributedString {
-        let result = NSMutableAttributedString()
+    /// Style context passed down the recursion in `convertElement`.
+    private struct TextStyle {
+        let baseFont: UIFont
+        let textColor: UIColor
+        var isBold = false
+        var isItalic = false
+    }
 
+    /// Convert a SwiftSoup element to NSAttributedString
+    private func convertElement(_ element: Element, style: TextStyle) throws -> NSMutableAttributedString {
+        let result = NSMutableAttributedString()
         let paragraphStyle = NSMutableParagraphStyle()
         paragraphStyle.lineSpacing = 6
 
         for node in element.getChildNodes() {
             if let textNode = node as? TextNode {
-                // Text node - add with current formatting
-                let text = textNode.text()
-                if !text.isEmpty {
-                    let font = fontForStyle(baseFont: baseFont, bold: isBold, italic: isItalic)
-                    let attributes: [NSAttributedString.Key: Any] = [
-                        .font: font,
-                        .foregroundColor: textColor,
-                        .paragraphStyle: paragraphStyle
-                    ]
-                    result.append(NSAttributedString(string: text, attributes: attributes))
-                }
+                appendTextNode(textNode.text(), to: result, style: style, paragraphStyle: paragraphStyle)
             } else if let childElement = node as? Element {
-                let tagName = childElement.tagName().lowercased()
-
-                // Determine formatting for this element
-                var childBold = isBold
-                var childItalic = isItalic
-
-                switch tagName {
-                case "b", "strong":
-                    childBold = true
-                case "i", "em":
-                    childItalic = true
-                case "br":
-                    let font = fontForStyle(baseFont: baseFont, bold: isBold, italic: isItalic)
-                    result.append(NSAttributedString(
-                        string: "\n",
-                        attributes: [.font: font, .foregroundColor: textColor]
-                    ))
-                    continue
-                case "p", "div":
-                    // Add paragraph break before if we have content
-                    if result.length > 0 {
-                        let lastChar = result.string.last
-                        if lastChar != "\n" {
-                            result.append(NSAttributedString(string: "\n\n"))
-                        }
-                    }
-                case "li":
-                    // Add bullet point
-                    let font = fontForStyle(baseFont: baseFont, bold: isBold, italic: isItalic)
-                    if result.length > 0 && result.string.last != "\n" {
-                        result.append(NSAttributedString(string: "\n"))
-                    }
-                    result.append(NSAttributedString(
-                        string: "• ",
-                        attributes: [.font: font, .foregroundColor: textColor]
-                    ))
-                case "ul", "ol":
-                    // Add newline before list
-                    if result.length > 0 && result.string.last != "\n" {
-                        result.append(NSAttributedString(string: "\n"))
-                    }
-                default:
-                    break
-                }
-
-                // Recursively process child elements
-                let childResult = try convertElement(
-                    childElement,
-                    baseFont: baseFont,
-                    textColor: textColor,
-                    isBold: childBold,
-                    isItalic: childItalic
-                )
-                result.append(childResult)
-
-                // Add paragraph break after block elements
-                if tagName == "p" || tagName == "div" {
-                    if result.length > 0 && result.string.last != "\n" {
-                        result.append(NSAttributedString(string: "\n"))
-                    }
-                }
+                try appendChildElement(childElement, to: result, style: style)
             }
         }
 
         return result
+    }
+
+    private func appendTextNode(
+        _ text: String,
+        to result: NSMutableAttributedString,
+        style: TextStyle,
+        paragraphStyle: NSParagraphStyle
+    ) {
+        guard !text.isEmpty else { return }
+        let font = fontForStyle(baseFont: style.baseFont, bold: style.isBold, italic: style.isItalic)
+        result.append(NSAttributedString(
+            string: text,
+            attributes: [.font: font, .foregroundColor: style.textColor, .paragraphStyle: paragraphStyle]
+        ))
+    }
+
+    private func appendChildElement(
+        _ childElement: Element,
+        to result: NSMutableAttributedString,
+        style: TextStyle
+    ) throws {
+        let tagName = childElement.tagName().lowercased()
+        let opening = handleTagOpening(tagName: tagName, result: result, style: style)
+        guard opening.shouldRecurse else { return }
+
+        var childStyle = style
+        childStyle.isBold = opening.childBold
+        childStyle.isItalic = opening.childItalic
+        let childResult = try convertElement(childElement, style: childStyle)
+        result.append(childResult)
+
+        if tagName == "p" || tagName == "div" {
+            appendNewlineIfNeeded(to: result)
+        }
+    }
+
+    /// Pre-recursion bookkeeping for a child tag. Returns the formatting to apply to
+    /// descendants and whether the caller should recurse into the child (false for `<br>`,
+    /// whose content is handled inline here).
+    private func handleTagOpening(
+        tagName: String,
+        result: NSMutableAttributedString,
+        style: TextStyle
+    ) -> (childBold: Bool, childItalic: Bool, shouldRecurse: Bool) {
+        switch tagName {
+        case "b", "strong":
+            return (true, style.isItalic, true)
+        case "i", "em":
+            return (style.isBold, true, true)
+        case "br":
+            let font = fontForStyle(baseFont: style.baseFont, bold: style.isBold, italic: style.isItalic)
+            result.append(NSAttributedString(
+                string: "\n",
+                attributes: [.font: font, .foregroundColor: style.textColor]
+            ))
+            return (style.isBold, style.isItalic, false)
+        case "p", "div":
+            appendParagraphBreakIfNeeded(to: result)
+            return (style.isBold, style.isItalic, true)
+        case "li":
+            appendNewlineIfNeeded(to: result)
+            let font = fontForStyle(baseFont: style.baseFont, bold: style.isBold, italic: style.isItalic)
+            result.append(NSAttributedString(
+                string: "• ",
+                attributes: [.font: font, .foregroundColor: style.textColor]
+            ))
+            return (style.isBold, style.isItalic, true)
+        case "ul", "ol":
+            appendNewlineIfNeeded(to: result)
+            return (style.isBold, style.isItalic, true)
+        default:
+            return (style.isBold, style.isItalic, true)
+        }
+    }
+
+    private func appendNewlineIfNeeded(to result: NSMutableAttributedString) {
+        if result.length > 0 && result.string.last != "\n" {
+            result.append(NSAttributedString(string: "\n"))
+        }
+    }
+
+    private func appendParagraphBreakIfNeeded(to result: NSMutableAttributedString) {
+        if result.length > 0 && result.string.last != "\n" {
+            result.append(NSAttributedString(string: "\n\n"))
+        }
     }
 
     /// Get font with bold/italic style

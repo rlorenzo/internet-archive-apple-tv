@@ -63,8 +63,6 @@ final class TrackListCell: UICollectionViewCell {
         return view
     }()
 
-    private var isNowPlaying: Bool = false
-
     // MARK: - Initialization
 
     override init(frame: CGRect) {
@@ -128,8 +126,6 @@ final class TrackListCell: UICollectionViewCell {
     ///   - track: The audio track to display
     ///   - isPlaying: Whether this track is currently playing
     func configure(with track: AudioTrack, isPlaying: Bool) {
-        self.isNowPlaying = isPlaying
-
         // Set track number
         if let number = track.trackNumber {
             trackNumberLabel.text = String(format: "%02d", number)
@@ -214,7 +210,6 @@ final class TrackListCell: UICollectionViewCell {
         trackNumberLabel.text = nil
         titleLabel.text = nil
         durationLabel.text = nil
-        isNowPlaying = false
         nowPlayingIndicator.isHidden = true
         trackNumberLabel.isHidden = false
         titleLabel.textColor = .label

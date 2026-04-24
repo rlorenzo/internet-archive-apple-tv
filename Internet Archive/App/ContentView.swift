@@ -16,8 +16,6 @@ import SwiftUI
 /// - **Favorites**: View saved favorites and followed creators
 /// - **Account**: Manage authentication and user settings
 struct ContentView: View {
-    @EnvironmentObject private var appState: AppState
-
     /// The currently selected tab (persisted for focus restoration)
     @SceneStorage("selectedTab") private var selectedTab: Tab = .videos
 

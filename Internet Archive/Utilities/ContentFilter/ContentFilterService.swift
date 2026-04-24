@@ -291,23 +291,3 @@ public final class ContentFilterService {
         return preferences
     }
 }
-
-// MARK: - SearchResult Extension for Filtering
-
-extension SearchResult {
-    /// Check if this result should be filtered based on content filter settings
-    @MainActor
-    var isFiltered: Bool {
-        ContentFilterService.shared.shouldFilter(self).isFiltered
-    }
-}
-
-// MARK: - ItemMetadata Extension for Filtering
-
-extension ItemMetadata {
-    /// Check if this metadata should be filtered based on content filter settings
-    @MainActor
-    var isFiltered: Bool {
-        ContentFilterService.shared.shouldFilter(self).isFiltered
-    }
-}

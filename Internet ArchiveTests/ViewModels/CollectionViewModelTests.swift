@@ -50,17 +50,6 @@ final class MockCollectionService: CollectionServiceProtocol, @unchecked Sendabl
 
         return response
     }
-
-    func reset() {
-        getCollectionsCalled = false
-        getMetadataCalled = false
-        lastCollection = nil
-        lastResultType = nil
-        lastIdentifier = nil
-        mockCollectionsResponse = nil
-        mockMetadataResponse = nil
-        errorToThrow = nil
-    }
 }
 
 // MARK: - CollectionViewModel Tests

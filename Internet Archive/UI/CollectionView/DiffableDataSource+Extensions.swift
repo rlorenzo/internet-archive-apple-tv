@@ -107,32 +107,3 @@ extension NSDiffableDataSourceSnapshot {
 
 typealias ItemDataSource = UICollectionViewDiffableDataSource<CollectionSection, ItemViewModel>
 typealias ItemSnapshot = NSDiffableDataSourceSnapshot<CollectionSection, ItemViewModel>
-
-// MARK: - Home Screen Data Source (supports Continue Watching + Items)
-
-/// Wrapper for items in home screen collection views that can be either
-/// PlaybackProgress (for Continue Watching) or ItemViewModel (for main grid)
-enum HomeScreenItem: Hashable {
-    case progress(PlaybackProgress)
-    case item(ItemViewModel)
-
-    var identifier: String {
-        switch self {
-        case .progress(let progress):
-            return "progress-\(progress.itemIdentifier)-\(progress.filename)"
-        case .item(let viewModel):
-            return "item-\(viewModel.item.identifier)"
-        }
-    }
-
-    static func == (lhs: HomeScreenItem, rhs: HomeScreenItem) -> Bool {
-        lhs.identifier == rhs.identifier
-    }
-
-    func hash(into hasher: inout Hasher) {
-        hasher.combine(identifier)
-    }
-}
-
-typealias HomeDataSource = UICollectionViewDiffableDataSource<CollectionSection, HomeScreenItem>
-typealias HomeSnapshot = NSDiffableDataSourceSnapshot<CollectionSection, HomeScreenItem>

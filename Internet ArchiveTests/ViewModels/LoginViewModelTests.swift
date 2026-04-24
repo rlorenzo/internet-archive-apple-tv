@@ -49,16 +49,6 @@ final class MockAuthService: AuthServiceProtocol, @unchecked Sendable {
 
         return response
     }
-
-    func reset() {
-        loginCalled = false
-        getAccountInfoCalled = false
-        lastEmail = nil
-        lastPassword = nil
-        mockLoginResponse = nil
-        mockAccountInfoResponse = nil
-        errorToThrow = nil
-    }
 }
 
 // MARK: - LoginViewModel Tests

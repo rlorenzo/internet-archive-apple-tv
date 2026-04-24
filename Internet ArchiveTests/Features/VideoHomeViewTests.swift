@@ -109,14 +109,6 @@ final class MockVideoCollectionService: CollectionServiceProtocol, @unchecked Se
 
         return response
     }
-
-    func reset() {
-        mockResults = []
-        mockMetadataResponse = nil
-        errorToThrow = nil
-        getCollectionsCalled = false
-        delayMilliseconds = 0
-    }
 }
 
 // MARK: - Notification Tests

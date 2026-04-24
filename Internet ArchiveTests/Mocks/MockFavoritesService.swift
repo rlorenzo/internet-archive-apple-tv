@@ -49,12 +49,4 @@ final class MockFavoritesService: FavoritesServiceProtocol, @unchecked Sendable 
         return response
     }
 
-    // MARK: - Helper Methods
-
-    func reset() {
-        getFavoriteItemsCalled = false
-        lastUsername = nil
-        mockResponse = nil
-        errorToThrow = nil
-    }
 }

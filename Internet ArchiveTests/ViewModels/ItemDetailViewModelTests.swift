@@ -31,13 +31,6 @@ final class MockMetadataService: MetadataServiceProtocol, @unchecked Sendable {
 
         return response
     }
-
-    func reset() {
-        getMetadataCalled = false
-        lastIdentifier = nil
-        mockResponse = nil
-        errorToThrow = nil
-    }
 }
 
 // MARK: - ItemDetailViewModel Tests

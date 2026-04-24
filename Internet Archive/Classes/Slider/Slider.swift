@@ -13,7 +13,6 @@ public protocol SliderDelegate: AnyObject {
 
     func sliderDidTap(_ slider: Slider)
     func slider(_ slider: Slider, didChangeValue value: Double)
-    func slider(_ slider: Slider, didUpdateFocusInContext context: UIFocusUpdateContext, withAnimationCoordinator coordinator: UIFocusAnimationCoordinator)
     func sliderDidBeginScrubbing(_ slider: Slider)
     func sliderDidEndScrubbing(_ slider: Slider)
     /// Called when scrubbing gesture ends AND any deceleration animation completes.
@@ -26,7 +25,6 @@ public extension SliderDelegate {
 
     func sliderDidTap(_ slider: Slider) {}
     func slider(_ slider: Slider, didChangeValue value: Double) {}
-    func slider(_ slider: Slider, didUpdateFocusInContext context: UIFocusUpdateContext, withAnimationCoordinator coordinator: UIFocusAnimationCoordinator) {}
     func sliderDidBeginScrubbing(_ slider: Slider) {}
     func sliderDidEndScrubbing(_ slider: Slider) {}
     func sliderDidFinishScrubbing(_ slider: Slider) {}
@@ -270,12 +268,12 @@ public class Slider: UIView {
         }
     }
 
-    @objc private func handleTapGesture(tapGestureRecognizer: UITapGestureRecognizer) {
+    @objc private func handleTapGesture(tapGestureRecognizer _: UITapGestureRecognizer) {
         stopDeceleratingTimer()
         delegate?.sliderDidTap(self)
     }
 
-    @objc private func handleDeceleratingTimer(timer: Timer) {
+    @objc private func handleDeceleratingTimer(timer _: Timer) {
         let leading = seekerViewLeadingConstraintConstant + deceleratingVelocity * 0.01
         set(percentage: Double(leading / barView.frame.width))
         seekerViewLeadingConstraintConstant = seekerViewLeadingConstraint.constant
