@@ -30,6 +30,12 @@ struct CollectionBrowserView: View {
     /// Media type for proper formatting
     let mediaType: MediaItemCard.MediaType
 
+    // MARK: - Environment
+
+    #if !os(tvOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
     // MARK: - State
 
     /// Items in the collection
@@ -77,7 +83,7 @@ struct CollectionBrowserView: View {
                     itemsGrid
                 }
             }
-            .padding(.horizontal, PlatformMetrics.horizontalPadding)
+            .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
             .padding(.vertical, 40)
         }
         .background(Color.black.opacity(0.95))
@@ -225,7 +231,7 @@ struct CollectionBrowserView: View {
                     .accessibilityHint("Double-tap to view details")
                 }
             }
-            .focusSection()
+            .tvFocusSection()
         }
         .accessibilityElement(children: .contain)
         .accessibilityLabel("Items section with \(items.count) items")
@@ -245,6 +251,18 @@ struct CollectionBrowserView: View {
     private var gridColumns: [GridItem] {
         let count = mediaType == .video ? 4 : 6
         return Array(repeating: GridItem(.flexible(), spacing: mediaType == .video ? 48 : 40), count: count)
+    }
+
+    /// Resolved compact-width flag for `PlatformMetrics`. tvOS has no size class
+    /// concept; everywhere else we pass the live environment value so iPad
+    /// Split View / Stage Manager transitions are picked up on the next render.
+    private var isCompactLayout: Bool? {
+        #if os(tvOS)
+        return nil
+        #else
+        guard let horizontalSizeClass else { return nil }
+        return horizontalSizeClass == .compact
+        #endif
     }
 
     private func itemCard(for item: SearchResult) -> some View {

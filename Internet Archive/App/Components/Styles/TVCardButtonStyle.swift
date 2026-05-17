@@ -91,8 +91,6 @@ private struct FocusableCardContent<Label: View>: View {
 
         #if os(tvOS)
         return base.focused($isFocused)
-        #elseif os(visionOS)
-        return base.hoverEffect(.lift)
         #else
         return base.hoverEffect(.lift)
         #endif
@@ -107,6 +105,15 @@ extension View {
         self.buttonStyle(TVCardButtonStyle())
     }
 
+    /// Applies `.focusSection()` on tvOS; no-op elsewhere.
+    @ViewBuilder
+    func tvFocusSection() -> some View {
+        #if os(tvOS)
+        self.focusSection()
+        #else
+        self
+        #endif
+    }
 }
 
 // MARK: - Preview

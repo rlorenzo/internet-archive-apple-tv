@@ -263,26 +263,26 @@ final class VideoPlayerViewController: AVPlayerViewController {
     }
 
     private func setupTransportBarSubtitleMenu() {
-        // Build menu actions for each subtitle track
+        // tvOS exposes a custom transport bar menu. iOS/iPadOS/visionOS use the
+        // built-in AVPlayerViewController media-options picker; users can still
+        // access subtitles via the showSubtitleMenu action sheet button.
+        #if os(tvOS)
         var menuActions: [UIAction] = []
 
-        // Add "Off" option
         let offAction = UIAction(
             title: "Off",
             image: UIImage(systemName: "captions.bubble.slash"),
             state: selectedSubtitleTrack == nil ? .on : .off
         ) { [weak self] _ in
             self?.selectSubtitleTrack(nil)
-            self?.setupTransportBarSubtitleMenu() // Refresh menu state
+            self?.setupTransportBarSubtitleMenu()
         }
         menuActions.append(offAction)
 
-        // Add each subtitle track - include format if there are duplicates
         let displayNames = subtitleTracks.map { $0.languageDisplayName }
         let hasDuplicateNames = Set(displayNames).count < displayNames.count
 
         for track in subtitleTracks {
-            // Add format suffix if there are tracks with the same display name
             let title = hasDuplicateNames
                 ? "\(track.languageDisplayName) (\(track.format.rawValue.uppercased()))"
                 : track.languageDisplayName
@@ -293,25 +293,16 @@ final class VideoPlayerViewController: AVPlayerViewController {
                 state: selectedSubtitleTrack?.identifier == track.identifier ? .on : .off
             ) { [weak self] _ in
                 self?.selectSubtitleTrack(track)
-                self?.setupTransportBarSubtitleMenu() // Refresh menu state
+                self?.setupTransportBarSubtitleMenu()
             }
             menuActions.append(action)
         }
 
-        // Create the menu
-        let subtitleMenu = UIMenu(
+        transportBarCustomMenuItems = [UIMenu(
             title: "Subtitles",
             image: UIImage(systemName: "captions.bubble"),
             children: menuActions
-        )
-
-        #if os(tvOS)
-        // tvOS exposes a custom transport bar menu. iOS/iPadOS/visionOS use the
-        // built-in AVPlayerViewController media-options picker; users can still
-        // access subtitles via the showSubtitleMenu action sheet button.
-        transportBarCustomMenuItems = [subtitleMenu]
-        #else
-        _ = subtitleMenu  // silence unused warning on non-tvOS
+        )]
         #endif
     }
 
@@ -553,6 +544,7 @@ extension VideoPlayerViewController: SubtitleSelectionDelegate {
 // MARK: - AVPlayerViewControllerDelegate
 
 extension VideoPlayerViewController: AVPlayerViewControllerDelegate {
+    #if os(tvOS)
     /// Called when the transport bar visibility is about to change
     /// Use this to adjust subtitle position so they don't overlap with the transport bar
     nonisolated func playerViewController(
@@ -567,4 +559,5 @@ extension VideoPlayerViewController: AVPlayerViewControllerDelegate {
             }
         }, completion: nil)
     }
+    #endif
 }

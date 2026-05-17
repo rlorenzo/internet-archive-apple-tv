@@ -88,6 +88,8 @@ private struct FullTextViewer: View {
 
     #if os(tvOS)
     @FocusState private var isTextFocused: Bool
+    #else
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
 
     var body: some View {
@@ -108,7 +110,10 @@ private struct FullTextViewer: View {
                     .font(.system(size: 20))
                     .foregroundStyle(.white)
                     .lineSpacing(6)
-                    .padding(EdgeInsets(top: 40, leading: 32, bottom: 40, trailing: 32))
+                    .padding(.horizontal, PlatformMetrics.horizontalPadding(
+                        compact: horizontalSizeClass.map { $0 == .compact }
+                    ))
+                    .padding(.vertical, 40)
                 #endif
             }
 

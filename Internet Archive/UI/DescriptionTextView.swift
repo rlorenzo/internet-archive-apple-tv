@@ -256,10 +256,21 @@ final class DescriptionTextView: UIView {
             return
         }
 
-        // Calculate if text is truncated
+        // Calculate if text is truncated. Prefer our own laid-out width; fall
+        // back to the hosting window so iPad Split View / Stage Manager /
+        // visionOS resizing produce correct truncation. `UIScreen.main` would
+        // report the entire display and lie in any non-fullscreen window.
+        let availableWidth: CGFloat
+        if textLabel.bounds.width > 0 {
+            availableWidth = textLabel.bounds.width
+        } else if let windowWidth = window?.bounds.width {
+            availableWidth = windowWidth - 200
+        } else {
+            availableWidth = 1080
+        }
         let textHeight = attributedText.boundingRect(
             with: CGSize(
-                width: textLabel.bounds.width > 0 ? textLabel.bounds.width : UIScreen.main.bounds.width - 200,
+                width: availableWidth,
                 height: .greatestFiniteMagnitude
             ),
             options: [.usesLineFragmentOrigin, .usesFontLeading],

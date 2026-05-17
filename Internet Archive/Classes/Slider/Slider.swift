@@ -30,6 +30,7 @@ public extension SliderDelegate {
     func sliderDidFinishScrubbing(_ slider: Slider) {}
 }
 
+#if os(tvOS)
 @IBDesignable
 @MainActor
 public class Slider: UIView {
@@ -389,3 +390,38 @@ extension Slider {
     }
     #endif
 }
+#else
+// MARK: - Non-tvOS stub
+//
+// On iOS / iPadOS / visionOS the focus-engine scrubber XIB is excluded
+// from the build, so `Slider` is a transparent, non-functional placeholder.
+// It exposes the API surface that callers (e.g. NowPlayingViewController)
+// rely on so the file still compiles and no force-unwrap of missing
+// IBOutlets can occur at runtime. Music playback on these platforms shows
+// the time labels and transport controls but no scrubbing bar.
+// TODO: replace with a `UISlider`-backed implementation for touch platforms.
+@MainActor
+public class Slider: UIView {
+    public weak var delegate: SliderDelegate?
+    public var max: Double = 100
+    public var value: Double = 0
+    public let leftLabel = UILabel()
+    public let rightLabel = UILabel()
+    public let seekerLabel = UILabel()
+    public let seekerLabelBackgroundView = UIView()
+
+    override public init(frame: CGRect) {
+        super.init(frame: frame)
+        isHidden = true
+    }
+
+    public required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        isHidden = true
+    }
+
+    public func set(value: Double, animated _: Bool = false) {
+        self.value = value
+    }
+}
+#endif
