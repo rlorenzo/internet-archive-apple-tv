@@ -8,6 +8,7 @@
 
 import XCTest
 
+#if os(tvOS)
 @MainActor
 final class Internet_ArchiveUITests: XCTestCase {
 
@@ -1600,3 +1601,4 @@ final class Internet_ArchiveUITests: XCTestCase {
         XCTAssertTrue(app.state == .runningForeground)
     }
 }
+#endif

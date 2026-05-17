@@ -30,6 +30,7 @@ public extension SliderDelegate {
     func sliderDidFinishScrubbing(_ slider: Slider) {}
 }
 
+#if os(tvOS)
 @IBDesignable
 @MainActor
 public class Slider: UIView {
@@ -145,6 +146,7 @@ public class Slider: UIView {
         updateViews()
     }
 
+    #if os(tvOS)
     override public func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
         super.didUpdateFocus(in: context, with: coordinator)
 
@@ -180,6 +182,7 @@ public class Slider: UIView {
         }
         return super.shouldUpdateFocus(in: context)
     }
+    #endif
 
     // MARK: - Internal/Private
     @IBOutlet private(set) weak var seekerViewLeadingConstraint: NSLayoutConstraint!
@@ -322,7 +325,7 @@ extension Slider: UIGestureRecognizerDelegate {
     }
 }
 
-// MARK: - Arrow Key Support (for tvOS remote and simulator)
+// MARK: - Arrow Key Support (tvOS Siri Remote / external keyboard)
 
 extension Slider {
     /// The increment step for arrow key presses (in seconds)
@@ -331,6 +334,7 @@ extension Slider {
         set { accessibilityIncrementStep = newValue }
     }
 
+    #if os(tvOS)
     override public func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
         // Only handle left/right arrows when focused, pass everything else through
         var unhandledPresses = Set<UIPress>()
@@ -384,4 +388,40 @@ extension Slider {
             super.pressesEnded(unhandledPresses, with: event)
         }
     }
+    #endif
 }
+#else
+// MARK: - Non-tvOS stub
+//
+// On iOS / iPadOS / visionOS the focus-engine scrubber XIB is excluded
+// from the build, so `Slider` is a transparent, non-functional placeholder.
+// It exposes the API surface that callers (e.g. NowPlayingViewController)
+// rely on so the file still compiles and no force-unwrap of missing
+// IBOutlets can occur at runtime. Music playback on these platforms shows
+// the time labels and transport controls but no scrubbing bar.
+// TODO: replace with a `UISlider`-backed implementation for touch platforms.
+@MainActor
+public class Slider: UIView {
+    public weak var delegate: SliderDelegate?
+    public var max: Double = 100
+    public var value: Double = 0
+    public let leftLabel = UILabel()
+    public let rightLabel = UILabel()
+    public let seekerLabel = UILabel()
+    public let seekerLabelBackgroundView = UIView()
+
+    override public init(frame: CGRect) {
+        super.init(frame: frame)
+        isHidden = true
+    }
+
+    public required init?(coder: NSCoder) {
+        super.init(coder: coder)
+        isHidden = true
+    }
+
+    public func set(value: Double, animated _: Bool = false) {
+        self.value = value
+    }
+}
+#endif

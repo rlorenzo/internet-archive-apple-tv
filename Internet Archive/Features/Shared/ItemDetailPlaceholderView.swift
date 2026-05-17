@@ -65,12 +65,14 @@ struct ItemDetailPlaceholderView: View {
         }
         .padding()
         .navigationTitle(item.safeTitle)
+        #if os(tvOS)
         .onPlayPauseCommand {
             // Placeholder for future play action
         }
         .onExitCommand {
             dismiss()
         }
+        #endif
     }
 }
 

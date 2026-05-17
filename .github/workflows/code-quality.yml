@@ -40,7 +40,13 @@ jobs:
             ${{ runner.os }}-spm-
 
       - name: Run Periphery
-        run: periphery scan --strict --format github-actions --relative-results --disable-update-check
+        run: |
+          periphery scan \
+            --strict \
+            --format github-actions \
+            --relative-results \
+            --disable-update-check \
+            -- -destination 'generic/platform=tvOS Simulator'
 
   lizard:
     name: Lizard (Complexity)

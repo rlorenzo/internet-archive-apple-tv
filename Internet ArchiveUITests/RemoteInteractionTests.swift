@@ -11,6 +11,7 @@
 
 import XCTest
 
+#if os(tvOS)
 @MainActor
 final class RemoteInteractionTests: XCTestCase {
 
@@ -247,3 +248,4 @@ final class RemoteInteractionTests: XCTestCase {
                       "Scrolling through lists should work smoothly")
     }
 }
+#endif

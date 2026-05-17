@@ -8,6 +8,7 @@
 
 import XCTest
 
+#if os(tvOS)
 @MainActor
 final class AccessibilityTests: XCTestCase {
 
@@ -214,3 +215,4 @@ final class AccessibilityTests: XCTestCase {
                       "Page should have accessible buttons")
     }
 }
+#endif

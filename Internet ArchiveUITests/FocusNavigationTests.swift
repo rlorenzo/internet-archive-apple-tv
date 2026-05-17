@@ -8,6 +8,7 @@
 
 import XCTest
 
+#if os(tvOS)
 @MainActor
 final class FocusNavigationTests: XCTestCase {
 
@@ -363,3 +364,4 @@ final class FocusNavigationTests: XCTestCase {
                       "Custom focus environment should handle focus transitions")
     }
 }
+#endif

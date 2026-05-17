@@ -86,13 +86,18 @@ private struct FullTextViewer: View {
     let text: String
     let onDismiss: () -> Void
 
+    #if os(tvOS)
     @FocusState private var isTextFocused: Bool
+    #else
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
 
     var body: some View {
         ZStack {
             Color.black.ignoresSafeArea()
 
             ScrollView {
+                #if os(tvOS)
                 Text(text)
                     .font(.system(size: 32))
                     .foregroundStyle(.white)
@@ -100,14 +105,44 @@ private struct FullTextViewer: View {
                     .padding(EdgeInsets(top: 100, leading: 250, bottom: 100, trailing: 250))
                     .focusable()
                     .focused($isTextFocused)
+                #else
+                Text(text)
+                    .font(.system(size: 20))
+                    .foregroundStyle(.white)
+                    .lineSpacing(6)
+                    .padding(.horizontal, PlatformMetrics.horizontalPadding(
+                        compact: horizontalSizeClass.map { $0 == .compact }
+                    ))
+                    .padding(.vertical, 40)
+                #endif
             }
+
+            // Dismiss button overlay for non-tvOS (tvOS uses Menu/Back remote button)
+            #if !os(tvOS)
+            VStack {
+                HStack {
+                    Spacer()
+                    Button {
+                        onDismiss()
+                    } label: {
+                        Image(systemName: "xmark.circle.fill")
+                            .font(.title)
+                            .foregroundStyle(.white)
+                            .padding()
+                    }
+                }
+                Spacer()
+            }
+            #endif
         }
+        #if os(tvOS)
         .onExitCommand {
             onDismiss()
         }
         .onAppear {
             isTextFocused = true
         }
+        #endif
         .accessibilityLabel("Full description")
     }
 }

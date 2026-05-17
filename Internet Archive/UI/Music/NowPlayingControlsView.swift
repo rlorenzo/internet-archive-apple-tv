@@ -35,10 +35,12 @@ final class NowPlayingControlsView: UIView {
         return stack
     }()
 
-    // Fixed button frame sizes: play/pause is larger for prominence,
-    // all other controls share a consistent size.
-    private static let standardButtonSize: CGFloat = 90
-    private static let primaryButtonSize: CGFloat = 110
+    // Button frame sizes adapt per platform: tvOS uses 10-foot UI sizes (90/110pt);
+    // iOS/iPadOS/visionOS get touch-friendly sizes via PlatformMetrics.
+    @MainActor
+    private static var standardButtonSize: CGFloat { PlatformMetrics.secondaryControlButtonSize }
+    @MainActor
+    private static var primaryButtonSize: CGFloat { PlatformMetrics.controlButtonSize }
 
     private lazy var shuffleButton: UIButton = createControlButton(
         systemName: "shuffle",

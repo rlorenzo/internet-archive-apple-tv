@@ -15,6 +15,7 @@
 
 import XCTest
 
+#if os(tvOS)
 @MainActor
 final class BackgroundAudioTests: XCTestCase {
 
@@ -192,3 +193,4 @@ final class BackgroundAudioTests: XCTestCase {
         sleep(1)
     }
 }
+#endif

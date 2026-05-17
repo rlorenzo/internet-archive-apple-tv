@@ -234,7 +234,7 @@ struct SearchView: View {
                                 ))
                             }
                         )
-                        .focusSection()
+                        .tvFocusSection()
                     }
 
                     if selectedFilter != .videos && !musicResults.isEmpty {
@@ -251,7 +251,7 @@ struct SearchView: View {
                                 ))
                             }
                         )
-                        .focusSection()
+                        .tvFocusSection()
                     }
                 }
                 .padding(.horizontal, 80)
