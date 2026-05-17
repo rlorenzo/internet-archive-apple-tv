@@ -64,9 +64,9 @@ Internet Archive/
 ├── Configuration/              # App configuration
 ├── Models/                     # Data models (Codable structs)
 ├── Protocols/                  # Protocol definitions
-├── UI/                         # UIKit components
-│   ├── CollectionView/         # ModernItemCell, DiffableDataSource helpers
+├── UI/                         # UIKit components (used by video/audio players)
 │   ├── ImageLoading/           # ImageCacheManager
+│   ├── Music/                  # AlbumArtView, NowPlayingControlsView, TrackListCell
 │   └── Subtitles/              # SubtitleOverlayView
 ├── Utilities/                  # Helpers and services
 │   ├── APIManager.swift        # Network API calls

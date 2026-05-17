@@ -19,37 +19,6 @@ import UIKit
 @MainActor
 enum PlatformMetrics {
 
-    // MARK: - Grid
-
-    /// Number of grid columns for the main media browser.
-    static var gridColumns: Int {
-        #if os(tvOS)
-        return 5
-        #elseif os(visionOS)
-        return 5
-        #else
-        switch UIDevice.current.userInterfaceIdiom {
-        case .pad:
-            return isCompactWidth ? 3 : 4
-        case .phone:
-            return isCompactWidth ? 2 : 3
-        default:
-            return 3
-        }
-        #endif
-    }
-
-    /// Inter-item spacing for collection view grids.
-    static var gridSpacing: CGFloat {
-        #if os(tvOS)
-        return 40
-        #elseif os(visionOS)
-        return 32
-        #else
-        return UIDevice.current.userInterfaceIdiom == .pad ? 24 : 16
-        #endif
-    }
-
     // MARK: - Padding
 
     /// Horizontal padding for top-level content (e.g. collection browser, headers).
@@ -86,19 +55,6 @@ enum PlatformMetrics {
         return 52
         #else
         return UIDevice.current.userInterfaceIdiom == .pad ? 48 : 40
-        #endif
-    }
-
-    // MARK: - Cards
-
-    /// Corner radius for media item cards.
-    static var cardCornerRadius: CGFloat {
-        #if os(tvOS)
-        return 14
-        #elseif os(visionOS)
-        return 20
-        #else
-        return UIDevice.current.userInterfaceIdiom == .pad ? 12 : 10
         #endif
     }
 

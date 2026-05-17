@@ -118,48 +118,6 @@ final class NukeIntegrationTests: XCTestCase {
 
     // MARK: - Cell Image Loading Tests
 
-    func testModernItemCell_configureLoadsCancelsCycle() {
-        let cell = ModernItemCell(frame: CGRect(x: 0, y: 0, width: 200, height: 300))
-        let searchResult = TestFixtures.movieSearchResult
-        let viewModel = ItemViewModel(item: searchResult)
-
-        // Configure (starts image load)
-        cell.configure(with: viewModel)
-
-        // Prepare for reuse (cancels image load)
-        cell.prepareForReuse()
-
-        // Reconfigure (starts new image load)
-        cell.configure(with: viewModel)
-
-        XCTAssertNotNil(cell)
-    }
-
-    func testContinueWatchingCell_configureLoadsCancelsCycle() {
-        let cell = ContinueWatchingCell(frame: CGRect(x: 0, y: 0, width: 400, height: 320))
-        let progress = PlaybackProgress(
-            itemIdentifier: "test-item",
-            filename: "video.mp4",
-            currentTime: 120,
-            duration: 600,
-            lastWatchedDate: Date(),
-            title: "Test Video",
-            mediaType: "movies",
-            imageURL: nil
-        )
-
-        // Configure (starts image load)
-        cell.configure(with: progress)
-
-        // Prepare for reuse (cancels image load)
-        cell.prepareForReuse()
-
-        // Reconfigure (starts new image load)
-        cell.configure(with: progress)
-
-        XCTAssertNotNil(cell)
-    }
-
     func testAlbumArtView_setImageURL_thenNil() {
         let view = AlbumArtView(size: 300)
         let url = URL(string: "https://archive.org/services/img/album_test")!
