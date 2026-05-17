@@ -70,8 +70,9 @@ enum VideoPlayerPresenter {
             presentingVC = presented
         }
 
-        // Create player
-        let asset = AVAsset(url: url)
+        // Create player. `AVAsset(url:)` is deprecated in tvOS 18; use the
+        // concrete `AVURLAsset` for URL-backed media.
+        let asset = AVURLAsset(url: url)
         let playerItem = AVPlayerItem(asset: asset)
         let player = AVPlayer(playerItem: playerItem)
 
@@ -186,8 +187,8 @@ struct VideoPlayerView: UIViewControllerRepresentable {
     // MARK: - UIViewControllerRepresentable
 
     func makeUIViewController(context: Context) -> VideoPlayerViewController {
-        // Create player using AVAsset and AVPlayerItem
-        let asset = AVAsset(url: videoURL)
+        // Create player using AVURLAsset (AVAsset.init(url:) deprecated in tvOS 18).
+        let asset = AVURLAsset(url: videoURL)
         let playerItem = AVPlayerItem(asset: asset)
         let player = AVPlayer(playerItem: playerItem)
 
