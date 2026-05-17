@@ -58,14 +58,20 @@ private struct FocusableCardContent<Label: View>: View {
     let animationDuration: Double
 
     @Environment(\.isFocused) private var envFocused
+    #if os(tvOS)
     @FocusState private var isFocused: Bool
+    #endif
 
     private var isCurrentlyFocused: Bool {
-        envFocused || isFocused
+        #if os(tvOS)
+        return envFocused || isFocused
+        #else
+        return envFocused
+        #endif
     }
 
     var body: some View {
-        label
+        let base = label
             .scaleEffect(isCurrentlyFocused ? focusedScale : 1.0)
             .scaleEffect(isPressed ? 0.95 : 1.0)
             .brightness(isCurrentlyFocused ? 0.1 : 0)
@@ -82,7 +88,14 @@ private struct FocusableCardContent<Label: View>: View {
             .zIndex(isCurrentlyFocused ? 1 : 0)
             .animation(.easeInOut(duration: animationDuration), value: isCurrentlyFocused)
             .animation(.easeInOut(duration: 0.1), value: isPressed)
-            .focused($isFocused)
+
+        #if os(tvOS)
+        return base.focused($isFocused)
+        #elseif os(visionOS)
+        return base.hoverEffect(.lift)
+        #else
+        return base.hoverEffect(.lift)
+        #endif
     }
 }
 

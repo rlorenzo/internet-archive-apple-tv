@@ -52,10 +52,11 @@ final class ModernItemCell: UICollectionViewCell {
     private let glassEffectView: UIVisualEffectView = {
         let view: UIVisualEffectView
         if #available(tvOS 26.0, *) {
-            // Liquid Glass for tvOS 26+
+            // Liquid Glass on tvOS 26+. On iOS/iPadOS/visionOS this branch also runs
+            // (the `*` wildcard is always satisfied) and renders the standard system blur.
             view = UIVisualEffectView(effect: UIBlurEffect(style: .regular))
         } else {
-            // Standard blur for tvOS 17-25
+            // Fallback blur for tvOS 17-25.
             view = UIVisualEffectView(effect: UIBlurEffect(style: .light))
         }
         view.layer.cornerRadius = 12

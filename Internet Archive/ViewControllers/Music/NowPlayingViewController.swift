@@ -141,7 +141,9 @@ final class NowPlayingViewController: UIViewController {
         setupViews()
         setupConstraints()
         setupAccessibility()
+        #if os(tvOS)
         setupMenuButtonHandler()
+        #endif
         configureDataSource()
         bindQueueManager()
 
@@ -262,7 +264,8 @@ final class NowPlayingViewController: UIViewController {
         [controlsView.defaultFocusedButton]
     }
 
-    /// Track if focus is currently in the track list for Menu button handling
+    #if os(tvOS)
+    /// Track if focus is currently in the track list for Menu button handling (tvOS only)
     private var isFocusInTrackList: Bool {
         guard let focusedItem = UIFocusSystem.focusSystem(for: self)?.focusedItem else { return false }
 
@@ -290,6 +293,7 @@ final class NowPlayingViewController: UIViewController {
             dismiss(animated: true)
         }
     }
+    #endif
 
     // MARK: - Data Source
 

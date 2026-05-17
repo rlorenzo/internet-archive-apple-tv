@@ -209,19 +209,37 @@ struct CompositionalLayoutBuilder {
 
 extension CompositionalLayoutBuilder {
 
-    /// Standard grid for video and music collections (5 columns)
+    /// Standard grid for video and music collections.
+    /// Column count and spacing adapt per platform via `PlatformMetrics`.
+    @MainActor
     static var standardGrid: UICollectionViewLayout {
-        createGridLayout(columns: 5, spacing: 40, aspectRatio: 0.75)
+        createGridLayout(
+            columns: PlatformMetrics.gridColumns,
+            spacing: PlatformMetrics.gridSpacing,
+            aspectRatio: 0.75
+        )
     }
 
-    /// Compact grid for search results (6 columns)
+    /// Compact grid for search results (one extra column vs standard on tvOS).
+    @MainActor
     static var compactGrid: UICollectionViewLayout {
-        createGridLayout(columns: 6, spacing: 30, aspectRatio: 0.75)
+        let columns = PlatformMetrics.gridColumns + 1
+        return createGridLayout(
+            columns: columns,
+            spacing: PlatformMetrics.gridSpacing * 0.75,
+            aspectRatio: 0.75
+        )
     }
 
-    /// Large item grid for featured content (4 columns)
+    /// Large item grid for featured content (one fewer column vs standard).
+    @MainActor
     static var largeItemGrid: UICollectionViewLayout {
-        createGridLayout(columns: 4, spacing: 50, aspectRatio: 0.67)
+        let columns = Swift.max(PlatformMetrics.gridColumns - 1, 2)
+        return createGridLayout(
+            columns: columns,
+            spacing: PlatformMetrics.gridSpacing,
+            aspectRatio: 0.67
+        )
     }
 
     /// List layout for years or categories

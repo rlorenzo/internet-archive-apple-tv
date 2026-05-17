@@ -305,8 +305,14 @@ final class VideoPlayerViewController: AVPlayerViewController {
             children: menuActions
         )
 
-        // Add to transport bar custom menu items
+        #if os(tvOS)
+        // tvOS exposes a custom transport bar menu. iOS/iPadOS/visionOS use the
+        // built-in AVPlayerViewController media-options picker; users can still
+        // access subtitles via the showSubtitleMenu action sheet button.
         transportBarCustomMenuItems = [subtitleMenu]
+        #else
+        _ = subtitleMenu  // silence unused warning on non-tvOS
+        #endif
     }
 
     private func loadPreferredSubtitles() {

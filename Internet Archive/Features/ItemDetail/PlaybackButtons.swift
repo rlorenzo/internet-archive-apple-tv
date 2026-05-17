@@ -39,8 +39,10 @@ struct PlaybackButtons: View {
 
     // MARK: - State
 
-    /// Track which button is focused for visual feedback
+    /// Track which button is focused for visual feedback (tvOS focus engine only)
+    #if os(tvOS)
     @FocusState private var focusedButton: ButtonType?
+    #endif
 
     private enum ButtonType: Hashable {
         case play
@@ -79,7 +81,9 @@ struct PlaybackButtons: View {
             .padding(.vertical, 20)
         }
         .buttonStyle(PlaybackButtonStyle(isPrimary: true))
+        #if os(tvOS)
         .focused($focusedButton, equals: .play)
+        #endif
         .accessibilityLabel("Play")
         .accessibilityHint("Double-tap to start playback")
     }
@@ -104,7 +108,9 @@ struct PlaybackButtons: View {
                     .padding(.vertical, 20)
                 }
                 .buttonStyle(PlaybackButtonStyle(isPrimary: true))
+                #if os(tvOS)
                 .focused($focusedButton, equals: .resume)
+                #endif
                 .accessibilityLabel("Resume")
                 .accessibilityHint("Double-tap to continue from where you left off")
 
@@ -123,7 +129,9 @@ struct PlaybackButtons: View {
                     .padding(.vertical, 20)
                 }
                 .buttonStyle(PlaybackButtonStyle(isPrimary: false))
+                #if os(tvOS)
                 .focused($focusedButton, equals: .startOver)
+                #endif
                 .accessibilityLabel("Start Over")
                 .accessibilityHint("Double-tap to start playback from the beginning")
             }

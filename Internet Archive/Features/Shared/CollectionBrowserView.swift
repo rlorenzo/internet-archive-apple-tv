@@ -77,7 +77,7 @@ struct CollectionBrowserView: View {
                     itemsGrid
                 }
             }
-            .padding(.horizontal, 80)
+            .padding(.horizontal, PlatformMetrics.horizontalPadding)
             .padding(.vertical, 40)
         }
         .background(Color.black.opacity(0.95))

@@ -145,6 +145,7 @@ public class Slider: UIView {
         updateViews()
     }
 
+    #if os(tvOS)
     override public func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
         super.didUpdateFocus(in: context, with: coordinator)
 
@@ -180,6 +181,7 @@ public class Slider: UIView {
         }
         return super.shouldUpdateFocus(in: context)
     }
+    #endif
 
     // MARK: - Internal/Private
     @IBOutlet private(set) weak var seekerViewLeadingConstraint: NSLayoutConstraint!
@@ -322,7 +324,7 @@ extension Slider: UIGestureRecognizerDelegate {
     }
 }
 
-// MARK: - Arrow Key Support (for tvOS remote and simulator)
+// MARK: - Arrow Key Support (tvOS Siri Remote / external keyboard)
 
 extension Slider {
     /// The increment step for arrow key presses (in seconds)
@@ -331,6 +333,7 @@ extension Slider {
         set { accessibilityIncrementStep = newValue }
     }
 
+    #if os(tvOS)
     override public func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
         // Only handle left/right arrows when focused, pass everything else through
         var unhandledPresses = Set<UIPress>()
@@ -384,4 +387,5 @@ extension Slider {
             super.pressesEnded(unhandledPresses, with: event)
         }
     }
+    #endif
 }

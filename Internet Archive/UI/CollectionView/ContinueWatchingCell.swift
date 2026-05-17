@@ -69,6 +69,8 @@ final class ContinueWatchingCell: UICollectionViewCell {
     private let glassEffectView: UIVisualEffectView = {
         let view: UIVisualEffectView
         if #available(tvOS 26.0, *) {
+            // Liquid Glass on tvOS 26+; non-tvOS platforms also hit this branch
+            // (`*` wildcard) and use the standard regular blur.
             view = UIVisualEffectView(effect: UIBlurEffect(style: .regular))
         } else {
             view = UIVisualEffectView(effect: UIBlurEffect(style: .light))

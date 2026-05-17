@@ -124,9 +124,14 @@ final class DescriptionTextView: UIView {
     }
 
     private func setupGestures() {
-        // Tap gesture for pressing select
         let tapGesture = UITapGestureRecognizer(target: self, action: #selector(handleTap))
+        #if os(tvOS)
+        // Restrict to Siri Remote select button on tvOS
         tapGesture.allowedPressTypes = [NSNumber(value: UIPress.PressType.select.rawValue)]
+        #else
+        // Standard finger tap on iOS/iPadOS/visionOS
+        isUserInteractionEnabled = true
+        #endif
         addGestureRecognizer(tapGesture)
     }
 
@@ -166,6 +171,7 @@ final class DescriptionTextView: UIView {
 
     override var canBecomeFocused: Bool { true }
 
+    #if os(tvOS)
     override func didUpdateFocus(in context: UIFocusUpdateContext, with coordinator: UIFocusAnimationCoordinator) {
         super.didUpdateFocus(in: context, with: coordinator)
 
@@ -191,7 +197,7 @@ final class DescriptionTextView: UIView {
         }
     }
 
-    // MARK: - Press Handling
+    // MARK: - Press Handling (Siri Remote)
 
     override func pressesBegan(_ presses: Set<UIPress>, with event: UIPressesEvent?) {
         for press in presses where press.type == .select {
@@ -224,6 +230,7 @@ final class DescriptionTextView: UIView {
         }
         super.pressesCancelled(presses, with: event)
     }
+    #endif
 
     // MARK: - Private Methods
 
