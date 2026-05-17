@@ -9,7 +9,9 @@ import XCTest
 
 @MainActor
 enum UITestHelper {
-    /// Cross-platform launch (no tvOS-only XCUIRemote).
+    /// Cross-platform launch (no tvOS-only XCUIRemote). Used by `TouchSmokeTests`
+    /// which is `#if !os(tvOS)`-gated; Periphery's tvOS scan can't see those callers.
+    // periphery:ignore
     static func launchAppCrossPlatform() -> XCUIApplication {
         let app = XCUIApplication()
         app.launchArguments = ["--uitesting"]
@@ -55,3 +57,4 @@ extension UITestHelper {
         sleep(3)
     }
 }
+#endif

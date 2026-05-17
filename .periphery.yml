@@ -1,6 +1,18 @@
 project: Internet Archive.xcodeproj
 schemes:
   - Internet Archive
+# NOTE: pass `-- -destination 'generic/platform=tvOS Simulator'` on the
+# `periphery scan` command line so the build picks the tvOS slice. The app is
+# primarily tvOS; on iOS / iPadOS / visionOS the `Slider` class and other
+# focus-engine pieces are stubs and would generate false positives.
 retain_swift_ui_previews: true
-retain_objc_accessible: true
+# Previously `retain_objc_accessible: true` shielded every UIKit-subclass
+# (UIViewController / UIView / UICollectionViewCell etc.) from being flagged,
+# which let pure-Swift dead code linger as long as it inherited from NSObject.
+# We rely on Periphery's native XIB/storyboard scanning + #selector resolution
+# to keep IB- and selector-referenced declarations alive, and on the explicit
+# `@objc` annotation as a safety net for anything that would otherwise need
+# implicit Obj-C accessibility.
+retain_objc_accessible: false
+retain_objc_annotated: true
 retain_unused_protocol_func_params: true

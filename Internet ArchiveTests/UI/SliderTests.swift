@@ -8,6 +8,10 @@
 import XCTest
 @testable import Internet_Archive
 
+// The focus-engine `Slider` only ships on tvOS; iOS / iPadOS / visionOS use a
+// non-functional stub. The behavioural tests below assume the tvOS API surface.
+#if os(tvOS)
+
 // MARK: - Mock Slider Delegate
 
 final class MockSliderDelegate: SliderDelegate {
@@ -526,3 +530,5 @@ final class SliderScrubbingDelegateTests: XCTestCase {
 final class DefaultSliderDelegate: SliderDelegate {
     // Uses all default implementations from protocol extension
 }
+
+#endif
