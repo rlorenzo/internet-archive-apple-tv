@@ -9,6 +9,18 @@ import XCTest
 
 @MainActor
 enum UITestHelper {
+    /// Cross-platform launch (no tvOS-only XCUIRemote).
+    static func launchAppCrossPlatform() -> XCUIApplication {
+        let app = XCUIApplication()
+        app.launchArguments = ["--uitesting"]
+        app.launchEnvironment = ["USE_MOCK_DATA": "true"]
+        app.launch()
+        return app
+    }
+}
+
+#if os(tvOS)
+extension UITestHelper {
 
     /// Launches the app with standard UI testing configuration.
     static func launchApp() -> XCUIApplication {
