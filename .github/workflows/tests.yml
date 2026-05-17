@@ -274,10 +274,15 @@ jobs:
         echo "Total lines: $TOTAL_LINES"
         echo "Covered lines: $COVERED_LINES"
 
-        # Files to exclude (require Internet Archive API credentials to test)
-        # NOTE: These files handle login/account/favorites functionality which cannot be tested
-        # without valid API credentials. See Configuration.plist.template for setup.
-        EXCLUDED_FILES="AccountVC.swift AccountNC.swift LoginVC.swift RegisterVC.swift PeopleVC.swift ItemVC.swift FavoriteVC.swift"
+        # Files to exclude (require Internet Archive API credentials to test).
+        # NOTE: The original list named the UIKit VCs (AccountVC.swift, LoginVC.swift,
+        # FavoriteVC.swift, etc.) which combined view + view-model + network. After the
+        # SwiftUI refactor the view-models live in their own files and ARE tested
+        # (LoginViewModel, FavoritesViewModel, PeopleViewModel, ItemDetailViewModel,
+        # etc.) — only the pure-view `AccountView.swift` still needs real auth to
+        # exercise its login / register / signed-in branches. See
+        # Configuration.plist.template for setup.
+        EXCLUDED_FILES="AccountView.swift"
 
         EXCLUDED_TOTAL=0
         EXCLUDED_COVERED=0
