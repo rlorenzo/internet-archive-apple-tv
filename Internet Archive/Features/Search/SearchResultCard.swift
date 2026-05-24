@@ -14,20 +14,25 @@ struct SearchResultCard: View {
     let item: SearchResult
     let mediaType: MediaItemCard.MediaType
 
-    /// Card size based on media type
-    private var size: CGSize {
+    /// When true, the card stretches to fill its grid cell (compact-width
+    /// iPhone / Split View). When false, the card locks to its tvOS-sized
+    /// fixed width so 10-foot UI layouts stay rhythmic.
+    var stretches: Bool = false
+
+    /// Card size used when `stretches` is false.
+    private var fixedSize: CGSize {
         mediaType == .video
             ? CGSize(width: 380, height: 380 * 9 / 16)
             : CGSize(width: 220, height: 220)
     }
 
+    private var aspectRatio: CGFloat {
+        mediaType == .video ? 16.0 / 9.0 : 1.0
+    }
+
     var body: some View {
         VStack(alignment: .leading, spacing: 12) {
-            MediaThumbnailView(
-                identifier: item.identifier,
-                mediaType: mediaType,
-                size: size
-            )
+            thumbnail
 
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.safeTitle)
@@ -35,7 +40,8 @@ struct SearchResultCard: View {
                     .fontWeight(.medium)
                     .lineLimit(2)
                     .foregroundStyle(.primary)
-                    .frame(height: mediaType == .video ? 56 : nil, alignment: .bottomLeading)
+                    .frame(height: stretches ? nil : (mediaType == .video ? 56 : nil),
+                           alignment: .bottomLeading)
 
                 Text(item.creator ?? item.year ?? " ")
                     .font(.caption)
@@ -43,10 +49,40 @@ struct SearchResultCard: View {
                     .lineLimit(1)
             }
         }
-        .frame(width: size.width)
+        .modifier(CardWidthModifier(stretches: stretches, fixedWidth: fixedSize.width))
         .accessibilityElement(children: .combine)
         .accessibilityLabel(accessibilityLabelText)
         .accessibilityHint("Double-tap to view details")
+    }
+
+    @ViewBuilder
+    private var thumbnail: some View {
+        if stretches {
+            MediaThumbnailView(
+                identifier: item.identifier,
+                mediaType: mediaType,
+                aspectRatio: aspectRatio
+            )
+        } else {
+            MediaThumbnailView(
+                identifier: item.identifier,
+                mediaType: mediaType,
+                size: fixedSize
+            )
+        }
+    }
+
+    private struct CardWidthModifier: ViewModifier {
+        let stretches: Bool
+        let fixedWidth: CGFloat
+
+        func body(content: Content) -> some View {
+            if stretches {
+                content.frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                content.frame(width: fixedWidth)
+            }
+        }
     }
 
     // MARK: - Accessibility

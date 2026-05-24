@@ -32,9 +32,7 @@ struct CollectionBrowserView: View {
 
     // MARK: - Environment
 
-    #if !os(tvOS)
-    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
-    #endif
+    @Environment(\.isCompactLayout) private var isCompactLayout
 
     // MARK: - State
 
@@ -100,78 +98,95 @@ struct CollectionBrowserView: View {
     // MARK: - Collection Header
 
     private var collectionHeader: some View {
-        HStack(alignment: .top, spacing: 40) {
-            // Thumbnail
-            AsyncImage(url: thumbnailURL) { phase in
-                switch phase {
-                case .empty:
-                    placeholderThumbnail
-                case .success(let image):
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fill)
-                case .failure:
-                    placeholderThumbnail
-                @unknown default:
-                    placeholderThumbnail
+        Group {
+            if isCompactLayout == true {
+                VStack(alignment: .leading, spacing: 20) {
+                    headerThumbnail
+                    headerMetadata
+                }
+            } else {
+                HStack(alignment: .top, spacing: 40) {
+                    headerThumbnail
+                    headerMetadata
+                        .frame(maxWidth: .infinity, alignment: .leading)
                 }
             }
-            .frame(width: 300, height: mediaType == .video ? 169 : 300)
-            .clipShape(RoundedRectangle(cornerRadius: 12))
-            .accessibilityHidden(true)
-
-            // Metadata
-            VStack(alignment: .leading, spacing: 16) {
-                Text(collection.safeTitle)
-                    .font(.title)
-                    .fontWeight(.bold)
-                    .lineLimit(2)
-                    .accessibilityAddTraits(.isHeader)
-
-                if let creator = collection.creator {
-                    HStack(spacing: 8) {
-                        Image(systemName: "person.fill")
-                            .foregroundStyle(.secondary)
-                            .accessibilityHidden(true)
-                        Text(creator)
-                            .font(.title3)
-                            .foregroundStyle(.secondary)
-                    }
-                    .accessibilityElement(children: .combine)
-                    .accessibilityLabel("Creator: \(creator)")
-                }
-
-                if let description = collectionMetadata?.description ?? collection.description {
-                    DescriptionView(htmlContent: description, collapsedLineLimit: 3)
-                }
-
-                if !isLoading && !items.isEmpty {
-                    HStack(spacing: 24) {
-                        Text("\(items.count) items")
-                            .font(.callout)
-                            .foregroundStyle(.tertiary)
-
-                        Button {
-                            navigationPath.append(YearBrowseDestination(
-                                collection: collection,
-                                mediaType: mediaType
-                            ))
-                        } label: {
-                            HStack(spacing: 8) {
-                                Image(systemName: "calendar")
-                                Text("Browse by Year")
-                            }
-                            .font(.callout)
-                        }
-                        .buttonStyle(.bordered)
-                        .accessibilityLabel("Browse by year")
-                        .accessibilityHint("Double-tap to browse this collection organized by year")
-                    }
-                }
-            }
-            .frame(maxWidth: .infinity, alignment: .leading)
         }
         .padding(.bottom, 20)
+    }
+
+    private var headerThumbnail: some View {
+        let width: CGFloat = isCompactLayout == true ? 140 : 300
+        let height: CGFloat = mediaType == .video ? width * 9 / 16 : width
+
+        return AsyncImage(url: thumbnailURL) { phase in
+            switch phase {
+            case .empty:
+                placeholderThumbnail
+            case .success(let image):
+                image
+                    .resizable()
+                    .aspectRatio(contentMode: .fill)
+            case .failure:
+                placeholderThumbnail
+            @unknown default:
+                placeholderThumbnail
+            }
+        }
+        .frame(width: width, height: height)
+        .clipShape(RoundedRectangle(cornerRadius: 12))
+        .accessibilityHidden(true)
+    }
+
+    private var headerMetadata: some View {
+        VStack(alignment: .leading, spacing: 16) {
+            Text(collection.safeTitle)
+                .font(.title)
+                .fontWeight(.bold)
+                .lineLimit(2)
+                .accessibilityAddTraits(.isHeader)
+
+            if let creator = collection.creator {
+                HStack(spacing: 8) {
+                    Image(systemName: "person.fill")
+                        .foregroundStyle(.secondary)
+                        .accessibilityHidden(true)
+                    Text(creator)
+                        .font(.title3)
+                        .foregroundStyle(.secondary)
+                }
+                .accessibilityElement(children: .combine)
+                .accessibilityLabel("Creator: \(creator)")
+            }
+
+            if let description = collectionMetadata?.description ?? collection.description {
+                DescriptionView(htmlContent: description, collapsedLineLimit: 3)
+            }
+
+            if !isLoading && !items.isEmpty {
+                HStack(spacing: 24) {
+                    Text("\(items.count) items")
+                        .font(.callout)
+                        .foregroundStyle(.tertiary)
+
+                    Button {
+                        navigationPath.append(YearBrowseDestination(
+                            collection: collection,
+                            mediaType: mediaType
+                        ))
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: "calendar")
+                            Text("Browse by Year")
+                        }
+                        .font(.callout)
+                    }
+                    .buttonStyle(.bordered)
+                    .accessibilityLabel("Browse by year")
+                    .accessibilityHint("Double-tap to browse this collection organized by year")
+                }
+            }
+        }
     }
 
     private var placeholderThumbnail: some View {
@@ -201,23 +216,18 @@ struct CollectionBrowserView: View {
 
                 Spacer()
 
-                Text("Sort by")
-                    .font(.callout)
-                    .foregroundStyle(.tertiary)
-
-                Picker("Sort by", selection: $sortOption) {
-                    ForEach(CollectionSortOption.allCases) { option in
-                        Text(option.displayName).tag(option)
-                    }
+                if isCompactLayout != true {
+                    Text("Sort by")
+                        .font(.callout)
+                        .foregroundStyle(.tertiary)
                 }
-                .pickerStyle(.segmented)
-                .frame(width: 400)
-                .accessibilityLabel("Sort order")
+
+                sortPicker
             }
 
             LazyVGrid(
-                columns: gridColumns,
-                spacing: mediaType == .video ? 48 : 40
+                columns: SearchResultsGridHelpers.gridColumns(for: mediaType, compact: isCompactLayout),
+                spacing: gridRowSpacing
             ) {
                 ForEach(items) { item in
                     Button {
@@ -248,36 +258,44 @@ struct CollectionBrowserView: View {
         return components.joined(separator: ", ")
     }
 
-    private var gridColumns: [GridItem] {
-        let count = mediaType == .video ? 4 : 6
-        return Array(repeating: GridItem(.flexible(), spacing: mediaType == .video ? 48 : 40), count: count)
+    /// Row spacing between grid rows. Compact platforms get a tighter rhythm
+    /// to match the smaller card minimums from `SearchResultsGridHelpers`.
+    private var gridRowSpacing: CGFloat {
+        if isCompactLayout == true { return 16 }
+        return mediaType == .video ? 48 : 40
     }
 
-    /// Resolved compact-width flag for `PlatformMetrics`. tvOS has no size class
-    /// concept; everywhere else we pass the live environment value so iPad
-    /// Split View / Stage Manager transitions are picked up on the next render.
-    private var isCompactLayout: Bool? {
-        #if os(tvOS)
-        return nil
-        #else
-        guard let horizontalSizeClass else { return nil }
-        return horizontalSizeClass == .compact
-        #endif
+    /// Sort picker. Segmented on TV / regular width (the picker keeps its
+    /// information dense across a wide row); menu on compact width so it
+    /// collapses to a small affordance instead of overflowing the header.
+    @ViewBuilder
+    private var sortPicker: some View {
+        if isCompactLayout == true {
+            Picker("Sort by", selection: $sortOption) {
+                ForEach(CollectionSortOption.allCases) { option in
+                    Text(option.displayName).tag(option)
+                }
+            }
+            .pickerStyle(.menu)
+            .accessibilityLabel("Sort order")
+        } else {
+            Picker("Sort by", selection: $sortOption) {
+                ForEach(CollectionSortOption.allCases) { option in
+                    Text(option.displayName).tag(option)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 400)
+            .accessibilityLabel("Sort order")
+        }
     }
 
     private func itemCard(for item: SearchResult) -> some View {
-        let cardWidth = mediaType == .video ? videoCardWidth : musicCardSize
-        let cardHeight = mediaType == .video ? videoCardWidth * 9 / 16 : musicCardSize
+        let stretches = isCompactLayout == true
 
         return VStack(alignment: .leading, spacing: 12) {
-            // Thumbnail (reuses MediaThumbnailView for DRY)
-            MediaThumbnailView(
-                identifier: item.identifier,
-                mediaType: mediaType,
-                size: CGSize(width: cardWidth, height: cardHeight)
-            )
+            thumbnail(for: item, stretches: stretches)
 
-            // Text
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.safeTitle)
                     .font(mediaType == .video ? .callout : .caption)
@@ -293,7 +311,43 @@ struct CollectionBrowserView: View {
                 }
             }
         }
-        .frame(width: cardWidth)
+        .modifier(ItemCardWidthModifier(stretches: stretches, fixedWidth: fixedCardWidth))
+    }
+
+    @ViewBuilder
+    private func thumbnail(for item: SearchResult, stretches: Bool) -> some View {
+        if stretches {
+            MediaThumbnailView(
+                identifier: item.identifier,
+                mediaType: mediaType,
+                aspectRatio: mediaType == .video ? 16.0 / 9.0 : 1.0
+            )
+        } else {
+            let cardWidth = fixedCardWidth
+            let cardHeight = mediaType == .video ? cardWidth * 9 / 16 : cardWidth
+            MediaThumbnailView(
+                identifier: item.identifier,
+                mediaType: mediaType,
+                size: CGSize(width: cardWidth, height: cardHeight)
+            )
+        }
+    }
+
+    private var fixedCardWidth: CGFloat {
+        mediaType == .video ? videoCardWidth : musicCardSize
+    }
+
+    private struct ItemCardWidthModifier: ViewModifier {
+        let stretches: Bool
+        let fixedWidth: CGFloat
+
+        func body(content: Content) -> some View {
+            if stretches {
+                content.frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                content.frame(width: fixedWidth)
+            }
+        }
     }
 
     // MARK: - Loading View

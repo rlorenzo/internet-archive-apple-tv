@@ -83,12 +83,21 @@ struct SkeletonGrid: View {
     let columns: Int
     let rows: Int
 
+    #if !os(tvOS)
+    @Environment(\.horizontalSizeClass) private var horizontalSizeClass
+    #endif
+
+    /// Hard cap on rendered placeholders so a single column on iPhone does not
+    /// blow up to a 12- or 18-item vertical scroll while loading. The adaptive
+    /// grid still chooses how many fit per row; this only bounds total count.
+    private static let placeholderCap = 8
+
     var body: some View {
         LazyVGrid(
             columns: gridColumns,
-            spacing: 40
+            spacing: gridSpacing
         ) {
-            ForEach(0..<(columns * rows), id: \.self) { _ in
+            ForEach(0..<placeholderCount, id: \.self) { _ in
                 switch cardType {
                 case .video:
                     SkeletonCard.video
@@ -99,13 +108,47 @@ struct SkeletonGrid: View {
         }
     }
 
+    private var placeholderCount: Int {
+        min(columns * rows, Self.placeholderCap)
+    }
+
+    private var gridSpacing: CGFloat {
+        isCompact ? 16 : 40
+    }
+
     private var gridColumns: [GridItem] {
-        let minWidth: CGFloat = cardType == .video ? 300 : 180
-        let maxWidth: CGFloat = cardType == .video ? 400 : 220
+        // Mirror `SearchResultsGridHelpers.gridColumns` exactly so the skeleton
+        // row count matches the real grid's column count on every platform —
+        // otherwise the skeleton flashes one column count, then content reflows
+        // to a different one when the data lands.
+        let minWidth: CGFloat
+        let maxWidth: CGFloat
+        switch (cardType, isCompact) {
+        case (.video, true):
+            minWidth = 160
+            maxWidth = 220
+        case (.video, false):
+            minWidth = 340
+            maxWidth = 420
+        case (.music, true):
+            minWidth = 140
+            maxWidth = 180
+        case (.music, false):
+            minWidth = 200
+            maxWidth = 240
+        }
 
         return [
-            GridItem(.adaptive(minimum: minWidth, maximum: maxWidth), spacing: 40)
+            GridItem(.adaptive(minimum: minWidth, maximum: maxWidth), spacing: gridSpacing)
         ]
+    }
+
+    private var isCompact: Bool {
+        #if os(tvOS)
+        return false
+        #else
+        return horizontalSizeClass == .compact
+        #endif
     }
 }
 

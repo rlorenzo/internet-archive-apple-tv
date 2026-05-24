@@ -17,6 +17,8 @@ struct VideoHomeView: View {
 
     @StateObject private var viewModel = VideoViewModel(collectionService: DefaultCollectionService())
 
+    @Environment(\.isCompactLayout) private var isCompactLayout
+
     /// Continue watching items from PlaybackProgressManager
     @State private var continueWatchingItems: [PlaybackProgress] = []
 
@@ -74,12 +76,12 @@ struct VideoHomeView: View {
 
     private var contentView: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 60) {
+            VStack(alignment: .leading, spacing: isCompactLayout == true ? 24 : 60) {
                 continueWatchingSection
                 featuredVideosSection
             }
-            .padding(.horizontal, 80)
-            .padding(.vertical, 40)
+            .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
+            .padding(.vertical, isCompactLayout == true ? 16 : 40)
         }
     }
 
@@ -117,28 +119,21 @@ struct VideoHomeView: View {
 
                 Spacer()
 
-                Picker("Sort by", selection: $selectedSort) {
-                    ForEach(CollectionSortOption.allCases) { option in
-                        Text(option.displayName).tag(option)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 400)
-                .accessibilityLabel("Sort order")
+                sortPicker
             }
 
             if viewModel.state.isLoading && !viewModel.state.hasItems {
                 SkeletonGrid(cardType: .video, columns: 4, rows: 3)
             } else if viewModel.state.hasItems {
                 LazyVGrid(
-                    columns: SearchResultsGridHelpers.gridColumns(for: .video),
-                    spacing: 48
+                    columns: SearchResultsGridHelpers.gridColumns(for: .video, compact: isCompactLayout),
+                    spacing: isCompactLayout == true ? 16 : 48
                 ) {
                     ForEach(viewModel.state.items) { item in
                         Button {
                             navigationPath.append(item)
                         } label: {
-                            SearchResultCard(item: item, mediaType: .video)
+                            SearchResultCard(item: item, mediaType: .video, stretches: isCompactLayout == true)
                         }
                         .tvCardStyle()
                         .onAppear {
@@ -186,7 +181,7 @@ struct VideoHomeView: View {
                     SectionHeader("Featured Videos")
                     SkeletonGrid(cardType: .video, columns: 4, rows: 3)
                 }
-                .padding(.horizontal, 80)
+                .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
             }
             .padding(.vertical, 40)
         }
@@ -203,6 +198,31 @@ struct VideoHomeView: View {
     }
 
     // MARK: - Helpers
+
+    /// Sort picker. Segmented + fixed-width on TV / regular surfaces;
+    /// `.menu` style on compact width so the header doesn't overflow the
+    /// iPhone screen and crowd out the section title.
+    @ViewBuilder
+    private var sortPicker: some View {
+        if isCompactLayout == true {
+            Picker("Sort by", selection: $selectedSort) {
+                ForEach(CollectionSortOption.allCases) { option in
+                    Text(option.displayName).tag(option)
+                }
+            }
+            .pickerStyle(.menu)
+            .accessibilityLabel("Sort order")
+        } else {
+            Picker("Sort by", selection: $selectedSort) {
+                ForEach(CollectionSortOption.allCases) { option in
+                    Text(option.displayName).tag(option)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 400)
+            .accessibilityLabel("Sort order")
+        }
+    }
 
     private func handleContinueWatchingTap(_ progress: PlaybackProgress) {
         // Create a SearchResult from the progress data to navigate to ItemDetailView

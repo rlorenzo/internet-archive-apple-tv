@@ -5,7 +5,30 @@
 //  Adaptive sizing for tvOS / iOS / iPadOS / visionOS.
 //
 
+import SwiftUI
 import UIKit
+
+extension EnvironmentValues {
+    /// Resolved compact-width flag, derived from `horizontalSizeClass`.
+    ///
+    /// - `nil` on tvOS — the focus engine carries the 10-foot layout, no size class concept.
+    /// - `true` on iOS / iPadOS / visionOS when `horizontalSizeClass == .compact`
+    ///   (iPhone portrait, iPhone non-Plus landscape, iPad Split View narrow column).
+    /// - `false` on regular-width touch / spatial surfaces (iPad full screen, iPhone Plus
+    ///   landscape, visionOS standard window).
+    ///
+    /// Use directly in views via `@Environment(\.isCompactLayout)` instead of duplicating
+    /// the `#if !os(tvOS)` + `horizontalSizeClass` read at every call site.
+    @MainActor
+    var isCompactLayout: Bool? {
+        #if os(tvOS)
+        return nil
+        #else
+        guard let horizontalSizeClass else { return nil }
+        return horizontalSizeClass == .compact
+        #endif
+    }
+}
 
 /// Sizing constants that differ between TV (10-foot UI) and touch / spatial platforms.
 ///

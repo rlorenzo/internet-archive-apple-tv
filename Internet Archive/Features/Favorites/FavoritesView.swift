@@ -18,6 +18,8 @@ import SwiftUI
 struct FavoritesView: View {
     @EnvironmentObject private var appState: AppState
 
+    @Environment(\.isCompactLayout) private var isCompactLayout
+
     // MARK: - ViewModel
 
     @StateObject private var viewModel = FavoritesViewModel(
@@ -139,7 +141,7 @@ struct FavoritesView: View {
                     peopleSection
                 }
             }
-            .padding(.horizontal, 80)
+            .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
             .padding(.vertical, 40)
         }
         .onAppear {

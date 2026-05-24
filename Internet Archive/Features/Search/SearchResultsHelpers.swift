@@ -21,14 +21,33 @@ enum SearchResultsGridHelpers {
 
     // MARK: - Grid Layout
 
-    /// Get grid columns for the given media type
-    /// - Parameter mediaType: The media type
-    /// - Returns: Array of GridItem definitions
-    static func gridColumns(for mediaType: MediaItemCard.MediaType) -> [GridItem] {
+    /// Get grid columns for the given media type.
+    ///
+    /// On tvOS and regular-width touch surfaces (iPad, visionOS), card minimums
+    /// are sized for the 10-foot UI / pointer experience. On compact width
+    /// (iPhone, iPad Split View narrow column), minimums drop so two or three
+    /// cards still fit across a 390–430pt screen without collapsing to one.
+    ///
+    /// - Parameters:
+    ///   - mediaType: The media type.
+    ///   - compact: Whether the surface is compact-width. Pass `nil` (default)
+    ///     for tvOS and regular-width contexts.
+    /// - Returns: Array of GridItem definitions.
+    static func gridColumns(
+        for mediaType: MediaItemCard.MediaType,
+        compact: Bool? = nil
+    ) -> [GridItem] {
+        let isCompact = compact ?? false
         switch mediaType {
         case .video:
+            if isCompact {
+                return [GridItem(.adaptive(minimum: 160, maximum: 220), spacing: 16)]
+            }
             return [GridItem(.adaptive(minimum: 340, maximum: 420), spacing: 48)]
         case .music:
+            if isCompact {
+                return [GridItem(.adaptive(minimum: 140, maximum: 180), spacing: 16)]
+            }
             return [GridItem(.adaptive(minimum: 200, maximum: 240), spacing: 40)]
         }
     }
