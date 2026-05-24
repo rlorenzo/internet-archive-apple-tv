@@ -74,7 +74,7 @@ struct PeopleDetailView: View {
 
             // Avatar placeholder
             Circle()
-                .fill(Color.gray.opacity(0.3))
+                .fill(Color.placeholderFill)
                 .frame(width: 150, height: 150)
                 .overlay {
                     ProgressView()
@@ -201,7 +201,7 @@ struct PeopleDetailView: View {
     private var avatarPlaceholder: some View {
         ZStack {
             Circle()
-                .fill(Color.gray.opacity(0.3))
+                .fill(Color.placeholderFill)
             Image(systemName: "person.fill")
                 .font(.system(size: 60))
                 .foregroundStyle(.secondary)

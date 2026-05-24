@@ -88,24 +88,9 @@ struct ContinueWatchingCard: View {
                         case .empty:
                             placeholderContent
                         case .success(let image):
-                            // Internet Archive audio items often return waveform visualizations
-                            // as thumbnails instead of album art. These waveforms are typically
-                            // very wide and short (e.g., 180x45 pixels) - appearing as a horizontal
-                            // audio waveform strip rather than a proper thumbnail.
-                            //
-                            // Heuristic to detect waveform thumbnails:
-                            // - Height < 100px: Too short to be proper album art
-                            // - Width > 3x height: Panoramic aspect ratio typical of waveforms
-                            //
-                            // When detected, we show a placeholder with a music icon instead.
-                            if progress.isAudio, let cgImage = ImageRenderer(content: image).cgImage,
-                               cgImage.height < 100 && cgImage.width > cgImage.height * 3 {
-                                placeholderContent
-                            } else {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            }
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
                         case .failure:
                             placeholderContent
                         @unknown default:
@@ -131,7 +116,7 @@ struct ContinueWatchingCard: View {
     private var placeholderContent: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.gray.opacity(0.3))
+                .fill(Color.placeholderFill)
 
             Image(systemName: progress.isVideo ? "film" : "music.note")
                 .font(.system(size: 40))
@@ -146,7 +131,7 @@ struct ContinueWatchingCard: View {
                 ZStack(alignment: .leading) {
                     // Background track
                     Rectangle()
-                        .fill(Color.black.opacity(0.6))
+                        .fill(Color.surfaceOverlayDim)
                         .frame(height: 8)
 
                     // Progress fill

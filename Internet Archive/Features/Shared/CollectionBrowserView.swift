@@ -86,7 +86,7 @@ struct CollectionBrowserView: View {
             .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
             .padding(.vertical, 40)
         }
-        .background(Color.black.opacity(0.95))
+        .background(Color.libraryCharcoal)
         .task {
             await loadCollectionItems()
         }
@@ -176,7 +176,7 @@ struct CollectionBrowserView: View {
 
     private var placeholderThumbnail: some View {
         RoundedRectangle(cornerRadius: 12)
-            .fill(Color.gray.opacity(0.3))
+            .fill(Color.placeholderFill)
             .overlay(
                 Image(systemName: mediaType.placeholderIcon)
                     .font(.system(size: 50))

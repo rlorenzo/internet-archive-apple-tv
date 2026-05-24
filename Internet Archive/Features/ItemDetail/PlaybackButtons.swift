@@ -168,6 +168,7 @@ private struct PlaybackButtonContent: View {
     let isPrimary: Bool
 
     @Environment(\.isFocused) private var isFocused
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         configuration.label
@@ -182,8 +183,8 @@ private struct PlaybackButtonContent: View {
             )
             .scaleEffect(scaleValue)
             .shadow(color: shadowColor, radius: isFocused ? 20 : 0)
-            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
-            .animation(.easeInOut(duration: 0.2), value: isFocused)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: configuration.isPressed)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: isFocused)
     }
 
     private var isPressed: Bool {
@@ -201,7 +202,7 @@ private struct PlaybackButtonContent: View {
     }
 
     private var shadowColor: Color {
-        isFocused ? Color.white.opacity(0.5) : Color.clear
+        isFocused ? Color.chromeFocus : Color.clear
     }
 
     private var foregroundColor: Color {
@@ -215,14 +216,11 @@ private struct PlaybackButtonContent: View {
 
     private var backgroundColor: Color {
         if isFocused {
-            // Bright white when focused for high visibility
-            return isPrimary ? Color.white : Color.white.opacity(0.4)
+            return isPrimary ? Color.actionPrimaryFocused : Color.chromeActive
         } else if isPrimary {
-            // High contrast: white background for primary button
-            return isPressed ? Color.white.opacity(0.8) : Color.white
+            return isPressed ? Color.actionPrimaryPressed : Color.actionPrimaryRest
         } else {
-            // Semi-transparent for secondary
-            return isPressed ? Color.white.opacity(0.3) : Color.white.opacity(0.15)
+            return isPressed ? Color.chromeActive : Color.chromeRest
         }
     }
 
@@ -232,7 +230,7 @@ private struct PlaybackButtonContent: View {
         } else if isPrimary {
             return .clear
         } else {
-            return isPressed ? Color.white.opacity(0.6) : Color.white.opacity(0.4)
+            return isPressed ? Color.white.opacity(0.6) : Color.chromeOutline
         }
     }
 }
@@ -247,7 +245,7 @@ private struct PlaybackButtonContent: View {
         onStartOver: { print("Start Over") }
     )
     .padding(50)
-    .background(Color.black)
+    .background(Color.libraryCharcoal)
 }
 
 #Preview("With Progress") {
@@ -267,7 +265,7 @@ private struct PlaybackButtonContent: View {
         onStartOver: { print("Start Over") }
     )
     .padding(50)
-    .background(Color.black)
+    .background(Color.libraryCharcoal)
 }
 
 #Preview("Audio Progress") {
@@ -287,5 +285,5 @@ private struct PlaybackButtonContent: View {
         onStartOver: { print("Start Over") }
     )
     .padding(50)
-    .background(Color.black)
+    .background(Color.libraryCharcoal)
 }

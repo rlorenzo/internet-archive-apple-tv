@@ -90,7 +90,7 @@ struct ItemDetailView: View {
             }
             .padding(.horizontal, 80)
         }
-        .background(Color.black.opacity(0.95))
+        .background(Color.libraryCharcoal)
         .onAppear {
             loadMetadata()
             checkFavoriteStatus()
@@ -125,14 +125,13 @@ struct ItemDetailView: View {
             }
             .aspectRatio(mediaType.aspectRatio, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(radius: 20)
         }
         .padding(.vertical, 60)
     }
 
     private var placeholderImage: some View {
         RoundedRectangle(cornerRadius: 16)
-            .fill(Color.gray.opacity(0.3))
+            .fill(Color.placeholderFill)
             .aspectRatio(mediaType.aspectRatio, contentMode: .fit)
             .overlay(
                 Image(systemName: mediaType.placeholderIcon)
@@ -188,7 +187,7 @@ struct ItemDetailView: View {
                         .fontWeight(.bold)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.white.opacity(0.2))
+                        .background(Color.chromeRest)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                         .accessibilityHidden(true)
                     Text(subtitleInfo)
@@ -498,7 +497,7 @@ private struct PlayerLoadingView: View {
             .padding(.top, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
+        .background(Color.libraryCharcoal)
     }
 }
 
@@ -531,7 +530,7 @@ private struct PlayerErrorView: View {
             .padding(.top, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
+        .background(Color.libraryCharcoal)
     }
 }
 

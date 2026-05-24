@@ -63,7 +63,7 @@ struct MediaThumbnailView: View {
 
     private var placeholderView: some View {
         RoundedRectangle(cornerRadius: cornerRadius)
-            .fill(Color.gray.opacity(0.3))
+            .fill(Color.placeholderFill)
             .overlay(
                 Image(systemName: mediaType.placeholderIcon)
                     .font(.system(size: 40))
@@ -81,7 +81,7 @@ struct MediaThumbnailView: View {
         size: CGSize(width: 380, height: 214)
     )
     .padding()
-    .background(Color.black)
+    .background(Color.libraryCharcoal)
 }
 
 #Preview("Music Thumbnail") {
@@ -91,5 +91,5 @@ struct MediaThumbnailView: View {
         size: CGSize(width: 220, height: 220)
     )
     .padding()
-    .background(Color.black)
+    .background(Color.libraryCharcoal)
 }

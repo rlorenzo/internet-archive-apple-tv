@@ -1,0 +1,225 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-05-17T00:00:00Z",
+  "title": "Design System: Internet Archive for tvOS",
+  "platform": "swiftui-tvos",
+  "extensions": {
+    "colorMeta": {
+      "library-charcoal": {
+        "role": "primary",
+        "displayName": "Library Charcoal",
+        "canonical": "oklch(20.9% 0 0)",
+        "tonalRamp": [
+          "#0A0A0A",
+          "#131313",
+          "#1B1B1B",
+          "#222222",
+          "#2C2C2C",
+          "#3A3A3A",
+          "#525252",
+          "#808080"
+        ]
+      },
+      "text-primary": {
+        "role": "neutral",
+        "displayName": "Text Primary (platform .primary, dark)",
+        "canonical": "oklch(100% 0 0)",
+        "notes": "Platform-resolved system color. Used at full opacity for focused element labels and the progress fill. Should not be reached for as an arbitrary white."
+      },
+      "text-secondary": {
+        "role": "neutral",
+        "displayName": "Text Secondary (platform .secondary, dark)",
+        "canonical": "oklch(100% 0 0 / 0.6)",
+        "notes": "The most common text color in the system. Section headers, subtitles, time-remaining strings, See-All affordances."
+      },
+      "text-tertiary": {
+        "role": "neutral",
+        "displayName": "Text Tertiary (platform .tertiary, dark)",
+        "canonical": "oklch(100% 0 0 / 0.3)",
+        "notes": "Quietest text layer. Used for empty-state glyphs and de-emphasized chrome."
+      },
+      "surface-overlay-dim": {
+        "role": "neutral",
+        "displayName": "Overlay Dim",
+        "canonical": "oklch(0% 0 0 / 0.6)",
+        "notes": "The dark scrim behind the progress bar. The only on-image overlay tint in the system."
+      },
+      "placeholder-fill": {
+        "role": "neutral",
+        "displayName": "Placeholder Fill",
+        "canonical": "oklch(60% 0 0 / 0.5)",
+        "notes": "Gray block under a loading or failed thumbnail. Always paired with a centered SF Symbol glyph at 40pt."
+      },
+      "focus-glow": {
+        "role": "neutral",
+        "displayName": "Focus Glow",
+        "canonical": "oklch(100% 0 0)",
+        "notes": "The white outer shadow on the focused card. Drawn at radius 25 with 60% opacity."
+      },
+      "focus-shadow": {
+        "role": "neutral",
+        "displayName": "Focus Drop Shadow",
+        "canonical": "oklch(0% 0 0)",
+        "notes": "Black drop shadow under the focused card. radius 20, y: 15, opacity 0.5."
+      },
+      "ia-favorite-red": {
+        "role": "tertiary",
+        "displayName": "IA Favorite Red (platform .red, dark)",
+        "canonical": "oklch(67.6% 0.214 26)",
+        "notes": "Used only on the filled-heart favorited state. Never as a primary action color. Never for warnings."
+      },
+      "ia-action-blue": {
+        "role": "secondary",
+        "displayName": "IA Action Blue (platform .blue, dark)",
+        "canonical": "oklch(62.3% 0.193 250)",
+        "notes": "Linking affordances and a small set of status indicators. Used in single-digit percent of the surface."
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "The largest stat or hero text. Used sparingly on Account and detail surfaces; never on browse screens.",
+        "appleStyle": "title"
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section headers across browse screens. The most prominent recurring type element in the app.",
+        "appleStyle": "title2 + semibold"
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Subheaders, item titles on detail surfaces, navigation labels.",
+        "appleStyle": "title3"
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Card titles across grids and rows. Capped at two lines via lineLimit(2).",
+        "appleStyle": "callout + medium"
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "Subtitles, time-remaining strings, captions overlaid on thumbnails.",
+        "appleStyle": "caption"
+      }
+    },
+    "shadows": [
+      {
+        "name": "focus-glow",
+        "value": "0 0 25px rgba(255, 255, 255, 0.6)",
+        "swiftui": ".shadow(color: .white.opacity(0.6), radius: 25)",
+        "purpose": "White outer glow on the focused card. Pairs with focus-drop to read as floating illumination."
+      },
+      {
+        "name": "focus-drop",
+        "value": "0 15px 20px rgba(0, 0, 0, 0.5)",
+        "swiftui": ".shadow(color: .black.opacity(0.5), radius: 20, x: 0, y: 15)",
+        "purpose": "Drop shadow under the focused card. Grounds the elevated element."
+      }
+    ],
+    "motion": [
+      {
+        "name": "focus-ease",
+        "value": "easeInOut, duration 0.2s",
+        "swiftui": ".easeInOut(duration: 0.2)",
+        "purpose": "Default focus transition: scale, brightness, and shadow animate together over 200ms."
+      },
+      {
+        "name": "press-ease",
+        "value": "easeInOut, duration 0.1s",
+        "swiftui": ".easeInOut(duration: 0.1)",
+        "purpose": "Faster easing for the press state, so the remote click reads as a tactile depress."
+      }
+    ],
+    "focusState": {
+      "scale": 1.08,
+      "brightness": 0.1,
+      "pressScale": 0.95,
+      "zIndex": 1,
+      "notes": "Combined with focus-glow and focus-drop shadows, this is the entire elevation system. No element lifts at rest; exactly one element lifts under focus."
+    },
+    "spacingRhythm": {
+      "intraComponent": ["4px", "8px", "12px"],
+      "interComponent": ["20px", "24px"],
+      "interRow": "40px",
+      "pageGutter": "80px",
+      "notes": "40pt is the dominant outer rhythm: card-to-card, card-to-row. 80pt is the horizontal page gutter, sized for 10-foot viewing distance."
+    },
+    "aspectRatios": {
+      "video": "16:9",
+      "music": "1:1",
+      "notes": "Aspect ratio carries media type before any label loads. Never mix the two within a single row."
+    }
+  },
+  "narrative": {
+    "northStar": "The Reading Room After Dark",
+    "overview": "A public library kept open at night. The room is dimly lit, the shelves are quiet, and the catalog is open to anyone who walks in. Whatever sits in front of the user, a 1928 silent short, a Grateful Dead bootleg, a public-domain documentary, is presented with the same gentle illumination. This system is platform-honest: it runs on tvOS, navigated by a Siri Remote at a couch-distance of 8 to 12 feet. Chrome is borrowed from Apple. Personality is concentrated in editorial choices, the focus treatment, and a single anchor color (Library Charcoal).",
+    "keyCharacteristics": [
+      "Library Charcoal canvas anchored at sRGB(0.133, 0.133, 0.133), untinted.",
+      "Platform-native type from the Apple Dynamic Type scale; one family across the surface.",
+      "Focus is the entire elevation system. Surfaces are flat at rest; the remote's path is the choreography.",
+      "Rounded vocabulary in four steps (4 / 8 / 12 / 16) with md (12px) as the default card radius.",
+      "Spacing rhythm anchored on 40pt as the dominant outer step, with 80pt for the page horizontal gutter at 10-foot viewing distance.",
+      "16:9 for video, 1:1 for music. The aspect ratio carries the media type before any label does."
+    ],
+    "rules": [
+      {
+        "name": "The One Canvas Rule",
+        "body": "Every surface in this app sits on Library Charcoal or a tvOS-system material derived from it. There is no second background color. The user should never feel they have left the same room.",
+        "section": "colors"
+      },
+      {
+        "name": "The Status-Only Color Rule",
+        "body": "Color (red, blue, the rare green or orange in error states) is reserved for state and status. Never for hierarchy, never for decoration, never as a brand accent on a button.",
+        "section": "colors"
+      },
+      {
+        "name": "The Untinted Charcoal Rule",
+        "body": "Do not tint the canvas warm or cool. On a TV at 10 feet, subtle hue shifts read as a calibration error, not a creative choice.",
+        "section": "colors"
+      },
+      {
+        "name": "The One Family Rule",
+        "body": "SF Pro is the only typeface in the app. Editorial weight comes from fontWeight, not from a display pairing.",
+        "section": "typography"
+      },
+      {
+        "name": "The Semantic-Step Rule",
+        "body": "Always reach for .title, .title2, .title3, .callout, .body, .caption before reaching for .system(size:). The semantic styles respect Dynamic Type; explicit sizes do not.",
+        "section": "typography"
+      },
+      {
+        "name": "The Focus-Is-Depth Rule",
+        "body": "Focus is the only state that lifts. Cards do not have ambient shadows. Buttons do not have ambient shadows. If something needs to feel elevated, it needs to be focused first.",
+        "section": "elevation"
+      },
+      {
+        "name": "The Single-Lifted-Element Rule",
+        "body": "At any moment, exactly one element in the focus tree is elevated. Multiplying lifted elements reads as broken focus state.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "Do anchor every surface on Library Charcoal (#222222, sRGB 0.133/0.133/0.133). One canvas, app-wide.",
+      "Do use the Dynamic Type semantic styles (.title, .title2, .title3, .callout, .body, .caption) before reaching for .system(size:). Explicit sizes are for SF Symbol glyphs only.",
+      "Do treat the focus state as the entire elevation system: scale 1.08, brightness +0.1, white outer glow at radius 25 / opacity 0.6, drop shadow at radius 20 / y: 15 / opacity 0.5.",
+      "Do use TVCardButtonStyle (or its .tvCardStyle() modifier) on every card. Do not roll a new focus treatment per surface.",
+      "Do keep 40pt as the dominant spacing between cards in rows and grids, and 80pt as the outer horizontal page gutter.",
+      "Do carry media type through aspect ratio: 16:9 for video, 1:1 for music. A user should know what a thing is before reading its label.",
+      "Do honor UIAccessibility.isReduceMotionEnabled: when reduced motion is on, drop the focus animation duration to near-zero.",
+      "Do keep red and blue reserved for status and link semantics. If color appears, it carries information."
+    ],
+    "donts": [
+      "Don't introduce a second background color. No light surfaces, no tinted modals, no warm-cream containers.",
+      "Don't build hero-metric blocks (big number + small label + supporting stats + accent). This is the SaaS template PRODUCT.md most directly rejects.",
+      "Don't ship identical card grids that read as icon + heading + paragraph templates. Cards must carry imagery (16:9 or 1:1), not be containers for icons.",
+      "Don't add Netflix-style auto-playing hero carousels. Browsing is lean-back; no element should start moving without the user's consent.",
+      "Don't add ambient shadows to cards, buttons, or modals. Elevation is reserved for the focused element.",
+      "Don't introduce a second typeface. SF Pro carries every role; emphasis comes from fontWeight.",
+      "Don't use a colored side-stripe border (leading border > 1pt) as a card accent.",
+      "Don't use glassmorphism (blurred backgrounds, frosted cards) as a default surface. The tvOS-provided system materials are the exception.",
+      "Don't add decorative motion. Every animation must answer a question (where did this come from? what changed? what's loading?).",
+      "Don't invent affordances for standard tasks. No custom scrollbars, no non-standard modals, no reinvented focus rings.",
+      "Don't use em dashes in UX copy. Periods, commas, colons, parentheses; never an em dash or --."
+    ]
+  }
+}

@@ -168,7 +168,7 @@ struct MediaItemCard: View {
     private var placeholderView: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.gray.opacity(0.3))
+                .fill(Color.placeholderFill)
 
             Image(systemName: mediaType.placeholderIcon)
                 .font(.system(size: 40))
@@ -183,7 +183,7 @@ struct MediaItemCard: View {
                 Spacer()
                 ZStack(alignment: .leading) {
                     Rectangle()
-                        .fill(Color.black.opacity(0.6))
+                        .fill(Color.surfaceOverlayDim)
                         .frame(height: 8)
                     Rectangle()
                         .fill(Color.white)
