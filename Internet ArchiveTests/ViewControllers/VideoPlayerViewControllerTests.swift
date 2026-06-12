@@ -269,6 +269,26 @@ final class VideoPlayerViewControllerTests: XCTestCase {
         XCTAssertNotNil(viewController)
     }
 
+    // MARK: - Generated Subtitles (tvOS 27+) Tests
+
+    func testVideoPlayerViewController_preservesNativeSubtitlesWithoutSidecarTracks() {
+        let viewController = makeViewController(subtitleTracks: [])
+
+        if #available(tvOS 27.0, iOS 27.0, visionOS 27.0, *) {
+            // The system's generated subtitles use the native legible pipeline,
+            // so it must be left untouched when we have nothing to render
+            XCTAssertTrue(viewController.shouldPreserveNativeSubtitles)
+        } else {
+            XCTAssertFalse(viewController.shouldPreserveNativeSubtitles)
+        }
+    }
+
+    func testVideoPlayerViewController_doesNotPreserveNativeSubtitlesWithSidecarTracks() {
+        let viewController = makeViewController(subtitleTracks: [makeSubtitleTrack()])
+
+        XCTAssertFalse(viewController.shouldPreserveNativeSubtitles)
+    }
+
     // MARK: - Subtitle Format Tests
 
     func testVideoPlayerViewController_srtSubtitleTrack() {

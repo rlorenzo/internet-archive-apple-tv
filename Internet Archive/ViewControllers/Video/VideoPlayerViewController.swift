@@ -212,9 +212,26 @@ final class VideoPlayerViewController: AVPlayerViewController {
         NotificationCenter.default.removeObserver(self)
     }
 
+    /// Whether to leave AVPlayer's native subtitle pipeline untouched.
+    ///
+    /// tvOS 27 can generate subtitles on device for videos that lack caption
+    /// tracks, surfaced through the player's native subtitle controls
+    /// (AVLegibleMediaOptionsMenuController is not available on tvOS, so the
+    /// system menu is the only entry point). When we have no sidecar tracks to
+    /// render in the custom overlay there are no duplicate captions to prevent,
+    /// and suppressing the native selection would only block the system's
+    /// generated subtitles.
+    var shouldPreserveNativeSubtitles: Bool {
+        guard subtitleTracks.isEmpty else { return false }
+        if #available(tvOS 27.0, iOS 27.0, visionOS 27.0, *) {
+            return true
+        }
+        return false
+    }
+
     /// Disable AVPlayer's automatic subtitle selection to prevent duplicate captions
     private func disableNativeSubtitles() {
-        guard let player = player else { return }
+        guard !shouldPreserveNativeSubtitles, let player = player else { return }
 
         // Observe when the player item becomes ready, then disable native subtitles
         Task {
