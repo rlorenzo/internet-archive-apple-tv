@@ -13,7 +13,7 @@ env:
 jobs:
   swiftlint:
     name: SwiftLint
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -31,8 +31,11 @@ jobs:
       fail-fast: false
       matrix:
         include:
-          - os: macos-latest
-            xcode: "26.1"
+          # Pinned to macos-26 (GA) so builds stay deterministic while the
+          # macos-latest label migrates from macOS 15 to macOS 26 (June 2026).
+          # macos-26 ships Xcode 26.0-26.5; 26.4 is the image default.
+          - os: macos-26
+            xcode: "26.4"
             destination: "platform=tvOS Simulator,name=Apple TV 4K (3rd generation)"
 
     steps:
