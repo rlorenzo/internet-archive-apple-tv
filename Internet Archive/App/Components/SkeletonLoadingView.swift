@@ -87,9 +87,11 @@ struct SkeletonGrid: View {
     @Environment(\.horizontalSizeClass) private var horizontalSizeClass
     #endif
 
-    /// Hard cap on rendered placeholders so a single column on iPhone does not
-    /// blow up to a 12- or 18-item vertical scroll while loading. The adaptive
-    /// grid still chooses how many fit per row; this only bounds total count.
+    /// Hard cap on rendered placeholders for compact width, so a single column
+    /// on iPhone does not blow up to a 12- or 18-item vertical scroll while
+    /// loading. On tvOS / regular width the full `columns * rows` renders so the
+    /// skeleton fills the same rows the real grid will. The adaptive grid still
+    /// chooses how many fit per row; this only bounds total count.
     private static let placeholderCap = 8
 
     var body: some View {
@@ -109,11 +111,21 @@ struct SkeletonGrid: View {
     }
 
     private var placeholderCount: Int {
-        min(columns * rows, Self.placeholderCap)
+        let requested = columns * rows
+        return isCompact ? min(requested, Self.placeholderCap) : requested
     }
 
     private var gridSpacing: CGFloat {
-        isCompact ? 16 : 40
+        // Mirror SearchResultsGridHelpers spacing exactly so the skeleton does
+        // not reflow when real content lands: video uses 48pt at regular width,
+        // music 40pt, both 16pt on compact.
+        guard !isCompact else { return 16 }
+        switch cardType {
+        case .video:
+            return 48
+        case .music:
+            return 40
+        }
     }
 
     private var gridColumns: [GridItem] {

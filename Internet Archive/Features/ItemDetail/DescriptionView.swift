@@ -25,6 +25,10 @@ struct DescriptionView: View {
     /// Maximum number of lines when collapsed (default 5)
     var collapsedLineLimit: Int = 5
 
+    // MARK: - Environment
+
+    @Environment(\.isCompactLayout) private var isCompactLayout
+
     // MARK: - State
 
     /// Whether to show the full text viewer
@@ -39,10 +43,14 @@ struct DescriptionView: View {
 
     /// Whether the text is long enough to require truncation.
     ///
-    /// Uses a length-based heuristic: at SwiftUI `.body` size and the typical
-    /// detail-pane width (~1000pt) on tvOS, roughly 80 characters fit per line.
+    /// Uses a length-based heuristic for characters-per-line. A phone-width
+    /// column fits far fewer characters than the ~1000pt tvOS / iPad detail
+    /// pane, so the threshold must shrink on compact width — otherwise a
+    /// visibly truncated description never offers "Read More" and the full
+    /// text becomes unreachable.
     private var isTruncated: Bool {
-        plainText.count > collapsedLineLimit * 80
+        let charsPerLine = isCompactLayout == true ? 40 : 80
+        return plainText.count > collapsedLineLimit * charsPerLine
     }
 
     // MARK: - Body

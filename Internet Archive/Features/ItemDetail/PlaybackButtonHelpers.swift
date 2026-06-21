@@ -62,14 +62,14 @@ enum PlaybackButtonStyleHelpers {
     ///   - isPressed: Whether the button is pressed
     /// - Returns: The background color
     static func backgroundColor(isPrimary: Bool, isFocused: Bool, isPressed: Bool) -> Color {
+        // Must mirror `PlaybackButtonContent.backgroundColor` exactly — this
+        // helper exists so unit tests track the production style. Both resolve
+        // through the shared action / chrome ramps in Color+DesignTokens.
         if isFocused {
-            // Bright white when focused for high visibility
-            return isPrimary ? Color.white : Color.chromeOutline
+            return isPrimary ? Color.actionPrimaryFocused : Color.chromeActive
         } else if isPrimary {
-            // High contrast: white background for primary button
-            return isPressed ? Color.white.opacity(0.8) : Color.white
+            return isPressed ? Color.actionPrimaryPressed : Color.actionPrimaryRest
         } else {
-            // Semi-transparent for secondary
             return isPressed ? Color.chromeActive : Color.chromeRest
         }
     }
