@@ -178,22 +178,34 @@ struct SkeletonRow: View {
     let cardType: CardType
     let count: Int
 
+    @Environment(\.isCompactLayout) private var isCompactLayout
+
     var body: some View {
         ScrollView(.horizontal, showsIndicators: false) {
-            LazyHStack(spacing: 40) {
+            LazyHStack(spacing: isCompactLayout == true ? 16 : 40) {
                 ForEach(0..<count, id: \.self) { _ in
                     switch cardType {
                     case .video:
                         SkeletonCard.video
-                            .frame(width: 350)
+                            .frame(width: cardWidth)
                     case .music:
                         SkeletonCard.music
-                            .frame(width: 200)
+                            .frame(width: cardWidth)
                     }
                 }
             }
-            .padding(.horizontal, 80)
+            // Gutter is owned by the parent container, matching the real
+            // ContinueWatchingSection / grid shelves so the skeleton lines up
+            // with the content it stands in for instead of overflowing compact.
         }
+    }
+
+    /// Placeholder width is single-sourced from the real shelf card sizing so
+    /// swapping skeleton → content never reflows the row. Maps the skeleton's
+    /// video/music type onto the shelf's video/audio filter.
+    private var cardWidth: CGFloat {
+        let filter: ContinueWatchingSection.MediaFilter = cardType == .video ? .video : .audio
+        return ContinueWatchingHelpers.cardWidth(for: filter, compact: isCompactLayout == true)
     }
 }
 
@@ -238,6 +250,8 @@ struct SkeletonLoadingView: View {
     let title: String?
     let cardType: CardType
 
+    @Environment(\.isCompactLayout) private var isCompactLayout
+
     init(title: String? = nil, cardType: CardType = .video) {
         self.title = title
         self.cardType = cardType
@@ -251,7 +265,7 @@ struct SkeletonLoadingView: View {
                         .font(.title2)
                         .fontWeight(.semibold)
                         .foregroundStyle(.secondary)
-                        .padding(.horizontal, 80)
+                        .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
                 }
 
                 SkeletonGrid(
@@ -259,7 +273,7 @@ struct SkeletonLoadingView: View {
                     columns: cardType == .video ? 4 : 6,
                     rows: 2
                 )
-                .padding(.horizontal, 80)
+                .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
             }
             .padding(.vertical, 40)
         }

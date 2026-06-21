@@ -176,6 +176,7 @@ struct VideoHomeView: View {
                     SectionHeader("Continue Watching")
                     SkeletonRow(cardType: .video, count: 4)
                 }
+                .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
 
                 VStack(alignment: .leading, spacing: 20) {
                     SectionHeader("Featured Videos")

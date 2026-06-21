@@ -39,18 +39,26 @@ enum ContinueWatchingHelpers {
 
     // MARK: - Card Sizing
 
-    /// Returns the card width based on media type filter
-    /// - Parameter mediaType: The media type filter
-    /// - Returns: Width in points for the card
-    static func cardWidth(for mediaType: ContinueWatchingSection.MediaFilter?) -> CGFloat {
+    /// Returns the card width based on media type filter.
+    ///
+    /// On tvOS / regular-width surfaces the 10-foot card sizes (350 video,
+    /// 200 audio) apply. On compact width (iPhone, narrow Split View) the
+    /// cards shrink so more than one fits across a 390–430pt screen and the
+    /// shelf no longer overflows the viewport.
+    ///
+    /// - Parameters:
+    ///   - mediaType: The media type filter.
+    ///   - compact: Whether the surrounding layout is compact width.
+    /// - Returns: Width in points for the card.
+    static func cardWidth(for mediaType: ContinueWatchingSection.MediaFilter?, compact: Bool = false) -> CGFloat {
         switch mediaType {
         case .video:
-            return 350
+            return compact ? 240 : 350
         case .audio:
-            return 200
+            return compact ? 150 : 200
         case nil:
             // Mixed content - use video width
-            return 350
+            return compact ? 240 : 350
         }
     }
 

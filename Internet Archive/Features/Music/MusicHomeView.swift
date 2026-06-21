@@ -178,6 +178,7 @@ struct MusicHomeView: View {
                     SectionHeader("Continue Listening")
                     SkeletonRow(cardType: .music, count: 4)
                 }
+                .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
 
                 VStack(alignment: .leading, spacing: 20) {
                     // Keep title hidden until load attempt to avoid flash
