@@ -88,24 +88,9 @@ struct ContinueWatchingCard: View {
                         case .empty:
                             placeholderContent
                         case .success(let image):
-                            // Internet Archive audio items often return waveform visualizations
-                            // as thumbnails instead of album art. These waveforms are typically
-                            // very wide and short (e.g., 180x45 pixels) - appearing as a horizontal
-                            // audio waveform strip rather than a proper thumbnail.
-                            //
-                            // Heuristic to detect waveform thumbnails:
-                            // - Height < 100px: Too short to be proper album art
-                            // - Width > 3x height: Panoramic aspect ratio typical of waveforms
-                            //
-                            // When detected, we show a placeholder with a music icon instead.
-                            if progress.isAudio, let cgImage = ImageRenderer(content: image).cgImage,
-                               cgImage.height < 100 && cgImage.width > cgImage.height * 3 {
-                                placeholderContent
-                            } else {
-                                image
-                                    .resizable()
-                                    .aspectRatio(contentMode: .fill)
-                            }
+                            image
+                                .resizable()
+                                .aspectRatio(contentMode: .fill)
                         case .failure:
                             placeholderContent
                         @unknown default:
@@ -131,7 +116,7 @@ struct ContinueWatchingCard: View {
     private var placeholderContent: some View {
         ZStack {
             RoundedRectangle(cornerRadius: 12)
-                .fill(Color.gray.opacity(0.3))
+                .fill(Color.placeholderFill)
 
             Image(systemName: progress.isVideo ? "film" : "music.note")
                 .font(.system(size: 40))
@@ -146,7 +131,7 @@ struct ContinueWatchingCard: View {
                 ZStack(alignment: .leading) {
                     // Background track
                     Rectangle()
-                        .fill(Color.black.opacity(0.6))
+                        .fill(Color.surfaceOverlayDim)
                         .frame(height: 8)
 
                     // Progress fill
@@ -215,6 +200,8 @@ struct ContinueWatchingSection: View {
     /// Action when an item is tapped
     let onItemTap: (PlaybackProgress) -> Void
 
+    @Environment(\.isCompactLayout) private var isCompactLayout
+
     // MARK: - Media Filter
 
     enum MediaFilter {
@@ -241,7 +228,7 @@ struct ContinueWatchingSection: View {
             EmptyView()
         } else {
             ScrollView(.horizontal, showsIndicators: false) {
-                LazyHStack(spacing: 40) {
+                LazyHStack(spacing: isCompactLayout == true ? 16 : 40) {
                     ForEach(filteredItems, id: \.itemIdentifier) { progress in
                         ContinueWatchingCard(progress: progress) {
                             onItemTap(progress)
@@ -249,8 +236,11 @@ struct ContinueWatchingSection: View {
                         .frame(width: cardWidth)
                     }
                 }
-                .padding(.horizontal, 80)
-                .padding(.vertical, 50)
+                // The page gutter is owned by the parent container (home views
+                // pad their content with PlatformMetrics.horizontalPadding), so
+                // the shelf must not add its own — otherwise the cards double-
+                // inset on tvOS and overflow the viewport on compact width.
+                .padding(.vertical, isCompactLayout == true ? 16 : 50)
             }
             .scrollClipDisabled()
             .accessibilityElement(children: .contain)
@@ -287,17 +277,12 @@ struct ContinueWatchingSection: View {
             .sorted { $0.lastWatchedDate > $1.lastWatchedDate } // Most recent first
     }
 
-    /// Card width based on media type
+    /// Card width based on media type, shrinking on compact width so the
+    /// shelf fits across an iPhone screen. Single-sourced through
+    /// `ContinueWatchingHelpers.cardWidth` so the placeholder and the real
+    /// card stay in lockstep.
     private var cardWidth: CGFloat {
-        switch mediaType {
-        case .video:
-            return 350
-        case .audio:
-            return 200
-        case nil:
-            // Mixed content - use video width
-            return 350
-        }
+        ContinueWatchingHelpers.cardWidth(for: mediaType, compact: isCompactLayout == true)
     }
 }
 

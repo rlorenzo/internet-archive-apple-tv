@@ -473,32 +473,32 @@ final class PlaybackButtonStyleHelpersTests: XCTestCase {
 
     func testBackgroundColor_primaryFocused() {
         let color = PlaybackButtonStyleHelpers.backgroundColor(isPrimary: true, isFocused: true, isPressed: false)
-        XCTAssertEqual(color, Color.white)
+        XCTAssertEqual(color, Color.actionPrimaryFocused)
     }
 
     func testBackgroundColor_secondaryFocused() {
         let color = PlaybackButtonStyleHelpers.backgroundColor(isPrimary: false, isFocused: true, isPressed: false)
-        XCTAssertEqual(color, Color.white.opacity(0.4))
+        XCTAssertEqual(color, Color.chromeActive)
     }
 
     func testBackgroundColor_primaryNormal() {
         let color = PlaybackButtonStyleHelpers.backgroundColor(isPrimary: true, isFocused: false, isPressed: false)
-        XCTAssertEqual(color, Color.white)
+        XCTAssertEqual(color, Color.actionPrimaryRest)
     }
 
     func testBackgroundColor_primaryPressed() {
         let color = PlaybackButtonStyleHelpers.backgroundColor(isPrimary: true, isFocused: false, isPressed: true)
-        XCTAssertEqual(color, Color.white.opacity(0.8))
+        XCTAssertEqual(color, Color.actionPrimaryPressed)
     }
 
     func testBackgroundColor_secondaryNormal() {
         let color = PlaybackButtonStyleHelpers.backgroundColor(isPrimary: false, isFocused: false, isPressed: false)
-        XCTAssertEqual(color, Color.white.opacity(0.15))
+        XCTAssertEqual(color, Color.chromeRest)
     }
 
     func testBackgroundColor_secondaryPressed() {
         let color = PlaybackButtonStyleHelpers.backgroundColor(isPrimary: false, isFocused: false, isPressed: true)
-        XCTAssertEqual(color, Color.white.opacity(0.3))
+        XCTAssertEqual(color, Color.chromeActive)
     }
 
     func testBackgroundColor_focusTakesPrecedence() {

@@ -34,6 +34,8 @@ struct ItemDetailView: View {
     /// Media type determines aspect ratio and playback behavior
     let mediaType: MediaItemCard.MediaType
 
+    @Environment(\.isCompactLayout) private var isCompactLayout
+
     // MARK: - State
 
     /// Detailed metadata fetched from API
@@ -72,25 +74,14 @@ struct ItemDetailView: View {
     // MARK: - Body
 
     var body: some View {
-        GeometryReader { geometry in
-            HStack(alignment: .top, spacing: 60) {
-                // Left side: Thumbnail + playback controls
-                VStack(alignment: .leading, spacing: 30) {
-                    thumbnailView
-                    controlsSection
-                }
-                .frame(width: geometry.size.width * 0.4)
-
-                // Right side: Metadata
-                VStack(alignment: .leading, spacing: 30) {
-                    metadataSection
-                }
-                .frame(maxWidth: .infinity, alignment: .leading)
-                .padding(.vertical, 60)
+        Group {
+            if isCompactLayout == true {
+                compactBody
+            } else {
+                wideBody
             }
-            .padding(.horizontal, 80)
         }
-        .background(Color.black.opacity(0.95))
+        .background(Color.libraryCharcoal)
         .onAppear {
             loadMetadata()
             checkFavoriteStatus()
@@ -102,6 +93,56 @@ struct ItemDetailView: View {
         }
         .fullScreenCover(isPresented: $showPlayer) {
             playerView
+        }
+    }
+
+    /// Wide layout (tvOS, iPad, visionOS, regular-width iOS): thumbnail and
+    /// controls on the left, metadata column on the right. Wrapped in a
+    /// `ScrollView` so iPad / regular-iOS surfaces with tall metadata don't
+    /// clip off the bottom (tvOS focus scrolling still works inside a
+    /// ScrollView). Outer `GeometryReader` measures available width so the
+    /// 40 / 60 split survives Stage Manager and iPad Split View resizes; its
+    /// own height is unused (the ScrollView inside sizes to content).
+    private var wideBody: some View {
+        GeometryReader { geometry in
+            ScrollView {
+                let outerPadding = PlatformMetrics.horizontalPadding(compact: false)
+                let columnSpacing: CGFloat = 60
+                // Subtract both the outer padding and the inter-column spacing
+                // before splitting so the thumbnail / metadata ratio is a true
+                // 40 / 60 of the *usable* two-column area, not of the full
+                // GeometryReader width.
+                let columnsWidth = max(0, geometry.size.width - outerPadding * 2 - columnSpacing)
+                HStack(alignment: .top, spacing: columnSpacing) {
+                    VStack(alignment: .leading, spacing: 30) {
+                        thumbnailView
+                        controlsSection
+                    }
+                    .frame(width: columnsWidth * 0.4)
+
+                    VStack(alignment: .leading, spacing: 30) {
+                        metadataSection
+                    }
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.vertical, 60)
+                }
+                .padding(.horizontal, outerPadding)
+            }
+        }
+    }
+
+    /// Compact layout (iPhone, narrow iPad Split View): thumbnail, controls,
+    /// then metadata flow vertically inside a ScrollView so nothing is clipped
+    /// at 390pt width.
+    private var compactBody: some View {
+        ScrollView {
+            VStack(alignment: .leading, spacing: 24) {
+                thumbnailView
+                controlsSection
+                metadataSection
+            }
+            .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: true))
+            .padding(.vertical, 24)
         }
     }
 
@@ -125,14 +166,13 @@ struct ItemDetailView: View {
             }
             .aspectRatio(mediaType.aspectRatio, contentMode: .fit)
             .clipShape(RoundedRectangle(cornerRadius: 16))
-            .shadow(radius: 20)
         }
         .padding(.vertical, 60)
     }
 
     private var placeholderImage: some View {
         RoundedRectangle(cornerRadius: 16)
-            .fill(Color.gray.opacity(0.3))
+            .fill(Color.placeholderFill)
             .aspectRatio(mediaType.aspectRatio, contentMode: .fit)
             .overlay(
                 Image(systemName: mediaType.placeholderIcon)
@@ -188,7 +228,7 @@ struct ItemDetailView: View {
                         .fontWeight(.bold)
                         .padding(.horizontal, 6)
                         .padding(.vertical, 2)
-                        .background(Color.white.opacity(0.2))
+                        .background(Color.chromeRest)
                         .clipShape(RoundedRectangle(cornerRadius: 4))
                         .accessibilityHidden(true)
                     Text(subtitleInfo)
@@ -498,7 +538,7 @@ private struct PlayerLoadingView: View {
             .padding(.top, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
+        .background(Color.libraryCharcoal)
     }
 }
 
@@ -531,7 +571,7 @@ private struct PlayerErrorView: View {
             .padding(.top, 40)
         }
         .frame(maxWidth: .infinity, maxHeight: .infinity)
-        .background(Color.black)
+        .background(Color.libraryCharcoal)
     }
 }
 

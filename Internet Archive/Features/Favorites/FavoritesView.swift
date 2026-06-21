@@ -18,6 +18,8 @@ import SwiftUI
 struct FavoritesView: View {
     @EnvironmentObject private var appState: AppState
 
+    @Environment(\.isCompactLayout) private var isCompactLayout
+
     // MARK: - ViewModel
 
     @StateObject private var viewModel = FavoritesViewModel(
@@ -139,7 +141,7 @@ struct FavoritesView: View {
                     peopleSection
                 }
             }
-            .padding(.horizontal, 80)
+            .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
             .padding(.vertical, 40)
         }
         .onAppear {
@@ -292,13 +294,13 @@ private struct PersonCard: View {
         .frame(width: 180)
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Creator: \(name)")
-        .accessibilityHint("Double-click to view content by this creator")
+        .accessibilityHint("Double-tap to view content by this creator")
     }
 
     private var avatarPlaceholder: some View {
         ZStack {
             Circle()
-                .fill(Color.gray.opacity(0.3))
+                .fill(Color.placeholderFill)
             Image(systemName: "person.fill")
                 .font(.system(size: 50))
                 .foregroundStyle(.secondary)

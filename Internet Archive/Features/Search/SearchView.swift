@@ -17,6 +17,8 @@ import SwiftUI
 struct SearchView: View {
     // MARK: - State
 
+    @Environment(\.isCompactLayout) private var isCompactLayout
+
     @State private var searchText = ""
     @State private var selectedFilter: ContentFilter = .all
     @State private var isSearching = false
@@ -91,7 +93,7 @@ struct SearchView: View {
             }
         }
         .pickerStyle(.segmented)
-        .padding(.horizontal, 80)
+        .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
         .padding(.top, 20)
         .padding(.bottom, 10)
         .accessibilityLabel("Content type filter")
@@ -182,7 +184,7 @@ struct SearchView: View {
                         SkeletonRow(cardType: .music, count: 6)
                     }
                 }
-                .padding(.horizontal, 80)
+                .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
             }
             .padding(.vertical, 40)
         }
@@ -254,7 +256,7 @@ struct SearchView: View {
                         .tvFocusSection()
                     }
                 }
-                .padding(.horizontal, 80)
+                .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
             }
             .padding(.vertical, 40)
         }

@@ -24,6 +24,8 @@ struct PeopleDetailView: View {
     /// Display name for the person
     let name: String
 
+    @Environment(\.isCompactLayout) private var isCompactLayout
+
     // MARK: - ViewModel
 
     @StateObject private var viewModel = PeopleViewModel(
@@ -74,7 +76,7 @@ struct PeopleDetailView: View {
 
             // Avatar placeholder
             Circle()
-                .fill(Color.gray.opacity(0.3))
+                .fill(Color.placeholderFill)
                 .frame(width: 150, height: 150)
                 .overlay {
                     ProgressView()
@@ -157,7 +159,7 @@ struct PeopleDetailView: View {
                     )
                 }
             }
-            .padding(.horizontal, 80)
+            .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
             .padding(.vertical, 40)
         }
     }
@@ -201,7 +203,7 @@ struct PeopleDetailView: View {
     private var avatarPlaceholder: some View {
         ZStack {
             Circle()
-                .fill(Color.gray.opacity(0.3))
+                .fill(Color.placeholderFill)
             Image(systemName: "person.fill")
                 .font(.system(size: 60))
                 .foregroundStyle(.secondary)

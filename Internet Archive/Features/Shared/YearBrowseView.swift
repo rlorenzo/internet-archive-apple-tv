@@ -41,11 +41,12 @@ struct YearBrowseView: View {
     /// Currently selected year
     @State private var selectedYear: String?
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     // MARK: - Constants
 
     private let videoCardWidth: CGFloat = 320
     private let musicCardSize: CGFloat = 180
-    private let sidebarWidth: CGFloat = 300
 
     // MARK: - Initialization
 
@@ -70,12 +71,12 @@ struct YearBrowseView: View {
         HStack(spacing: 0) {
             // Left sidebar: Year list
             yearSidebar
-                .frame(width: sidebarWidth)
+                .frame(minWidth: 300, idealWidth: 320, maxWidth: 360)
 
             // Right content: Items grid
             contentArea
         }
-        .background(Color.black.opacity(0.95))
+        .background(Color.libraryCharcoal)
         .task {
             await loadData()
         }
@@ -102,7 +103,7 @@ struct YearBrowseView: View {
             .padding(.bottom, 24)
 
             Divider()
-                .background(Color.gray.opacity(0.3))
+                .background(Color.surfaceDivider)
 
             // Year list
             if viewModel.state.isLoading {
@@ -116,7 +117,7 @@ struct YearBrowseView: View {
                 yearListEmpty
             }
         }
-        .background(Color.black.opacity(0.5))
+        .background(Color.libraryCharcoal)
     }
 
     private var yearListLoading: some View {
@@ -124,9 +125,8 @@ struct YearBrowseView: View {
             VStack(spacing: 8) {
                 ForEach(0..<10, id: \.self) { _ in
                     RoundedRectangle(cornerRadius: 8)
-                        .fill(Color.gray.opacity(0.3))
+                        .fill(Color.placeholderFill)
                         .frame(height: 44)
-                        .shimmer()
                 }
             }
             .padding(.horizontal, 16)
@@ -148,8 +148,12 @@ struct YearBrowseView: View {
             }
             .onChange(of: selectedYear) { _, newYear in
                 if let year = newYear {
-                    withAnimation {
+                    if reduceMotion {
                         proxy.scrollTo(year, anchor: .center)
+                    } else {
+                        withAnimation {
+                            proxy.scrollTo(year, anchor: .center)
+                        }
                     }
                 }
             }
@@ -178,7 +182,7 @@ struct YearBrowseView: View {
             .padding(.vertical, 12)
             .background(
                 RoundedRectangle(cornerRadius: 8)
-                    .fill(isSelected ? Color.white.opacity(0.15) : Color.clear)
+                    .fill(isSelected ? Color.chromeRest : Color.clear)
             )
         }
         .buttonStyle(.plain)
@@ -191,7 +195,7 @@ struct YearBrowseView: View {
         VStack(spacing: 12) {
             Spacer()
             Image(systemName: "calendar.badge.exclamationmark")
-                .font(.system(size: 30))
+                .font(.system(size: 40))
                 .foregroundStyle(.tertiary)
             Text("No years found")
                 .font(.callout)

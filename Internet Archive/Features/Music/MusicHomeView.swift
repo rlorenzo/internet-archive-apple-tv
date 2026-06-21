@@ -17,6 +17,8 @@ struct MusicHomeView: View {
 
     @StateObject private var viewModel = MusicViewModel(collectionService: DefaultCollectionService())
 
+    @Environment(\.isCompactLayout) private var isCompactLayout
+
     /// Continue listening items from PlaybackProgressManager
     @State private var continueListeningItems: [PlaybackProgress] = []
 
@@ -74,12 +76,12 @@ struct MusicHomeView: View {
 
     private var contentView: some View {
         ScrollView {
-            VStack(alignment: .leading, spacing: 60) {
+            VStack(alignment: .leading, spacing: isCompactLayout == true ? 24 : 60) {
                 continueListeningSection
                 featuredMusicSection
             }
-            .padding(.horizontal, 80)
-            .padding(.vertical, 40)
+            .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
+            .padding(.vertical, isCompactLayout == true ? 16 : 40)
         }
     }
 
@@ -118,14 +120,7 @@ struct MusicHomeView: View {
 
                 Spacer()
 
-                Picker("Sort by", selection: $selectedSort) {
-                    ForEach(CollectionSortOption.allCases) { option in
-                        Text(option.displayName).tag(option)
-                    }
-                }
-                .pickerStyle(.segmented)
-                .frame(width: 400)
-                .accessibilityLabel("Sort order")
+                sortPicker
             }
             .opacity(viewModel.state.hasTitleLoadAttempted ? 1 : 0)
 
@@ -133,14 +128,14 @@ struct MusicHomeView: View {
                 SkeletonGrid(cardType: .music, columns: 6, rows: 3)
             } else if viewModel.state.hasItems {
                 LazyVGrid(
-                    columns: SearchResultsGridHelpers.gridColumns(for: .music),
-                    spacing: 40
+                    columns: SearchResultsGridHelpers.gridColumns(for: .music, compact: isCompactLayout),
+                    spacing: isCompactLayout == true ? 16 : 40
                 ) {
                     ForEach(viewModel.state.items) { item in
                         Button {
                             navigationPath.append(item)
                         } label: {
-                            SearchResultCard(item: item, mediaType: .music)
+                            SearchResultCard(item: item, mediaType: .music, stretches: isCompactLayout == true)
                         }
                         .tvCardStyle()
                         .onAppear {
@@ -183,6 +178,7 @@ struct MusicHomeView: View {
                     SectionHeader("Continue Listening")
                     SkeletonRow(cardType: .music, count: 4)
                 }
+                .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
 
                 VStack(alignment: .leading, spacing: 20) {
                     // Keep title hidden until load attempt to avoid flash
@@ -190,7 +186,7 @@ struct MusicHomeView: View {
                         .opacity(viewModel.state.hasTitleLoadAttempted ? 1 : 0)
                     SkeletonGrid(cardType: .music, columns: 6, rows: 3)
                 }
-                .padding(.horizontal, 80)
+                .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
             }
             .padding(.vertical, 40)
         }
@@ -207,6 +203,31 @@ struct MusicHomeView: View {
     }
 
     // MARK: - Helpers
+
+    /// Sort picker. Segmented + fixed-width on TV / regular surfaces;
+    /// `.menu` style on compact width so the header doesn't overflow the
+    /// iPhone screen and crowd out the section title.
+    @ViewBuilder
+    private var sortPicker: some View {
+        if isCompactLayout == true {
+            Picker("Sort by", selection: $selectedSort) {
+                ForEach(CollectionSortOption.allCases) { option in
+                    Text(option.displayName).tag(option)
+                }
+            }
+            .pickerStyle(.menu)
+            .accessibilityLabel("Sort order")
+        } else {
+            Picker("Sort by", selection: $selectedSort) {
+                ForEach(CollectionSortOption.allCases) { option in
+                    Text(option.displayName).tag(option)
+                }
+            }
+            .pickerStyle(.segmented)
+            .frame(width: 400)
+            .accessibilityLabel("Sort order")
+        }
+    }
 
     private func handleContinueListeningTap(_ progress: PlaybackProgress) {
         // Create a SearchResult from the progress data to navigate to ItemDetailView

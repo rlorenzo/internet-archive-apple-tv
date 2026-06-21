@@ -19,39 +19,53 @@ import SwiftUI
 struct DescriptionView: View {
     // MARK: - Properties
 
-    /// The HTML content to render
-    let htmlContent: String
-
     /// Maximum number of lines when collapsed (default 5)
-    var collapsedLineLimit: Int = 5
+    let collapsedLineLimit: Int
+
+    /// Plain text converted from HTML, computed once at init so the SwiftSoup
+    /// parse in `stripHTML` runs a single time per render instead of on each
+    /// reference (truncation check, body Text, accessibility value, viewer).
+    private let plainText: String
+
+    // MARK: - Environment
+
+    @Environment(\.isCompactLayout) private var isCompactLayout
 
     // MARK: - State
 
     /// Whether to show the full text viewer
     @State private var showFullText = false
 
-    /// Whether the text is actually being truncated (detected via geometry)
-    @State private var isTruncated = false
+    // MARK: - Initialization
 
-    // MARK: - Computed Properties
+    init(htmlContent: String, collapsedLineLimit: Int = 5) {
+        self.collapsedLineLimit = collapsedLineLimit
+        self.plainText = HTMLToAttributedString.shared.stripHTML(htmlContent)
+    }
 
-    /// Plain text converted from HTML
-    private var plainText: String {
-        HTMLToAttributedString.shared.stripHTML(htmlContent)
+    /// Whether the text is long enough to require truncation.
+    ///
+    /// Uses a length-based heuristic for characters-per-line. A phone-width
+    /// column fits far fewer characters than the ~1000pt tvOS / iPad detail
+    /// pane, so the threshold must shrink on compact width — otherwise a
+    /// visibly truncated description never offers "Read More" and the full
+    /// text becomes unreachable.
+    private var isTruncated: Bool {
+        let charsPerLine = isCompactLayout == true ? 40 : 80
+        return plainText.count > collapsedLineLimit * charsPerLine
     }
 
     // MARK: - Body
 
     var body: some View {
         VStack(alignment: .leading, spacing: 16) {
-            // Truncated description text with geometry-based truncation detection
-            TruncationDetectingText(
-                text: plainText,
-                lineLimit: collapsedLineLimit,
-                isTruncated: $isTruncated
-            )
-            .accessibilityLabel(isTruncated ? "Description, truncated" : "Description")
-            .accessibilityValue(plainText)
+            Text(plainText)
+                .font(.body)
+                .foregroundStyle(.primary)
+                .lineSpacing(6)
+                .lineLimit(collapsedLineLimit)
+                .accessibilityLabel(isTruncated ? "Description, truncated" : "Description")
+                .accessibilityValue(plainText)
 
             // Read More button - only show when text is actually truncated
             if isTruncated {
@@ -94,21 +108,21 @@ private struct FullTextViewer: View {
 
     var body: some View {
         ZStack {
-            Color.black.ignoresSafeArea()
+            Color.libraryCharcoal.ignoresSafeArea()
 
             ScrollView {
                 #if os(tvOS)
                 Text(text)
-                    .font(.system(size: 32))
-                    .foregroundStyle(.white)
+                    .font(.callout)
+                    .foregroundStyle(.primary)
                     .lineSpacing(8)
                     .padding(EdgeInsets(top: 100, leading: 250, bottom: 100, trailing: 250))
                     .focusable()
                     .focused($isTextFocused)
                 #else
                 Text(text)
-                    .font(.system(size: 20))
-                    .foregroundStyle(.white)
+                    .font(.title3)
+                    .foregroundStyle(.primary)
                     .lineSpacing(6)
                     .padding(.horizontal, PlatformMetrics.horizontalPadding(
                         compact: horizontalSizeClass.map { $0 == .compact }
@@ -152,7 +166,7 @@ private struct FullTextViewer: View {
 #Preview("Short Description") {
     DescriptionView(htmlContent: "This is a short description.")
         .padding(50)
-        .background(Color.black)
+        .background(Color.libraryCharcoal)
 }
 
 #Preview("HTML Description") {
@@ -165,7 +179,7 @@ private struct FullTextViewer: View {
         </ul>
         """)
         .padding(50)
-        .background(Color.black)
+        .background(Color.libraryCharcoal)
 }
 
 #Preview("Long Description") {
@@ -181,68 +195,5 @@ private struct FullTextViewer: View {
         expansion and the Read More button appears.</p>
         """, collapsedLineLimit: 4)
         .padding(50)
-        .background(Color.black)
-}
-
-// MARK: - Truncation Detecting Text
-
-/// A text view that detects whether its content is being truncated.
-///
-/// Uses geometry measurement to compare the full text height against the
-/// line-limited height to determine if truncation is occurring.
-private struct TruncationDetectingText: View {
-    let text: String
-    let lineLimit: Int
-    @Binding var isTruncated: Bool
-
-    @State private var fullHeight: CGFloat = 0
-    @State private var truncatedHeight: CGFloat = 0
-
-    var body: some View {
-        Text(text)
-            .font(.system(size: 29))
-            .foregroundStyle(.white)
-            .lineLimit(lineLimit)
-            .lineSpacing(6)
-            .background(
-                GeometryReader { truncatedGeometry in
-                    Color.clear
-                        .onAppear { truncatedHeight = truncatedGeometry.size.height }
-                        .onChange(of: truncatedGeometry.size.height) { _, newHeight in
-                            truncatedHeight = newHeight
-                            updateTruncationState()
-                        }
-                }
-            )
-            .background(
-                // Hidden full-height text to measure actual required height
-                Text(text)
-                    .font(.system(size: 29))
-                    .lineSpacing(6)
-                    .lineLimit(nil)
-                    .fixedSize(horizontal: false, vertical: true)
-                    .hidden()
-                    .background(
-                        GeometryReader { fullGeometry in
-                            Color.clear
-                                .onAppear { fullHeight = fullGeometry.size.height }
-                                .onChange(of: fullGeometry.size.height) { _, newHeight in
-                                    fullHeight = newHeight
-                                    updateTruncationState()
-                                }
-                        }
-                    )
-            )
-            .task {
-                // Small delay to ensure geometry is measured
-                try? await Task.sleep(nanoseconds: 10_000_000) // 10ms
-                updateTruncationState()
-            }
-    }
-
-    private func updateTruncationState() {
-        // Add small threshold to account for rounding differences
-        let threshold: CGFloat = 2
-        isTruncated = fullHeight > truncatedHeight + threshold
-    }
+        .background(Color.libraryCharcoal)
 }

@@ -16,6 +16,8 @@ struct SearchResultsGridView: View {
     let mediaType: MediaItemCard.MediaType
     @Binding var navigationPath: NavigationPath
 
+    @Environment(\.isCompactLayout) private var isCompactLayout
+
     @State private var results: [SearchResult] = []
     @State private var isLoading = true
     @State private var isLoadingMore = false
@@ -57,7 +59,8 @@ struct SearchResultsGridView: View {
                 columns: mediaType == .video ? 4 : 6,
                 rows: 3
             )
-            .padding(80)
+            .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
+            .padding(.vertical, isCompactLayout == true ? 16 : 40)
         }
     }
 
@@ -88,14 +91,17 @@ struct SearchResultsGridView: View {
     private var gridView: some View {
         ScrollView {
             LazyVGrid(
-                columns: gridColumns,
-                spacing: 48
+                columns: SearchResultsGridHelpers.gridColumns(for: mediaType, compact: isCompactLayout),
+                // Match the per-media row rhythm used by the home grids and the
+                // loading skeleton (video 48, music 40, both 16 on compact) so
+                // results don't reflow vertically when they replace the skeleton.
+                spacing: isCompactLayout == true ? 16 : (mediaType == .video ? 48 : 40)
             ) {
                 ForEach(results) { item in
                     Button {
                         navigationPath.append(item)
                     } label: {
-                        SearchResultCard(item: item, mediaType: mediaType)
+                        SearchResultCard(item: item, mediaType: mediaType, stretches: isCompactLayout == true)
                     }
                     .tvCardStyle()
                     .onAppear {
@@ -104,7 +110,7 @@ struct SearchResultsGridView: View {
                 }
 
                 if isLoadingMore {
-                    ForEach(0..<skeletonCardCount, id: \.self) { _ in
+                    ForEach(0..<SearchResultsGridHelpers.skeletonCardCount(for: mediaType), id: \.self) { _ in
                         if mediaType == .video {
                             SkeletonCard.video
                         } else {
@@ -113,20 +119,9 @@ struct SearchResultsGridView: View {
                     }
                 }
             }
-            .padding(80)
+            .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
+            .padding(.vertical, isCompactLayout == true ? 16 : 40)
         }
-    }
-
-    private var gridColumns: [GridItem] {
-        if mediaType == .video {
-            return [GridItem(.adaptive(minimum: 340, maximum: 420), spacing: 48)]
-        } else {
-            return [GridItem(.adaptive(minimum: 200, maximum: 240), spacing: 40)]
-        }
-    }
-
-    private var skeletonCardCount: Int {
-        mediaType == .video ? 4 : 6
     }
 
     // MARK: - Data Loading

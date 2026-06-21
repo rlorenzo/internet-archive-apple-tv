@@ -10,16 +10,28 @@ import UIKit
 
 // MARK: - Animation Helper
 
-/// Performs a bounce animation on a scale binding.
+/// Performs a brief scale pulse to acknowledge the favorite toggle.
+/// Uses ease-out (no bounce) and respects the user's Reduce Motion preference.
 /// - Parameters:
 ///   - scale: The binding to animate
-///   - peakScale: The maximum scale during the bounce (default 1.3)
-private func animateBounce(scale: Binding<CGFloat>, peakScale: CGFloat = 1.3) {
-    withAnimation(.spring(response: 0.3, dampingFraction: 0.5)) {
+///   - peakScale: The maximum scale during the pulse (default 1.3)
+///   - reduceMotion: When true, skip the animation entirely (scale stays at 1.0)
+@MainActor
+private func animateBounce(
+    scale: Binding<CGFloat>,
+    peakScale: CGFloat = 1.3,
+    reduceMotion: Bool
+) {
+    guard !reduceMotion else {
+        scale.wrappedValue = 1.0
+        return
+    }
+    withAnimation(.easeOut(duration: 0.25)) {
         scale.wrappedValue = peakScale
     }
-    DispatchQueue.main.asyncAfter(deadline: .now() + 0.15) {
-        withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+    Task { @MainActor in
+        try? await Task.sleep(for: .milliseconds(150))
+        withAnimation(.easeOut(duration: 0.25)) {
             scale.wrappedValue = 1.0
         }
     }
@@ -56,6 +68,8 @@ struct FavoriteButton: View {
     /// Animation scale for bounce effect
     @State private var animationScale: CGFloat = 1.0
 
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
+
     // MARK: - Body
 
     var body: some View {
@@ -83,7 +97,7 @@ struct FavoriteButton: View {
     // MARK: - Actions
 
     private func toggleFavorite() {
-        animateBounce(scale: $animationScale)
+        animateBounce(scale: $animationScale, reduceMotion: reduceMotion)
         onToggle()
 
         // Announce change to VoiceOver (isFavorited now reflects the NEW state after toggle)
@@ -113,6 +127,7 @@ private struct FavoriteButtonContent: View {
     let isFavorited: Bool
 
     @Environment(\.isFocused) private var isFocused
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         configuration.label
@@ -127,8 +142,8 @@ private struct FavoriteButtonContent: View {
             )
             .scaleEffect(scaleValue)
             .shadow(color: shadowColor, radius: isFocused ? 15 : 0)
-            .animation(.easeInOut(duration: 0.15), value: configuration.isPressed)
-            .animation(.easeInOut(duration: 0.2), value: isFocused)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.15), value: configuration.isPressed)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.2), value: isFocused)
     }
 
     private var isPressed: Bool {
@@ -139,7 +154,7 @@ private struct FavoriteButtonContent: View {
         if isPressed {
             return 0.95
         } else if isFocused {
-            return 1.05
+            return 1.08
         } else {
             return 1.0
         }
@@ -147,18 +162,18 @@ private struct FavoriteButtonContent: View {
 
     private var shadowColor: Color {
         if isFocused {
-            return isFavorited ? Color.red.opacity(0.6) : Color.white.opacity(0.4)
+            return isFavorited ? Color.favoriteFocusGlow : Color.chromeOutline
         }
         return Color.clear
     }
 
     private var backgroundColor: Color {
         if isFocused {
-            return isFavorited ? Color.red : Color.white.opacity(0.3)
+            return isFavorited ? Color.red : Color.chromeActive
         } else if isFavorited {
-            return isPressed ? Color.red.opacity(0.7) : Color.red.opacity(0.8)
+            return isPressed ? Color.favoritePressed : Color.favoriteRest
         } else {
-            return isPressed ? Color.gray.opacity(0.3) : Color.gray.opacity(0.2)
+            return isPressed ? Color.chromeActive : Color.chromeRest
         }
     }
 
@@ -166,7 +181,7 @@ private struct FavoriteButtonContent: View {
         if isFocused {
             return isFavorited ? Color.red : Color.white
         }
-        return isFavorited ? Color.red.opacity(0.6) : Color.gray.opacity(0.4)
+        return isFavorited ? Color.favoriteFocusGlow : Color.chromeOutline
     }
 }
 
@@ -180,6 +195,7 @@ struct CompactFavoriteButton: View {
     let onToggle: () -> Void
 
     @State private var animationScale: CGFloat = 1.0
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     var body: some View {
         Button(action: toggleFavorite) {
@@ -194,7 +210,7 @@ struct CompactFavoriteButton: View {
     }
 
     private func toggleFavorite() {
-        animateBounce(scale: $animationScale, peakScale: 1.4)
+        animateBounce(scale: $animationScale, peakScale: 1.4, reduceMotion: reduceMotion)
         onToggle()
 
         // Announce change to VoiceOver (isFavorited now reflects the NEW state after toggle)
@@ -213,7 +229,7 @@ struct CompactFavoriteButton: View {
         onToggle: { isFavorited.toggle() }
     )
     .padding(50)
-    .background(Color.black)
+    .background(Color.libraryCharcoal)
 }
 
 #Preview("Favorited") {
@@ -224,7 +240,7 @@ struct CompactFavoriteButton: View {
         onToggle: { isFavorited.toggle() }
     )
     .padding(50)
-    .background(Color.black)
+    .background(Color.libraryCharcoal)
 }
 
 #Preview("Compact Button") {
@@ -241,5 +257,5 @@ struct CompactFavoriteButton: View {
         )
     }
     .padding(50)
-    .background(Color.black)
+    .background(Color.libraryCharcoal)
 }

@@ -58,6 +58,7 @@ private struct FocusableCardContent<Label: View>: View {
     let animationDuration: Double
 
     @Environment(\.isFocused) private var envFocused
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
     #if os(tvOS)
     @FocusState private var isFocused: Bool
     #endif
@@ -86,8 +87,8 @@ private struct FocusableCardContent<Label: View>: View {
                 y: isCurrentlyFocused ? 15 : 0
             )
             .zIndex(isCurrentlyFocused ? 1 : 0)
-            .animation(.easeInOut(duration: animationDuration), value: isCurrentlyFocused)
-            .animation(.easeInOut(duration: 0.1), value: isPressed)
+            .animation(reduceMotion ? nil : .easeInOut(duration: animationDuration), value: isCurrentlyFocused)
+            .animation(reduceMotion ? nil : .easeInOut(duration: 0.1), value: isPressed)
 
         #if os(tvOS)
         return base.focused($isFocused)

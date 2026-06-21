@@ -7,6 +7,7 @@
 
 import XCTest
 import SwiftUI
+import UIKit
 @testable import Internet_Archive
 
 @MainActor
@@ -31,13 +32,16 @@ final class SkeletonLoadingViewTests: XCTestCase {
     func testSkeletonCard_defaultTitleHeight() {
         let card = SkeletonCard(aspectRatio: 1.0)
 
-        XCTAssertEqual(card.titleHeight, 20)
+        // Default tracks `.callout` line height so the skeleton matches the
+        // rendered card title at the current Dynamic Type setting.
+        XCTAssertEqual(card.titleHeight, UIFont.preferredFont(forTextStyle: .callout).lineHeight)
     }
 
     func testSkeletonCard_defaultSubtitleHeight() {
         let card = SkeletonCard(aspectRatio: 1.0)
 
-        XCTAssertEqual(card.subtitleHeight, 16)
+        // Default tracks `.caption1` line height to match the rendered subtitle.
+        XCTAssertEqual(card.subtitleHeight, UIFont.preferredFont(forTextStyle: .caption1).lineHeight)
     }
 
     func testSkeletonCard_defaultSubtitleWidth() {
@@ -72,8 +76,8 @@ final class SkeletonLoadingViewTests: XCTestCase {
         let card = SkeletonCard.music
 
         XCTAssertEqual(card.aspectRatio, 1.0, accuracy: 0.01)
-        XCTAssertEqual(card.titleHeight, 18)
-        XCTAssertEqual(card.subtitleHeight, 14)
+        // Music skeleton inherits the font-metric-derived heights; only
+        // the narrower subtitle width is bespoke.
         XCTAssertEqual(card.subtitleWidth, 120)
     }
 

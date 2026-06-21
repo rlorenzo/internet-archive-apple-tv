@@ -35,41 +35,86 @@ final class MediaItemCardTests: XCTestCase {
     }
 
     // MARK: - Grid Columns Tests
+    //
+    // Sizing now lives on `SearchResultsGridHelpers.gridColumns(for:compact:)`
+    // so the same helper drives every grid surface across platforms. Tests
+    // verify both the regular-width (tvOS / iPad / visionOS) and compact-width
+    // (iPhone / Split View) shapes.
 
-    func testGridColumns_video_hasCorrectMinimum() {
-        let columns = MediaItemCard.MediaType.video.gridColumns
+    func testGridColumns_video_regular_hasCorrectMinimum() {
+        let columns = SearchResultsGridHelpers.gridColumns(for: .video)
         XCTAssertEqual(columns.count, 1)
 
-        // Video cards should be wider (300-400pt)
         guard case .adaptive(let minimum, let maximum) = columns.first?.size else {
             XCTFail("Expected adaptive grid item")
             return
         }
+        // tvOS keeps the 10-foot minimum so card / focus sizes don't shrink;
+        // iPad / visionOS / regular-width iOS use a smaller minimum so iPad
+        // mini portrait (744pt) fits 2 columns instead of 1.
+        #if os(tvOS)
+        XCTAssertEqual(minimum, 340)
+        #else
         XCTAssertEqual(minimum, 300)
-        XCTAssertEqual(maximum, 400)
+        #endif
+        XCTAssertEqual(maximum, 420)
     }
 
-    func testGridColumns_music_hasCorrectMinimum() {
-        let columns = MediaItemCard.MediaType.music.gridColumns
+    func testGridColumns_music_regular_hasCorrectMinimum() {
+        let columns = SearchResultsGridHelpers.gridColumns(for: .music)
         XCTAssertEqual(columns.count, 1)
 
-        // Music cards should be smaller/square (200-280pt)
         guard case .adaptive(let minimum, let maximum) = columns.first?.size else {
             XCTFail("Expected adaptive grid item")
             return
         }
+        #if os(tvOS)
         XCTAssertEqual(minimum, 200)
-        XCTAssertEqual(maximum, 280)
+        #else
+        XCTAssertEqual(minimum, 180)
+        #endif
+        XCTAssertEqual(maximum, 240)
     }
 
-    func testGridColumns_video_hasCorrectSpacing() {
-        let columns = MediaItemCard.MediaType.video.gridColumns
+    func testGridColumns_video_compact_hasSmallerMinimum() {
+        let columns = SearchResultsGridHelpers.gridColumns(for: .video, compact: true)
+        XCTAssertEqual(columns.count, 1)
+
+        guard case .adaptive(let minimum, let maximum) = columns.first?.size else {
+            XCTFail("Expected adaptive grid item")
+            return
+        }
+        XCTAssertEqual(minimum, 160)
+        XCTAssertEqual(maximum, 220)
+    }
+
+    func testGridColumns_music_compact_hasSmallerMinimum() {
+        let columns = SearchResultsGridHelpers.gridColumns(for: .music, compact: true)
+        XCTAssertEqual(columns.count, 1)
+
+        guard case .adaptive(let minimum, let maximum) = columns.first?.size else {
+            XCTFail("Expected adaptive grid item")
+            return
+        }
+        XCTAssertEqual(minimum, 140)
+        XCTAssertEqual(maximum, 180)
+    }
+
+    func testGridColumns_video_regular_hasCorrectSpacing() {
+        let columns = SearchResultsGridHelpers.gridColumns(for: .video)
+        XCTAssertEqual(columns.first?.spacing, 48)
+    }
+
+    func testGridColumns_music_regular_hasCorrectSpacing() {
+        let columns = SearchResultsGridHelpers.gridColumns(for: .music)
         XCTAssertEqual(columns.first?.spacing, 40)
     }
 
-    func testGridColumns_music_hasCorrectSpacing() {
-        let columns = MediaItemCard.MediaType.music.gridColumns
-        XCTAssertEqual(columns.first?.spacing, 40)
+    func testGridColumns_compact_tighterSpacing() {
+        let videoColumns = SearchResultsGridHelpers.gridColumns(for: .video, compact: true)
+        let musicColumns = SearchResultsGridHelpers.gridColumns(for: .music, compact: true)
+        XCTAssertEqual(videoColumns.first?.spacing, 16)
+        XCTAssertEqual(musicColumns.first?.spacing, 16)
     }
 
     // MARK: - MediaItemCard Initialization Tests
