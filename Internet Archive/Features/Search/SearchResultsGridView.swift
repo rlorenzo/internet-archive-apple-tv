@@ -59,7 +59,8 @@ struct SearchResultsGridView: View {
                 columns: mediaType == .video ? 4 : 6,
                 rows: 3
             )
-            .padding(PlatformMetrics.horizontalPadding(compact: isCompactLayout))
+            .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
+            .padding(.vertical, isCompactLayout == true ? 16 : 40)
         }
     }
 
@@ -115,7 +116,8 @@ struct SearchResultsGridView: View {
                     }
                 }
             }
-            .padding(PlatformMetrics.horizontalPadding(compact: isCompactLayout))
+            .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
+            .padding(.vertical, isCompactLayout == true ? 16 : 40)
         }
     }
 

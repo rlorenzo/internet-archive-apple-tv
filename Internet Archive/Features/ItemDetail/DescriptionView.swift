@@ -23,7 +23,12 @@ struct DescriptionView: View {
     let htmlContent: String
 
     /// Maximum number of lines when collapsed (default 5)
-    var collapsedLineLimit: Int = 5
+    let collapsedLineLimit: Int
+
+    /// Plain text converted from HTML, computed once at init so the SwiftSoup
+    /// parse in `stripHTML` runs a single time per render instead of on each
+    /// reference (truncation check, body Text, accessibility value, viewer).
+    private let plainText: String
 
     // MARK: - Environment
 
@@ -34,11 +39,12 @@ struct DescriptionView: View {
     /// Whether to show the full text viewer
     @State private var showFullText = false
 
-    // MARK: - Computed Properties
+    // MARK: - Initialization
 
-    /// Plain text converted from HTML
-    private var plainText: String {
-        HTMLToAttributedString.shared.stripHTML(htmlContent)
+    init(htmlContent: String, collapsedLineLimit: Int = 5) {
+        self.htmlContent = htmlContent
+        self.collapsedLineLimit = collapsedLineLimit
+        self.plainText = HTMLToAttributedString.shared.stripHTML(htmlContent)
     }
 
     /// Whether the text is long enough to require truncation.
