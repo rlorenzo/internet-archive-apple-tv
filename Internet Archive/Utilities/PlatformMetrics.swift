@@ -19,7 +19,11 @@ extension EnvironmentValues {
     ///
     /// Use directly in views via `@Environment(\.isCompactLayout)` instead of duplicating
     /// the `#if !os(tvOS)` + `horizontalSizeClass` read at every call site.
-    @MainActor
+    ///
+    /// Not global-actor isolated: the getter only reads `horizontalSizeClass`
+    /// (a plain environment value), and a `@MainActor` computed property cannot
+    /// be referenced by the `\.isCompactLayout` key path under strict
+    /// concurrency.
     var isCompactLayout: Bool? {
         #if os(tvOS)
         return nil

@@ -61,7 +61,7 @@ struct DescriptionView: View {
         VStack(alignment: .leading, spacing: 16) {
             Text(plainText)
                 .font(.body)
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .lineSpacing(6)
                 .lineLimit(collapsedLineLimit)
                 .accessibilityLabel(isTruncated ? "Description, truncated" : "Description")
@@ -114,7 +114,7 @@ private struct FullTextViewer: View {
                 #if os(tvOS)
                 Text(text)
                     .font(.callout)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                     .lineSpacing(8)
                     .padding(EdgeInsets(top: 100, leading: 250, bottom: 100, trailing: 250))
                     .focusable()
@@ -122,7 +122,7 @@ private struct FullTextViewer: View {
                 #else
                 Text(text)
                     .font(.title3)
-                    .foregroundStyle(.white)
+                    .foregroundStyle(.primary)
                     .lineSpacing(6)
                     .padding(.horizontal, PlatformMetrics.horizontalPadding(
                         compact: horizontalSizeClass.map { $0 == .compact }
