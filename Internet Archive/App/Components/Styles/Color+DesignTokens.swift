@@ -19,8 +19,9 @@ extension Color {
 
     /// Fill color for thumbnail and avatar placeholders shown before an
     /// image loads, or when an image fails. Always paired with a centered
-    /// SF Symbol glyph in `.secondary`.
-    static let placeholderFill = Color.gray.opacity(0.3)
+    /// SF Symbol glyph in `.secondary`. Matches the DESIGN.md spec
+    /// (`placeholder-fill: #80808080`, 50% gray alpha).
+    static let placeholderFill = Color.gray.opacity(0.5)
 
     /// The dark scrim used as the track behind on-image progress bars.
     /// The only on-image overlay tint in the system.
@@ -41,7 +42,10 @@ extension Color {
 
     /// Focus halo shadow color. Pairs with the focus-state shadow radius
     /// in `TVCardButtonStyle` and the playback / favorite button styles.
-    static let chromeFocus = Color.white.opacity(0.5)
+    /// 60% white matches the card glow and the DESIGN.md elevation spec
+    /// (`shadow(color: .white.opacity(0.6), radius: 25)`) so every focused
+    /// surface lights up with the same halo.
+    static let chromeFocus = Color.white.opacity(0.6)
 
     // MARK: - Skeleton (loading-state placeholder ramp)
 

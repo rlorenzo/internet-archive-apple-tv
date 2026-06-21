@@ -19,9 +19,6 @@ import SwiftUI
 struct DescriptionView: View {
     // MARK: - Properties
 
-    /// The HTML content to render
-    let htmlContent: String
-
     /// Maximum number of lines when collapsed (default 5)
     let collapsedLineLimit: Int
 
@@ -42,7 +39,6 @@ struct DescriptionView: View {
     // MARK: - Initialization
 
     init(htmlContent: String, collapsedLineLimit: Int = 5) {
-        self.htmlContent = htmlContent
         self.collapsedLineLimit = collapsedLineLimit
         self.plainText = HTMLToAttributedString.shared.stripHTML(htmlContent)
     }

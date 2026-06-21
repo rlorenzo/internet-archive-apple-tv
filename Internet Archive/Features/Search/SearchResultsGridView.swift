@@ -92,7 +92,10 @@ struct SearchResultsGridView: View {
         ScrollView {
             LazyVGrid(
                 columns: SearchResultsGridHelpers.gridColumns(for: mediaType, compact: isCompactLayout),
-                spacing: isCompactLayout == true ? 16 : 48
+                // Match the per-media row rhythm used by the home grids and the
+                // loading skeleton (video 48, music 40, both 16 on compact) so
+                // results don't reflow vertically when they replace the skeleton.
+                spacing: isCompactLayout == true ? 16 : (mediaType == .video ? 48 : 40)
             ) {
                 ForEach(results) { item in
                     Button {
