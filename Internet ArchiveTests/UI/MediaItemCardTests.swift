@@ -49,7 +49,14 @@ final class MediaItemCardTests: XCTestCase {
             XCTFail("Expected adaptive grid item")
             return
         }
+        // tvOS keeps the 10-foot minimum so card / focus sizes don't shrink;
+        // iPad / visionOS / regular-width iOS use a smaller minimum so iPad
+        // mini portrait (744pt) fits 2 columns instead of 1.
+        #if os(tvOS)
         XCTAssertEqual(minimum, 340)
+        #else
+        XCTAssertEqual(minimum, 300)
+        #endif
         XCTAssertEqual(maximum, 420)
     }
 
@@ -61,7 +68,11 @@ final class MediaItemCardTests: XCTestCase {
             XCTFail("Expected adaptive grid item")
             return
         }
+        #if os(tvOS)
         XCTAssertEqual(minimum, 200)
+        #else
+        XCTAssertEqual(minimum, 180)
+        #endif
         XCTAssertEqual(maximum, 240)
     }
 

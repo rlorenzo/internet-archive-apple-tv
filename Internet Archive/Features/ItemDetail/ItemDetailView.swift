@@ -106,12 +106,19 @@ struct ItemDetailView: View {
     private var wideBody: some View {
         GeometryReader { geometry in
             ScrollView {
-                HStack(alignment: .top, spacing: 60) {
+                let outerPadding = PlatformMetrics.horizontalPadding(compact: false)
+                let columnSpacing: CGFloat = 60
+                // Subtract both the outer padding and the inter-column spacing
+                // before splitting so the thumbnail / metadata ratio is a true
+                // 40 / 60 of the *usable* two-column area, not of the full
+                // GeometryReader width.
+                let columnsWidth = max(0, geometry.size.width - outerPadding * 2 - columnSpacing)
+                HStack(alignment: .top, spacing: columnSpacing) {
                     VStack(alignment: .leading, spacing: 30) {
                         thumbnailView
                         controlsSection
                     }
-                    .frame(width: geometry.size.width * 0.4)
+                    .frame(width: columnsWidth * 0.4)
 
                     VStack(alignment: .leading, spacing: 30) {
                         metadataSection
@@ -119,7 +126,7 @@ struct ItemDetailView: View {
                     .frame(maxWidth: .infinity, alignment: .leading)
                     .padding(.vertical, 60)
                 }
-                .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: false))
+                .padding(.horizontal, outerPadding)
             }
         }
     }

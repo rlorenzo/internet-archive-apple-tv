@@ -128,13 +128,21 @@ struct SkeletonGrid: View {
             minWidth = 160
             maxWidth = 220
         case (.video, false):
+            #if os(tvOS)
             minWidth = 340
+            #else
+            minWidth = 300
+            #endif
             maxWidth = 420
         case (.music, true):
             minWidth = 140
             maxWidth = 180
         case (.music, false):
+            #if os(tvOS)
             minWidth = 200
+            #else
+            minWidth = 180
+            #endif
             maxWidth = 240
         }
 

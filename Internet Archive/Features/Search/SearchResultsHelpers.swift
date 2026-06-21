@@ -23,10 +23,16 @@ enum SearchResultsGridHelpers {
 
     /// Get grid columns for the given media type.
     ///
-    /// On tvOS and regular-width touch surfaces (iPad, visionOS), card minimums
-    /// are sized for the 10-foot UI / pointer experience. On compact width
-    /// (iPhone, iPad Split View narrow column), minimums drop so two or three
-    /// cards still fit across a 390–430pt screen without collapsing to one.
+    /// Three regimes, all backed by the SwiftUI adaptive grid:
+    ///
+    /// - **tvOS (10-foot UI):** higher minimums (`video 340`, `music 200`) keep
+    ///   four video / six music columns at 1080p and preserve focus-target
+    ///   sizes and the D-pad navigation graph.
+    /// - **Regular-width touch / spatial (iPad, visionOS):** lower minimums
+    ///   (`video 300`, `music 180`) so iPad mini portrait (744pt → 680pt
+    ///   content) still fits two video columns and three music columns.
+    /// - **Compact width (iPhone, narrow Split View):** smallest minimums
+    ///   so two or three cards fit across a 390–430pt screen.
     ///
     /// - Parameters:
     ///   - mediaType: The media type.
@@ -43,12 +49,20 @@ enum SearchResultsGridHelpers {
             if isCompact {
                 return [GridItem(.adaptive(minimum: 160, maximum: 220), spacing: 16)]
             }
+            #if os(tvOS)
             return [GridItem(.adaptive(minimum: 340, maximum: 420), spacing: 48)]
+            #else
+            return [GridItem(.adaptive(minimum: 300, maximum: 420), spacing: 48)]
+            #endif
         case .music:
             if isCompact {
                 return [GridItem(.adaptive(minimum: 140, maximum: 180), spacing: 16)]
             }
+            #if os(tvOS)
             return [GridItem(.adaptive(minimum: 200, maximum: 240), spacing: 40)]
+            #else
+            return [GridItem(.adaptive(minimum: 180, maximum: 240), spacing: 40)]
+            #endif
         }
     }
 
