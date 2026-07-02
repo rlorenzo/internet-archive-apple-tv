@@ -5,6 +5,7 @@
 //  Unit tests for ContentFilterService
 //
 
+import Foundation
 import Testing
 @testable import Internet_Archive
 
