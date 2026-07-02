@@ -417,6 +417,11 @@ struct ItemDetailView: View {
             // Metadata not loaded yet - mark playback as pending and show loading view
             playbackPending = true
             showPlayer = true
+            // If a previous metadata load failed, retry so the pending
+            // playback can actually complete instead of spinning forever
+            if viewModel.state.errorMessage != nil {
+                loadMetadata()
+            }
             return
         }
 
