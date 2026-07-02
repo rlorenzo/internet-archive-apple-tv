@@ -53,6 +53,11 @@ struct MediaThumbnailView: View {
     /// Corner radius (default 12)
     var cornerRadius: CGFloat = 12
 
+    /// Point size of the placeholder icon (default 40). Larger surfaces
+    /// (e.g. collection headers) can bump this to keep the icon in
+    /// proportion with the thumbnail.
+    var placeholderIconSize: CGFloat = 40
+
     // MARK: - Convenience Initializers
 
     /// Fixed-size thumbnail (legacy path; preferred on tvOS).
@@ -60,12 +65,14 @@ struct MediaThumbnailView: View {
         identifier: String,
         mediaType: MediaItemCard.MediaType,
         size: CGSize,
-        cornerRadius: CGFloat = 12
+        cornerRadius: CGFloat = 12,
+        placeholderIconSize: CGFloat = 40
     ) {
         self.identifier = identifier
         self.mediaType = mediaType
         self.sizing = .fixed(size)
         self.cornerRadius = cornerRadius
+        self.placeholderIconSize = placeholderIconSize
     }
 
     /// Aspect-ratio-driven thumbnail that fills its grid cell.
@@ -73,12 +80,14 @@ struct MediaThumbnailView: View {
         identifier: String,
         mediaType: MediaItemCard.MediaType,
         aspectRatio: CGFloat,
-        cornerRadius: CGFloat = 12
+        cornerRadius: CGFloat = 12,
+        placeholderIconSize: CGFloat = 40
     ) {
         self.identifier = identifier
         self.mediaType = mediaType
         self.sizing = .aspectRatio(aspectRatio)
         self.cornerRadius = cornerRadius
+        self.placeholderIconSize = placeholderIconSize
     }
 
     /// Resolved fixed-mode size. Returns the stored `CGSize` for fixed sizing
@@ -143,7 +152,7 @@ struct MediaThumbnailView: View {
             .fill(Color.placeholderFill)
             .overlay(
                 Image(systemName: mediaType.placeholderIcon)
-                    .font(.system(size: 40))
+                    .font(.system(size: placeholderIconSize))
                     .foregroundStyle(.secondary)
             )
     }

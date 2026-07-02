@@ -5,7 +5,6 @@
 //  View for browsing items within a collection
 //
 
-import NukeUI
 import SwiftUI
 
 /// A view that displays items within a specific Internet Archive collection.
@@ -125,17 +124,12 @@ struct CollectionBrowserView: View {
         let width: CGFloat = isCompactLayout == true ? 140 : 300
         let height: CGFloat = mediaType == .video ? width * 9 / 16 : width
 
-        return LazyImage(url: thumbnailURL) { state in
-            if let image = state.image {
-                image
-                    .resizable()
-                    .aspectRatio(contentMode: .fill)
-            } else {
-                placeholderThumbnail
-            }
-        }
-        .frame(width: width, height: height)
-        .clipShape(RoundedRectangle(cornerRadius: 12))
+        return MediaThumbnailView(
+            identifier: collection.identifier,
+            mediaType: mediaType,
+            size: CGSize(width: width, height: height),
+            placeholderIconSize: 50
+        )
         .accessibilityHidden(true)
     }
 
@@ -188,20 +182,6 @@ struct CollectionBrowserView: View {
                 }
             }
         }
-    }
-
-    private var placeholderThumbnail: some View {
-        RoundedRectangle(cornerRadius: 12)
-            .fill(Color.placeholderFill)
-            .overlay(
-                Image(systemName: mediaType.placeholderIcon)
-                    .font(.system(size: 50))
-                    .foregroundStyle(.secondary)
-            )
-    }
-
-    private var thumbnailURL: URL? {
-        IAURLHelpers.thumbnailURL(for: collection.identifier)
     }
 
     // MARK: - Items Grid
