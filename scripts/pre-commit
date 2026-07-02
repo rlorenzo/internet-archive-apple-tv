@@ -4,6 +4,10 @@
 
 set -e
 
+# Git runs hooks from the top of the working tree already (githooks(5));
+# this cd makes the script equally safe to run manually from anywhere.
+cd "$(git rev-parse --show-toplevel)"
+
 # Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
