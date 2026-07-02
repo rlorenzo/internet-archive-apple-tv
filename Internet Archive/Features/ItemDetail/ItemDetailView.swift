@@ -5,6 +5,7 @@
 //  Item detail modal view displaying metadata, description, and playback controls
 //
 
+import NukeUI
 import SwiftUI
 
 /// Item detail view displaying metadata, description, and playback controls.
@@ -183,17 +184,12 @@ struct ItemDetailView: View {
 
     private var thumbnailView: some View {
         VStack {
-            AsyncImage(url: thumbnailURL) { phase in
-                switch phase {
-                case .empty:
-                    placeholderImage
-                case .success(let image):
+            LazyImage(url: thumbnailURL) { state in
+                if let image = state.image {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fit)
-                case .failure:
-                    placeholderImage
-                @unknown default:
+                } else {
                     placeholderImage
                 }
             }

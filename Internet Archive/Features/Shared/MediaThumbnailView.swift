@@ -5,12 +5,15 @@
 //  Reusable thumbnail view for media items with placeholder support
 //
 
+import NukeUI
 import SwiftUI
 
 /// A reusable thumbnail view for media items.
 ///
 /// Displays an async-loaded image from Internet Archive's thumbnail service
-/// with a placeholder shown during loading or on failure.
+/// with a placeholder shown during loading or on failure. Images load
+/// through the app's configured Nuke pipeline (memory + 500 MB disk cache);
+/// `ImageCacheManager` installs it as `ImagePipeline.shared` at launch.
 ///
 /// ## Usage
 /// ```swift
@@ -94,10 +97,10 @@ struct MediaThumbnailView: View {
             .clipShape(RoundedRectangle(cornerRadius: cornerRadius))
     }
 
-    /// The fixed-size branch sets an explicit frame and lets the AsyncImage
+    /// The fixed-size branch sets an explicit frame and lets the image
     /// fill it. The aspect-ratio branch uses a `Color.clear` shim to own the
     /// aspect ratio so the outer container's bounds are deterministic — then
-    /// overlays the AsyncImage with `.fill` + clip so the loaded image
+    /// overlays the image with `.fill` + clip so the loaded image
     /// crops-to-fill instead of dictating the container's natural size.
     @ViewBuilder
     private var sizedContent: some View {
@@ -118,16 +121,13 @@ struct MediaThumbnailView: View {
 
     @ViewBuilder
     private var asyncImage: some View {
-        AsyncImage(url: thumbnailURL) { phase in
-            switch phase {
-            case .empty, .failure:
-                placeholderView
-            case .success(let image):
+        LazyImage(url: thumbnailURL) { state in
+            if let image = state.image {
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-            @unknown default:
-                EmptyView()
+            } else {
+                placeholderView
             }
         }
     }

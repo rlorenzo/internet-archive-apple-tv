@@ -5,6 +5,7 @@
 //  Favorites and followed creators management
 //
 
+import NukeUI
 import SwiftUI
 
 /// The favorites management screen displaying saved items and followed creators.
@@ -264,18 +265,13 @@ private struct PersonCard: View {
 
     var body: some View {
         VStack(spacing: 16) {
-            // Avatar
-            AsyncImage(url: avatarURL) { phase in
-                switch phase {
-                case .empty:
-                    avatarPlaceholder
-                case .success(let image):
+            // Avatar (loads via the configured Nuke pipeline)
+            LazyImage(url: avatarURL) { state in
+                if let image = state.image {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                case .failure:
-                    avatarPlaceholder
-                @unknown default:
+                } else {
                     avatarPlaceholder
                 }
             }

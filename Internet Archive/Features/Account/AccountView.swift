@@ -5,6 +5,7 @@
 //  Account management and authentication screen
 //
 
+import NukeUI
 import SwiftUI
 import UIKit
 
@@ -35,18 +36,13 @@ struct AccountView: View {
         VStack(spacing: 40) {
             Spacer()
 
-            // User Avatar
-            AsyncImage(url: avatarURL) { phase in
-                switch phase {
-                case .empty:
-                    avatarPlaceholder
-                case .success(let image):
+            // User Avatar (loads via the configured Nuke pipeline)
+            LazyImage(url: avatarURL) { state in
+                if let image = state.image {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                case .failure:
-                    avatarPlaceholder
-                @unknown default:
+                } else {
                     avatarPlaceholder
                 }
             }
@@ -507,6 +503,10 @@ struct RegisterFormView: View {
                 }
             } catch {
                 isLoading = false
+
+                // Don't show "Registration failed" for a request the user
+                // abandoned by leaving the screen
+                guard !(error is CancellationError), !Task.isCancelled else { return }
 
                 if let networkError = error as? NetworkError {
                     errorMessage = ErrorPresenter.shared.userFriendlyMessage(for: networkError)

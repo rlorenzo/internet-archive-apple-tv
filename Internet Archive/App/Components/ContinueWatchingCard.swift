@@ -5,6 +5,7 @@
 //  Card component for Continue Watching/Listening sections
 //
 
+import NukeUI
 import SwiftUI
 
 /// A specialized card for displaying items in Continue Watching/Listening sections.
@@ -83,17 +84,12 @@ struct ContinueWatchingCard: View {
                 .overlay {
                     // Thumbnail - always use archive.org thumbnail service for consistency
                     // This avoids issues with corrupted/invalid stored imageURLs
-                    AsyncImage(url: archiveThumbnailURL) { phase in
-                        switch phase {
-                        case .empty:
-                            placeholderContent
-                        case .success(let image):
+                    LazyImage(url: archiveThumbnailURL) { state in
+                        if let image = state.image {
                             image
                                 .resizable()
                                 .aspectRatio(contentMode: .fill)
-                        case .failure:
-                            placeholderContent
-                        @unknown default:
+                        } else {
                             placeholderContent
                         }
                     }

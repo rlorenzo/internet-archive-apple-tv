@@ -5,6 +5,7 @@
 //  View for browsing items within a collection
 //
 
+import NukeUI
 import SwiftUI
 
 /// A view that displays items within a specific Internet Archive collection.
@@ -124,17 +125,12 @@ struct CollectionBrowserView: View {
         let width: CGFloat = isCompactLayout == true ? 140 : 300
         let height: CGFloat = mediaType == .video ? width * 9 / 16 : width
 
-        return AsyncImage(url: thumbnailURL) { phase in
-            switch phase {
-            case .empty:
-                placeholderThumbnail
-            case .success(let image):
+        return LazyImage(url: thumbnailURL) { state in
+            if let image = state.image {
                 image
                     .resizable()
                     .aspectRatio(contentMode: .fill)
-            case .failure:
-                placeholderThumbnail
-            @unknown default:
+            } else {
                 placeholderThumbnail
             }
         }

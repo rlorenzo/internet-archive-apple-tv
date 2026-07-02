@@ -66,12 +66,16 @@ struct SearchResultsGridView: View {
 
     // MARK: - Error View
 
-    private func errorView(message _: String) -> some View {
+    private func errorView(message: String) -> some View {
         VStack {
             Spacer()
-            ErrorContentView.loadingFailed(contentType: "results") {
-                loadResults(page: 0)
-            }
+            ErrorContentView(
+                title: "Failed to Load",
+                message: message,
+                onRetry: {
+                    loadResults(page: 0)
+                }
+            )
             Spacer()
         }
     }

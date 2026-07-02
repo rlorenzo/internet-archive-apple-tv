@@ -5,6 +5,7 @@
 //  Reusable card component for displaying media items in grids
 //
 
+import NukeUI
 import SwiftUI
 
 /// A card component displaying a media item with thumbnail, title, and optional progress.
@@ -127,18 +128,13 @@ struct MediaItemCard: View {
 
     private var thumbnailView: some View {
         ZStack(alignment: .bottom) {
-            // Thumbnail
-            AsyncImage(url: thumbnailURL) { phase in
-                switch phase {
-                case .empty:
-                    placeholderView
-                case .success(let image):
+            // Thumbnail (loads via the configured Nuke pipeline)
+            LazyImage(url: thumbnailURL) { state in
+                if let image = state.image {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                case .failure:
-                    placeholderView
-                @unknown default:
+                } else {
                     placeholderView
                 }
             }
