@@ -28,46 +28,14 @@ enum NowPlayingPresenter {
         savedProgress: PlaybackProgress? = nil,
         onDismiss: (() -> Void)? = nil
     ) -> Bool {
-        guard let files = metadata.files else { return false }
-
-        // Filter for audio files, preferring originals to avoid duplicates
-        let allAudioFiles = files.filter { file in
-            let audioFormats = ["mp3", "flac", "ogg", "wav", "aac", "m4a", "vbr mp3"]
-            let format = file.format?.lowercased() ?? ""
-            let name = file.name.lowercased()
-
-            return audioFormats.contains(format) ||
-                   audioFormats.contains { name.hasSuffix(".\($0)") }
-        }
-
-        let originals = allAudioFiles.filter { $0.source == "original" }
-        let audioFiles = originals.isEmpty ? allAudioFiles : originals
-
-        guard !audioFiles.isEmpty else { return false }
-
-        // Convert to AudioTrack models
-        let thumbnailURL = URL(string: "https://archive.org/services/img/\(item.identifier)")
-        let tracks = audioFiles.map { file in
-            AudioTrack(
-                fileInfo: file,
-                itemIdentifier: item.identifier,
-                itemTitle: item.safeTitle,
-                imageURL: thumbnailURL
-            )
-        }.sorted { AudioTrack.sortByTrackNumber($0, $1) }
-
-        // Determine starting track and resume time from saved progress
-        var startIndex = 0
-        var trackResumeTime: Double?
-
-        if let progress = savedProgress,
-           let resumeIndex = NowPlayingHelpers.resumeStartIndex(
-               trackFilename: progress.trackFilename,
-               trackIndex: progress.trackIndex,
-               tracks: tracks
-           ) {
-            startIndex = resumeIndex
-            trackResumeTime = progress.trackCurrentTime
+        // Resolve the playable audio queue (format filtering, track
+        // building, and resume position)
+        guard let queue = PlayableMediaResolver.resolveAudioQueue(
+            item: item,
+            metadata: metadata,
+            savedProgress: savedProgress
+        ) else {
+            return false
         }
 
         // Find the root view controller to present from
@@ -89,12 +57,12 @@ enum NowPlayingPresenter {
 
         // Create the now playing view controller
         let playerVC = NowPlayingViewController(
-            itemIdentifier: item.identifier,
-            itemTitle: item.safeTitle,
-            imageURL: thumbnailURL,
-            tracks: tracks,
-            startAt: startIndex,
-            resumeTime: trackResumeTime
+            itemIdentifier: queue.itemIdentifier,
+            itemTitle: queue.itemTitle,
+            imageURL: queue.imageURL,
+            tracks: queue.tracks,
+            startAt: queue.startIndex,
+            resumeTime: queue.resumeTime
         )
 
         playerVC.modalPresentationStyle = .fullScreen
@@ -222,57 +190,23 @@ extension NowPlayingView {
         savedProgress: PlaybackProgress? = nil,
         onDismiss: (() -> Void)? = nil
     ) -> NowPlayingView? {
-        guard let files = metadata.files else { return nil }
-
-        // Filter for audio files, preferring originals to avoid duplicates
-        // (the API returns both original MP3 and derivative formats like Ogg Vorbis)
-        let allAudioFiles = files.filter { file in
-            let audioFormats = ["mp3", "flac", "ogg", "wav", "aac", "m4a", "vbr mp3"]
-            let format = file.format?.lowercased() ?? ""
-            let name = file.name.lowercased()
-
-            return audioFormats.contains(format) ||
-                   audioFormats.contains { name.hasSuffix(".\($0)") }
-        }
-
-        let originals = allAudioFiles.filter { $0.source == "original" }
-        let audioFiles = originals.isEmpty ? allAudioFiles : originals
-
-        guard !audioFiles.isEmpty else { return nil }
-
-        // Convert to AudioTrack models
-        let thumbnailURL = URL(string: "https://archive.org/services/img/\(item.identifier)")
-        let tracks = audioFiles.map { file in
-            AudioTrack(
-                fileInfo: file,
-                itemIdentifier: item.identifier,
-                itemTitle: item.safeTitle,
-                imageURL: thumbnailURL
-            )
-        }.sorted { AudioTrack.sortByTrackNumber($0, $1) }
-
-        // Determine starting track and resume time from saved progress
-        var startIndex = 0
-        var trackResumeTime: Double?
-
-        // Find the track to resume from: filename first, index as fallback
-        if let progress = savedProgress,
-           let resumeIndex = NowPlayingHelpers.resumeStartIndex(
-               trackFilename: progress.trackFilename,
-               trackIndex: progress.trackIndex,
-               tracks: tracks
-           ) {
-            startIndex = resumeIndex
-            trackResumeTime = progress.trackCurrentTime
+        // Resolve the playable audio queue (format filtering, track
+        // building, and resume position)
+        guard let queue = PlayableMediaResolver.resolveAudioQueue(
+            item: item,
+            metadata: metadata,
+            savedProgress: savedProgress
+        ) else {
+            return nil
         }
 
         return NowPlayingView(
-            itemIdentifier: item.identifier,
-            itemTitle: item.safeTitle,
-            imageURL: thumbnailURL,
-            tracks: tracks,
-            startAt: startIndex,
-            resumeTime: trackResumeTime,
+            itemIdentifier: queue.itemIdentifier,
+            itemTitle: queue.itemTitle,
+            imageURL: queue.imageURL,
+            tracks: queue.tracks,
+            startAt: queue.startIndex,
+            resumeTime: queue.resumeTime,
             onDismiss: onDismiss
         )
     }

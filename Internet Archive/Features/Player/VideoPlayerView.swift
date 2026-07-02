@@ -29,28 +29,10 @@ enum VideoPlayerPresenter {
         resumeTime: Double? = nil,
         onDismiss: (() -> Void)? = nil
     ) -> Bool {
-        // Find the best playable video file
-        guard let videoFile = VideoPlayerView.findPlayableVideo(in: metadata.files ?? []) else {
+        // Resolve the playable video (file selection, URL, subtitles, title)
+        guard let video = PlayableMediaResolver.resolveVideo(item: item, metadata: metadata) else {
             return false
         }
-
-        // Build the video URL
-        guard let downloadBaseURL = URL(string: "https://archive.org/download") else {
-            return false
-        }
-
-        let url = downloadBaseURL
-            .appendingPathComponent(item.identifier)
-            .appendingPathComponent(videoFile.name)
-
-        // Extract subtitle tracks
-        let subtitleTracks = SubtitleManager.shared.extractSubtitleTracks(
-            from: metadata.files ?? [],
-            identifier: item.identifier
-        )
-
-        // Build thumbnail URL
-        let thumbnailURL = "https://archive.org/services/img/\(item.identifier)"
 
         // Find the root view controller to present from
         // Prefer the foreground-active scene and its key window for multi-scene support
@@ -72,18 +54,18 @@ enum VideoPlayerPresenter {
 
         // Create player. `AVAsset(url:)` is deprecated in tvOS 18; use the
         // concrete `AVURLAsset` for URL-backed media.
-        let asset = AVURLAsset(url: url)
+        let asset = AVURLAsset(url: video.url)
         let playerItem = AVPlayerItem(asset: asset)
         let player = AVPlayer(playerItem: playerItem)
 
         // Create the video player view controller
         let playerVC = VideoPlayerViewController(
             player: player,
-            subtitleTracks: subtitleTracks,
-            identifier: item.identifier,
-            filename: videoFile.name,
-            title: item.safeTitle,
-            thumbnailURL: thumbnailURL,
+            subtitleTracks: video.subtitleTracks,
+            identifier: video.identifier,
+            filename: video.filename,
+            title: video.title,
+            thumbnailURL: video.thumbnailURL,
             resumeFromTime: resumeTime
         )
 
@@ -240,37 +222,18 @@ extension VideoPlayerView {
         resumeTime: Double? = nil,
         onDismiss: (() -> Void)? = nil
     ) -> VideoPlayerView? {
-        // Find the best playable video file
-        guard let videoFile = findPlayableVideo(in: metadata.files ?? []) else {
+        // Resolve the playable video (file selection, URL, subtitles, title)
+        guard let video = PlayableMediaResolver.resolveVideo(item: item, metadata: metadata) else {
             return nil
         }
-
-        // Build the video URL using the same approach as UIKit ItemVC:
-        // https://archive.org/download/{identifier}/{filename}
-        guard let downloadBaseURL = URL(string: "https://archive.org/download") else {
-            return nil
-        }
-
-        let url = downloadBaseURL
-            .appendingPathComponent(item.identifier)
-            .appendingPathComponent(videoFile.name)
-
-        // Extract subtitle tracks
-        let subtitleTracks = SubtitleManager.shared.extractSubtitleTracks(
-            from: metadata.files ?? [],
-            identifier: item.identifier
-        )
-
-        // Build thumbnail URL
-        let thumbnailURL = "https://archive.org/services/img/\(item.identifier)"
 
         return VideoPlayerView(
-            videoURL: url,
-            subtitleTracks: subtitleTracks,
-            identifier: item.identifier,
-            filename: videoFile.name,
-            title: item.safeTitle,
-            thumbnailURL: thumbnailURL,
+            videoURL: video.url,
+            subtitleTracks: video.subtitleTracks,
+            identifier: video.identifier,
+            filename: video.filename,
+            title: video.title,
+            thumbnailURL: video.thumbnailURL,
             resumeTime: resumeTime,
             onDismiss: onDismiss
         )
@@ -278,32 +241,9 @@ extension VideoPlayerView {
 
     /// Find the best playable video file from the files list.
     /// Prefers H.264 format, then falls back to other video formats.
+    /// Delegates to `PlayableMediaResolver` (the single source of truth).
     static func findPlayableVideo(in files: [FileInfo]) -> FileInfo? {
-        let videoFormats = ["h.264", "mp4", "mpeg4", "mov", "m4v"]
-        let lowerPriorityFormats = ["ogv", "webm"]
-
-        // First try H.264 / MP4 formats (best compatibility)
-        for format in videoFormats {
-            if let file = files.first(where: {
-                $0.format?.lowercased() == format ||
-                $0.name.lowercased().hasSuffix(".\(format)")
-            }) {
-                return file
-            }
-        }
-
-        // Fall back to other video formats
-        for format in lowerPriorityFormats {
-            if let file = files.first(where: {
-                $0.format?.lowercased() == format ||
-                $0.name.lowercased().hasSuffix(".\(format)")
-            }) {
-                return file
-            }
-        }
-
-        // Last resort: any file with "video" in its format
-        return files.first { $0.format?.lowercased().contains("video") == true }
+        PlayableMediaResolver.findPlayableVideo(in: files)
     }
 }
 
