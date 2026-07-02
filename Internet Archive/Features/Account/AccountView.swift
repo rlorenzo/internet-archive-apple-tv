@@ -100,7 +100,7 @@ struct AccountView: View {
 
     private var avatarURL: URL? {
         guard let username = appState.username else { return nil }
-        return URL(string: "https://archive.org/services/img/@\(username)")
+        return FavoritesViewHelpers.avatarURL(for: "@\(username)")
     }
 
     private func signOut() {

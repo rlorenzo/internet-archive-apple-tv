@@ -405,6 +405,30 @@ final class IAURLHelpersTests: XCTestCase {
         XCTAssertEqual(url?.absoluteString, "https://archive.org/services/img/test_item_456")
     }
 
+    func testThumbnailURL_identifierWithSpaces_encodesSpaces() {
+        let url = IAURLHelpers.thumbnailURL(for: "my item")
+
+        XCTAssertNotNil(url)
+        XCTAssertEqual(url?.absoluteString, "https://archive.org/services/img/my%20item")
+    }
+
+    func testItemImageURL_validIdentifier_buildsCorrectURL() {
+        let url = IAURLHelpers.itemImageURL(for: "test-item-123")
+
+        XCTAssertNotNil(url)
+        XCTAssertEqual(
+            url?.absoluteString,
+            "https://archive.org/services/get-item-image.php?identifier=test-item-123"
+        )
+    }
+
+    func testItemImageURL_identifierWithSpecialChars_encodes() {
+        let url = IAURLHelpers.itemImageURL(for: "item&more")
+
+        XCTAssertNotNil(url)
+        XCTAssertTrue(url!.absoluteString.contains("%26")) // encoded &
+    }
+
     func testDownloadURL_simpleFilename_buildsCorrectURL() {
         let url = IAURLHelpers.downloadURL(identifier: "my-item", filename: "video.mp4")
 

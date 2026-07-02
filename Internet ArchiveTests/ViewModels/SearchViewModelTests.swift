@@ -262,6 +262,9 @@ struct SearchViewModelTests {
         #expect(mockService.lastOptions?["rows"] == "10")
         #expect(mockService.lastOptions?["page"] == "1")
         #expect(mockService.lastOptions?["fl[]"] != nil)
+        // Options come from SearchQueryBuilder, which includes the
+        // "downloads desc" sort the search UI has always shipped
+        #expect(mockService.lastOptions?["sort[]"] == "downloads desc")
     }
 
     // MARK: - Error Type Tests

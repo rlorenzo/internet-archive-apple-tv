@@ -235,7 +235,7 @@ struct PeopleDetailView: View {
     // MARK: - Helper Methods
 
     private var avatarURL: URL? {
-        URL(string: "https://archive.org/services/img/\(identifier)")
+        FavoritesViewHelpers.avatarURL(for: identifier)
     }
 
     private func configureAndLoad() {

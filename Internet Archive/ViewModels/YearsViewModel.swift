@@ -211,7 +211,7 @@ final class YearsViewModel: ObservableObject {
             date: Global.formatDate(string: item.date) ?? "",
             description: item.description ?? "",
             mediaType: item.mediatype ?? "",
-            imageURL: URL(string: "https://archive.org/services/get-item-image.php?identifier=\(item.identifier)")
+            imageURL: IAURLHelpers.itemImageURL(for: item.identifier)
         )
     }
 
@@ -223,10 +223,7 @@ final class YearsViewModel: ObservableObject {
     // MARK: - Private Methods
 
     private func mapErrorToMessage(_ error: Error) -> String {
-        if let networkError = error as? NetworkError {
-            return ErrorPresenter.shared.userFriendlyMessage(for: networkError)
-        }
-        return "An unexpected error occurred. Please try again."
+        ErrorMessageMapper.message(for: error)
     }
 }
 

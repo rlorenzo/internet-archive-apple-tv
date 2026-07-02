@@ -193,10 +193,27 @@ enum IAURLHelpers {
     }()
 
     /// Build thumbnail URL for an item
-    /// - Parameter identifier: Item identifier
+    /// - Parameter identifier: Item identifier (percent-encoded for the URL path)
     /// - Returns: URL for the item's thumbnail image
     static func thumbnailURL(for identifier: String) -> URL? {
-        URL(string: "\(baseURL)/services/img/\(identifier)")
+        guard let encodedIdentifier = identifier.addingPercentEncoding(
+            withAllowedCharacters: pathAllowedCharacters
+        ) else {
+            return nil
+        }
+        return URL(string: "\(baseURL)/services/img/\(encodedIdentifier)")
+    }
+
+    /// Build the get-item-image URL for an item
+    /// - Parameter identifier: Item identifier (percent-encoded for the query)
+    /// - Returns: URL for the item's image via get-item-image.php
+    static func itemImageURL(for identifier: String) -> URL? {
+        guard let encodedIdentifier = identifier.addingPercentEncoding(
+            withAllowedCharacters: pathAllowedCharacters
+        ) else {
+            return nil
+        }
+        return URL(string: "\(baseURL)/services/get-item-image.php?identifier=\(encodedIdentifier)")
     }
 
     /// Build download URL for a file

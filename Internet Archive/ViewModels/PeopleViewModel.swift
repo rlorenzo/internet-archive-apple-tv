@@ -208,7 +208,7 @@ final class PeopleViewModel: ObservableObject {
             date: item.date ?? "",
             description: item.description ?? "",
             mediaType: item.mediatype ?? "",
-            imageURL: URL(string: "https://archive.org/services/get-item-image.php?identifier=\(item.identifier)")
+            imageURL: IAURLHelpers.itemImageURL(for: item.identifier)
         )
     }
 
@@ -220,25 +220,22 @@ final class PeopleViewModel: ObservableObject {
     // MARK: - Private Methods
 
     private func mapErrorToMessage(_ error: Error) -> String {
-        if let networkError = error as? NetworkError {
-            return ErrorPresenter.shared.userFriendlyMessage(for: networkError)
-        }
-        return "An unexpected error occurred. Please try again."
+        ErrorMessageMapper.message(for: error)
     }
 }
 
 // MARK: - Default People Favorites Service Implementation
 
-/// Default implementation using APIManager
+/// Default implementation using APIManager.networkService (supports mock data for UI testing)
 struct DefaultPeopleFavoritesService: PeopleFavoritesServiceProtocol {
 
     @MainActor
     func getFavoriteItems(username: String) async throws -> FavoritesResponse {
-        try await APIManager.sharedManager.getFavoriteItemsTyped(username: username)
+        try await APIManager.networkService.getFavoriteItems(username: username)
     }
 
     @MainActor
     func search(query: String, options: [String: String]) async throws -> SearchResponse {
-        try await APIManager.sharedManager.searchTyped(query: query, options: options)
+        try await APIManager.networkService.search(query: query, options: options)
     }
 }

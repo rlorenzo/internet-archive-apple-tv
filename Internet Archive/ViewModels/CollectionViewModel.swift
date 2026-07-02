@@ -32,9 +32,14 @@ protocol CollectionServiceProtocol: Sendable {
 /// ViewModel state for collection browsing
 struct CollectionViewState: Sendable {
     var isLoading: Bool = false
+    /// Whether a load has run to completion (success or failure).
+    /// Stays false when a load is cancelled so the view retries on reappear.
+    var hasLoaded: Bool = false
     var items: [SearchResult] = []
     var errorMessage: String?
     var collectionName: String = ""
+    /// Metadata of the collection itself (description etc.), when available
+    var collectionMetadata: ItemMetadata?
 
     static let initial = CollectionViewState()
 }
@@ -50,6 +55,7 @@ final class CollectionViewModel: ObservableObject {
     // MARK: - Dependencies
 
     private let collectionService: CollectionServiceProtocol
+    private var currentLoadToken = UUID()
 
     // MARK: - Initialization
 
@@ -58,6 +64,64 @@ final class CollectionViewModel: ObservableObject {
     }
 
     // MARK: - Public Methods
+
+    /// Load the items of a collection with server-side sorting, plus the
+    /// collection's own metadata for the description (non-fatal on failure).
+    ///
+    /// Uses a load token so a stale response (e.g. after a sort change) can't
+    /// overwrite newer results.
+    ///
+    /// - Parameters:
+    ///   - identifier: The collection identifier.
+    ///   - mediaTypeFilter: mediatype filter, e.g. "movies" or "(etree OR audio)".
+    ///   - sort: Solr-style sort expression (e.g. "week desc").
+    ///   - rows: Maximum number of items to fetch (default 100).
+    func loadCollectionContents(
+        identifier: String,
+        mediaTypeFilter: String,
+        sort: String,
+        rows: Int = 100
+    ) async {
+        let loadToken = UUID()
+        currentLoadToken = loadToken
+
+        state.isLoading = true
+        state.errorMessage = nil
+        state.items = []
+        state.collectionName = identifier
+
+        do {
+            let response = try await collectionService.getCollectionPage(
+                collection: identifier,
+                resultType: mediaTypeFilter,
+                page: 0,
+                pageSize: rows,
+                sort: sort
+            )
+
+            guard loadToken == currentLoadToken else { return }
+            state.items = response.response.docs
+
+            // Also load the collection's own metadata for the description.
+            // Non-fatal: the search-result description is a sufficient fallback.
+            do {
+                let metadata = try await collectionService.getMetadata(identifier: identifier)
+                guard loadToken == currentLoadToken else { return }
+                state.collectionMetadata = metadata.metadata
+            } catch {
+                guard loadToken == currentLoadToken else { return }
+            }
+
+            state.isLoading = false
+            state.hasLoaded = true
+        } catch {
+            guard loadToken == currentLoadToken else { return }
+            state.isLoading = false
+            guard !(error is CancellationError), !Task.isCancelled else { return }
+            state.errorMessage = mapErrorToMessage(error)
+            state.hasLoaded = true
+        }
+    }
 
     /// Load items from a collection
     func loadCollection(name: String, mediaType: String) async {
@@ -120,10 +184,7 @@ final class CollectionViewModel: ObservableObject {
     // MARK: - Private Methods
 
     private func mapErrorToMessage(_ error: Error) -> String {
-        if let networkError = error as? NetworkError {
-            return ErrorPresenter.shared.userFriendlyMessage(for: networkError)
-        }
-        return "An unexpected error occurred. Please try again."
+        ErrorMessageMapper.message(for: error)
     }
 }
 
@@ -138,12 +199,12 @@ enum SortCriteria: String, CaseIterable, Sendable {
 
 // MARK: - Default Collection Service Implementation
 
-/// Default implementation using APIManager
+/// Default implementation using APIManager.networkService (supports mock data for UI testing)
 struct DefaultCollectionService: CollectionServiceProtocol {
 
     @MainActor
     func getCollections(collection: String, resultType: String, limit: Int?) async throws -> (collection: String, results: [SearchResult]) {
-        try await APIManager.sharedManager.getCollectionsTyped(
+        try await APIManager.networkService.getCollections(
             collection: collection,
             resultType: resultType,
             limit: limit
@@ -152,7 +213,7 @@ struct DefaultCollectionService: CollectionServiceProtocol {
 
     @MainActor
     func getMetadata(identifier: String) async throws -> ItemMetadataResponse {
-        try await APIManager.sharedManager.getMetaDataTyped(identifier: identifier)
+        try await APIManager.networkService.getMetadata(identifier: identifier)
     }
 
     @MainActor
@@ -170,7 +231,7 @@ struct DefaultCollectionService: CollectionServiceProtocol {
             "sort[]": sort
         ]
 
-        return try await APIManager.sharedManager.searchTyped(
+        return try await APIManager.networkService.search(
             query: "collection:(\(collection)) And mediatype:\(resultType)",
             options: options
         )

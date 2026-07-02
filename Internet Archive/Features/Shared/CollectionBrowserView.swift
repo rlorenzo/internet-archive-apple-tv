@@ -34,33 +34,33 @@ struct CollectionBrowserView: View {
 
     @Environment(\.isCompactLayout) private var isCompactLayout
 
+    // MARK: - ViewModel
+
+    /// Collection view model (owns items, loading/error state, and the
+    /// load token that discards stale responses after sort changes)
+    @StateObject private var viewModel = CollectionViewModel(
+        collectionService: DefaultCollectionService()
+    )
+
     // MARK: - State
-
-    /// Items in the collection
-    @State private var items: [SearchResult] = []
-
-    /// Loading state
-    @State private var isLoading = true
-
-    /// Error message
-    @State private var errorMessage: String?
 
     /// Sort order for collection items
     @State private var sortOption: CollectionSortOption = .weeklyViews
 
-    /// Token to discard stale responses after sort changes
-    @State private var loadToken = UUID()
-
     /// Navigation path passed from parent for proper back navigation
     @Binding var navigationPath: NavigationPath
-
-    /// Collection metadata (description, etc.)
-    @State private var collectionMetadata: ItemMetadata?
 
     // MARK: - Constants
 
     private let videoCardWidth: CGFloat = 350
     private let musicCardSize: CGFloat = 200
+
+    // MARK: - ViewModel Accessors
+
+    private var items: [SearchResult] { viewModel.state.items }
+    private var isLoading: Bool { viewModel.state.isLoading }
+    private var errorMessage: String? { viewModel.state.errorMessage }
+    private var collectionMetadata: ItemMetadata? { viewModel.state.collectionMetadata }
 
     // MARK: - Body
 
@@ -86,7 +86,12 @@ struct CollectionBrowserView: View {
         }
         .background(Color.libraryCharcoal)
         .task {
-            await loadCollectionItems()
+            // Only load on first appearance - .task re-runs when returning
+            // from item detail, and an unconditional load would reset the
+            // grid and the user's focus position
+            if !viewModel.state.hasLoaded {
+                await loadCollectionItems()
+            }
         }
         .onChange(of: sortOption) { _, _ in
             Task { await loadCollectionItems() }
@@ -200,7 +205,7 @@ struct CollectionBrowserView: View {
     }
 
     private var thumbnailURL: URL? {
-        URL(string: "https://archive.org/services/img/\(collection.identifier)")
+        IAURLHelpers.thumbnailURL(for: collection.identifier)
     }
 
     // MARK: - Items Grid
@@ -390,52 +395,14 @@ struct CollectionBrowserView: View {
     // MARK: - Data Loading
 
     private func loadCollectionItems() async {
-        let token = UUID()
-        loadToken = token
-        isLoading = true
-        errorMessage = nil
-        items = []
+        // Music collections use both "etree" and "audio" mediatypes
+        let mediaTypeFilter = mediaType == .video ? "movies" : "(etree OR audio)"
 
-        do {
-            // Build search options
-            // Music collections use both "etree" and "audio" mediatypes
-            let mediaTypeFilter = mediaType == .video ? "movies" : "(etree OR audio)"
-            let options: [String: String] = [
-                "rows": "100",
-                "fl[]": "identifier,title,mediatype,creator,description,date,year,downloads",
-                "sort[]": sortOption.apiSortString
-            ]
-
-            // Load items within the collection
-            let result = try await APIManager.sharedManager.searchTyped(
-                query: "collection:\(collection.identifier) AND mediatype:\(mediaTypeFilter)",
-                options: options
-            )
-
-            guard token == loadToken else { return }
-            items = result.response.docs
-
-            // Also try to load collection metadata for description
-            do {
-                let metadata = try await APIManager.sharedManager.getMetaDataTyped(
-                    identifier: collection.identifier
-                )
-                guard token == loadToken else { return }
-                collectionMetadata = metadata.metadata
-            } catch {
-                // Non-fatal: description from search result is sufficient
-            }
-
-            isLoading = false
-        } catch let networkError as NetworkError {
-            guard token == loadToken else { return }
-            errorMessage = ErrorPresenter.shared.userFriendlyMessage(for: networkError)
-            isLoading = false
-        } catch {
-            guard token == loadToken else { return }
-            errorMessage = "Failed to load collection items. Please try again."
-            isLoading = false
-        }
+        await viewModel.loadCollectionContents(
+            identifier: collection.identifier,
+            mediaTypeFilter: mediaTypeFilter,
+            sort: sortOption.apiSortString
+        )
     }
 }
 

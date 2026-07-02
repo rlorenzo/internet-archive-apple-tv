@@ -109,7 +109,7 @@ struct ContinueWatchingCard: View {
     /// Thumbnail URL using Internet Archive's thumbnail service
     /// Always uses the item identifier to ensure consistent, valid thumbnails
     private var archiveThumbnailURL: URL? {
-        URL(string: "https://archive.org/services/img/\(progress.itemIdentifier)")
+        ContinueWatchingHelpers.thumbnailURL(for: progress.itemIdentifier)
     }
 
     /// Placeholder content without aspect ratio (used inside fixed container)

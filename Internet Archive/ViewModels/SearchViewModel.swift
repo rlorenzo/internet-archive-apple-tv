@@ -76,13 +76,21 @@ final class SearchViewModel: ObservableObject {
             let options = buildSearchOptions(page: 0)
             let response = try await searchService.search(query: query, options: options)
 
+            // A cancelled search must not overwrite a newer search's results
+            guard !Task.isCancelled else {
+                state.isLoading = false
+                return
+            }
+
             state.results = response.response.docs
             state.totalResults = response.response.numFound
             state.hasMoreResults = response.response.docs.count < response.response.numFound
             state.isLoading = false
         } catch {
-            state.errorMessage = mapErrorToMessage(error)
             state.isLoading = false
+            // Don't surface an error for a search the caller cancelled
+            guard !(error is CancellationError), !Task.isCancelled else { return }
+            state.errorMessage = mapErrorToMessage(error)
         }
     }
 
@@ -97,6 +105,12 @@ final class SearchViewModel: ObservableObject {
             let options = buildSearchOptions(page: nextPage)
             let response = try await searchService.search(query: query, options: options)
 
+            // A cancelled load must not append to a newer search's results
+            guard !Task.isCancelled else {
+                state.isLoading = false
+                return
+            }
+
             // De-duplicate: IA sort orders shift between pages, so page N+1
             // can re-contain page-N items (duplicate ForEach IDs break focus)
             SearchResultDeduplicator.appendUnique(response.response.docs, to: &state.results)
@@ -104,8 +118,10 @@ final class SearchViewModel: ObservableObject {
             state.hasMoreResults = state.results.count < state.totalResults
             state.isLoading = false
         } catch {
-            state.errorMessage = mapErrorToMessage(error)
             state.isLoading = false
+            // Don't surface an error for a load the caller cancelled
+            guard !(error is CancellationError), !Task.isCancelled else { return }
+            state.errorMessage = mapErrorToMessage(error)
         }
     }
 
@@ -154,19 +170,14 @@ final class SearchViewModel: ObservableObject {
 
     // MARK: - Private Methods
 
+    /// Build search options via the shared query-builder helper.
+    /// Includes the "downloads desc" sort the search UI has always shipped.
     private func buildSearchOptions(page: Int) -> [String: String] {
-        [
-            "rows": "\(pageSize)",
-            "page": "\(page + 1)",
-            "fl[]": "identifier,title,mediatype,creator,description,date,year,downloads"
-        ]
+        SearchQueryBuilder.buildOptions(pageSize: pageSize, page: page)
     }
 
     private func mapErrorToMessage(_ error: Error) -> String {
-        if let networkError = error as? NetworkError {
-            return ErrorPresenter.shared.userFriendlyMessage(for: networkError)
-        }
-        return "An unexpected error occurred. Please try again."
+        ErrorMessageMapper.message(for: error)
     }
 }
 

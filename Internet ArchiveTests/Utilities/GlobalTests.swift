@@ -178,6 +178,22 @@ final class GlobalTests: XCTestCase {
     }
 
     @MainActor
+    func testFormatDatePlainDateDelegatesToSharedHelper() {
+        // Plain yyyy-MM-dd dates (common in IA search results) are formatted
+        // via DateFormattingHelpers instead of being returned raw
+        let formatted = Global.formatDate(string: "2024-01-15")
+
+        XCTAssertEqual(formatted, DateFormattingHelpers.formatDateString("2024-01-15"))
+    }
+
+    @MainActor
+    func testFormatDateSlashDateDelegatesToSharedHelper() {
+        let formatted = Global.formatDate(string: "2024/06/01")
+
+        XCTAssertEqual(formatted, DateFormattingHelpers.formatDateString("2024/06/01"))
+    }
+
+    @MainActor
     func testFormatDateInvalidFormat() {
         let input = "not-a-date"
         let formatted = Global.formatDate(string: input)

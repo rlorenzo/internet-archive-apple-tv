@@ -38,27 +38,20 @@ struct ItemDetailView: View {
 
     @Environment(\.isCompactLayout) private var isCompactLayout
 
+    // MARK: - ViewModel
+
+    /// Item detail view model: owns metadata loading (with retry) and the
+    /// favorite toggle logic
+    @StateObject private var viewModel = ItemDetailViewModel(
+        metadataService: DefaultMetadataService()
+    )
+
     // MARK: - State
-
-    /// Detailed metadata fetched from API
-    @State private var metadata: ItemMetadata?
-
-    /// Full metadata response (includes files and server info)
-    @State private var metadataResponse: ItemMetadataResponse?
-
-    /// Files available for playback
-    @State private var files: [FileInfo]?
-
-    /// Loading state for metadata fetch
-    @State private var isLoading = true
-
-    /// Error message if fetch fails
-    @State private var errorMessage: String?
 
     /// Saved playback progress for resume functionality
     @State private var savedProgress: PlaybackProgress?
 
-    /// Whether this item is favorited
+    /// Whether this item is favorited (mirrors the view model, bound to FavoriteButton)
     @State private var isFavorited = false
 
     /// Show player via fullScreenCover
@@ -73,6 +66,29 @@ struct ItemDetailView: View {
     /// Task for loading metadata (stored for cancellation)
     @State private var loadMetadataTask: Task<Void, Never>?
 
+    // MARK: - ViewModel Accessors
+
+    /// Full metadata response (includes files and server info)
+    private var metadataResponse: ItemMetadataResponse? {
+        viewModel.state.metadataResponse
+    }
+
+    /// Detailed metadata fetched from API
+    private var metadata: ItemMetadata? {
+        metadataResponse?.metadata
+    }
+
+    /// Files available for playback
+    private var files: [FileInfo]? {
+        metadataResponse?.files
+    }
+
+    /// Whether the description area should show its loading indicator
+    private var isLoadingMetadata: Bool {
+        viewModel.state.isLoading
+            || (metadataResponse == nil && viewModel.state.errorMessage == nil)
+    }
+
     // MARK: - Body
 
     var body: some View {
@@ -85,12 +101,13 @@ struct ItemDetailView: View {
         }
         .background(Color.libraryCharcoal)
         .onAppear {
+            configureViewModel()
             // Only fetch metadata when we don't have it yet - onAppear
             // re-fires when returning from the player
             if metadataResponse == nil {
                 loadMetadata()
             }
-            checkFavoriteStatus()
+            isFavorited = viewModel.state.isFavorite
             checkSavedProgress()
         }
         .onDisappear {
@@ -256,7 +273,7 @@ struct ItemDetailView: View {
             }
 
             // Description
-            if isLoading {
+            if isLoadingMetadata {
                 ProgressView()
                     .padding(.top, 10)
                     .accessibilityLabel("Loading item details")
@@ -292,7 +309,7 @@ struct ItemDetailView: View {
     // MARK: - Computed Properties
 
     private var thumbnailURL: URL? {
-        URL(string: "https://archive.org/services/img/\(item.identifier)")
+        IAURLHelpers.thumbnailURL(for: item.identifier)
     }
 
     private var displayCreator: String? {
@@ -300,106 +317,72 @@ struct ItemDetailView: View {
     }
 
     private var displayDate: String? {
-        if let date = metadata?.date ?? item.date {
-            var text = "Date: \(Global.formatDate(string: date) ?? date)"
-            if let licenseURL = metadata?.licenseurl ?? item.licenseurl {
-                let licenseType = ContentFilterService.shared.getLicenseType(licenseURL)
-                text += "  \u{2022}  License: \(licenseType)"
-            }
-            return text
-        }
-        return nil
+        let date = metadata?.date ?? item.date
+        let licenseURL = metadata?.licenseurl ?? item.licenseurl
+
+        return DateFormattingHelpers.formatDateWithLicense(
+            dateString: date,
+            formattedDate: date.flatMap { Global.formatDate(string: $0) },
+            licenseType: licenseURL.map { ContentFilterService.shared.getLicenseType($0) }
+        )
     }
 
     private var displayDescription: String? {
         metadata?.description ?? item.description
     }
 
+    /// Subtitle availability text via the tested SubtitleHelpers (which,
+    /// unlike the previous inline copy, validates that the extracted
+    /// language actually looks like a language - "movie_01.srt" no longer
+    /// shows "Subtitles: 01").
     private var subtitleInfoText: String? {
         guard mediaType == .video, let files = files else { return nil }
-
-        // Filter for subtitle files by checking file extension
-        let subtitleExtensions = [".srt", ".vtt", ".webvtt"]
-        let subtitleFiles = files.filter { file in
-            let lowercasedName = file.name.lowercased()
-            return subtitleExtensions.contains { lowercasedName.hasSuffix($0) }
-        }
-        guard !subtitleFiles.isEmpty else { return nil }
-
-        let languages = subtitleFiles.compactMap { file -> String? in
-            // Extract language from filename pattern like "identifier_english.srt"
-            let basename = (file.name as NSString).deletingPathExtension
-            if let underscoreIndex = basename.lastIndex(of: "_") {
-                let langPart = String(basename[basename.index(after: underscoreIndex)...])
-                return langPart.capitalized
-            }
-            return nil
-        }
-
-        let uniqueLanguages = Array(Set(languages)).sorted()
-        if !uniqueLanguages.isEmpty {
-            return "Subtitles: \(uniqueLanguages.joined(separator: ", "))"
-        } else if subtitleFiles.count == 1 {
-            return "1 subtitle track available"
-        } else {
-            return "\(subtitleFiles.count) subtitle tracks available"
-        }
+        return SubtitleHelpers.formatSubtitleInfo(files: files)
     }
 
     // MARK: - Data Loading
 
-    private func loadMetadata() {
-        isLoading = true
-        errorMessage = nil
+    /// Configure the view model with this item's data (also refreshes the
+    /// favorite status from local storage).
+    private func configureViewModel() {
+        guard viewModel.state.identifier != item.identifier else {
+            viewModel.updateFavoriteStatus()
+            return
+        }
 
+        viewModel.configure(with: ItemConfiguration(
+            identifier: item.identifier,
+            title: item.safeTitle,
+            archivedBy: item.creator ?? "",
+            date: item.date ?? "",
+            description: item.description ?? "",
+            mediaType: item.mediatype ?? "",
+            imageURL: IAURLHelpers.thumbnailURL(for: item.identifier)
+        ))
+    }
+
+    /// Load metadata through the view model (retry + mock-aware service).
+    private func loadMetadata() {
         // Cancel any previous task before starting new one
         loadMetadataTask?.cancel()
 
         loadMetadataTask = Task { @MainActor in
-            do {
-                let response = try await APIManager.sharedManager.getMetaDataTyped(
-                    identifier: item.identifier
-                )
+            let response = await viewModel.loadMetadata()
 
-                // Check for cancellation before updating state
-                guard !Task.isCancelled else { return }
+            guard !Task.isCancelled else { return }
 
-                metadataResponse = response
-                metadata = response.metadata
-                files = response.files
-                isLoading = false
-
-                // If playback was pending, dismiss the loading cover; the
-                // player is presented from the cover's onDismiss handler
-                // once the dismissal has actually completed
-                if playbackPending {
+            if playbackPending {
+                if response != nil {
+                    // Dismiss the loading cover; the player is presented
+                    // from the cover's onDismiss handler once the dismissal
+                    // has actually completed
                     showPlayer = false
-                }
-            } catch let networkError as NetworkError {
-                guard !Task.isCancelled else { return }
-                errorMessage = ErrorPresenter.shared.userFriendlyMessage(for: networkError)
-                isLoading = false
-                // Dismiss loading view if playback was pending so user sees the error
-                if playbackPending {
-                    showPlayer = false
-                    playbackPending = false
-                }
-            } catch {
-                guard !Task.isCancelled else { return }
-                errorMessage = "Failed to load item details. Please try again."
-                isLoading = false
-                // Dismiss loading view if playback was pending so user sees the error
-                if playbackPending {
+                } else {
+                    // Dismiss the loading cover so the user sees the error
                     showPlayer = false
                     playbackPending = false
                 }
             }
-        }
-    }
-
-    private func checkFavoriteStatus() {
-        if let favorites = Global.getFavoriteData() {
-            isFavorited = favorites.contains(item.identifier)
         }
     }
 
@@ -475,13 +458,9 @@ struct ItemDetailView: View {
     }
 
     private func toggleFavorite() {
-        // Favorites are device-local (no API key for server-side saves)
-        if isFavorited {
-            Global.removeFavoriteData(identifier: item.identifier)
-        } else {
-            Global.saveFavoriteData(identifier: item.identifier)
-        }
-        isFavorited.toggle()
+        // Favorites are device-local (no API key for server-side saves);
+        // the view model owns the toggle logic and logging
+        isFavorited = viewModel.toggleFavorite()
         // Let the Favorites tab know it needs to refresh
         appState.notifyFavoritesChanged()
     }

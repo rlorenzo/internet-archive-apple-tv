@@ -110,29 +110,17 @@ struct MediaItemCard: View {
 
     /// Combined accessibility label describing the media item
     private var accessibilityLabelText: String {
-        var components: [String] = [title]
-
-        if let subtitle = subtitle {
-            components.append(subtitle)
-        }
-
-        let typeLabel = mediaType == .video ? "Video" : "Music"
-        components.append(typeLabel)
-
-        if let progress = progress, progress > 0 {
-            let percentage = Int(progress * 100)
-            components.append("\(percentage)% complete")
-        }
-
-        return components.joined(separator: ", ")
+        AccessibilityHelpers.buildMediaItemLabel(
+            title: title,
+            subtitle: subtitle,
+            isVideo: mediaType == .video,
+            progress: progress
+        )
     }
 
     /// Accessibility hint for VoiceOver
     private var accessibilityHintText: String {
-        if let progress = progress, progress > 0 {
-            return "Double-tap to resume playback"
-        }
-        return "Double-tap to view details"
+        AccessibilityHelpers.buildMediaItemHint(hasProgress: (progress ?? 0) > 0)
     }
 
     // MARK: - Subviews
@@ -220,8 +208,8 @@ struct MediaItemCard: View {
         if let customURL = customThumbnailURL {
             return customURL
         }
-        // Internet Archive thumbnail URL pattern
-        return URL(string: "https://archive.org/services/img/\(identifier)")
+        // Internet Archive thumbnail URL pattern (percent-encoded)
+        return IAURLHelpers.thumbnailURL(for: identifier)
     }
 }
 

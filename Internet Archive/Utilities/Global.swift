@@ -76,10 +76,14 @@ class Global: NSObject {
         dateFormatter.locale = Locale(identifier: "en_US_POSIX")
         dateFormatter.dateFormat = "yyyy-MM-dd'T'HH:mm:ssZ"
         guard let date = dateFormatter.date(from: string) else {
-            return string
+            // Not an ISO datetime - delegate to the shared date helpers,
+            // which handle the plain date formats the IA API also returns
+            // (yyyy-MM-dd, yyyy/MM/dd) and fall back to the original string.
+            return DateFormattingHelpers.formatDateString(string)
         }
 
         let dateFormatterPrint = DateFormatter()
+        dateFormatterPrint.locale = Locale(identifier: "en_US_POSIX")
         dateFormatterPrint.dateFormat = "MMM dd, yyyy"
 
         return dateFormatterPrint.string(from: date)

@@ -135,7 +135,7 @@ struct MediaThumbnailView: View {
     // MARK: - Private Views
 
     private var thumbnailURL: URL? {
-        URL(string: "https://archive.org/services/img/\(identifier)")
+        IAURLHelpers.thumbnailURL(for: identifier)
     }
 
     private var placeholderView: some View {
