@@ -4,7 +4,7 @@ This guide explains how to set up your development environment for the Internet 
 
 ## Prerequisites
 
-- **Xcode 16.0+** (for Swift 6.0 support)
+- **Xcode 26.4+** (matches CI; Swift 6.0 support)
 - **tvOS 26.0 SDK**
 - **SwiftLint** (`brew install swiftlint`)
 - **Periphery** (`brew install periphery`) — unused code detection
@@ -53,10 +53,10 @@ This will:
 Create a configuration file for your API keys:
 
 ```bash
-cp Config.example.plist Config.plist
+cp Configuration.plist.template "Internet Archive/Configuration.plist"
 ```
 
-Edit `Config.plist` with your Internet Archive API credentials. This file is gitignored and will not be committed.
+Edit `Internet Archive/Configuration.plist` and add your Internet Archive S3 API keys from [archive.org/account/s3.php](https://archive.org/account/s3.php). This file is gitignored and will not be committed.
 
 ## SwiftLint
 
@@ -72,7 +72,7 @@ swiftlint
 swiftlint --fix
 
 # Lint specific file
-swiftlint lint --path "Internet Archive/AppDelegate.swift"
+swiftlint lint "Internet Archive/App/InternetArchiveApp.swift"
 ```
 
 ### Pre-commit Hook
@@ -140,7 +140,7 @@ GitHub's blame UI applies the file automatically.
 - **Strict Concurrency:** Enabled
 
 ### tvOS Deployment Target
-- **Target:** tvOS 17.0+
+- **Target:** tvOS 18.0+
 
 ### Code Signing
 Configure your development team in Xcode:

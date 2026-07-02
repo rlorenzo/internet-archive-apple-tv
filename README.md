@@ -13,7 +13,7 @@ A native tvOS application for browsing and streaming video and audio content fro
 ## Requirements
 
 - Xcode 16.0+
-- tvOS 17.0+
+- tvOS 18.0+
 - Apple TV (4th generation or later)
 
 ## Quick Start

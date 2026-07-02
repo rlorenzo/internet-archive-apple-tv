@@ -2,139 +2,57 @@
 
 ## Overview
 
-This document describes the testing infrastructure for the Internet Archive Apple TV app. The project uses **Swift Testing** for all unit tests and **XCTest** for UI tests (required by XCUIApplication).
+This document describes the testing infrastructure for the Internet Archive Apple TV app. Unit tests are a mix of **XCTest** (the majority of existing files) and **Swift Testing**; the policy is to **prefer Swift Testing for new unit tests** (matching `CLAUDE.md`). UI tests use **XCTest** (required by XCUIApplication).
 
 ## Test Structure
 
+Test files mirror the production source layout. Directory-level summary (run
+`find "Internet ArchiveTests" -name "*.swift"` for the current full list):
+
 ```text
 Internet ArchiveTests/
-├── Mocks/
-│   ├── MockNetworkService.swift          # Mock network service
-│   ├── MockFavoritesService.swift        # Mock favorites service
-│   ├── MockKeychainManager.swift         # Mock keychain manager
-│   ├── MockPlaybackProgressManager.swift # Mock playback progress
-│   └── MockNetworkMonitor.swift          # Mock network monitor
-├── Fixtures/
-│   └── TestFixtures.swift                # Shared test data factories
-├── Helpers/
-│   ├── TestHelpers.swift                 # General test utilities
-│   └── TestHelpers+SwiftTesting.swift    # Swift Testing-specific helpers
-├── Accessibility/
-│   └── AccessibilityTests.swift          # Accessibility audit tests
-├── App/
-│   ├── AppStateTests.swift               # App-wide state tests
-│   ├── ContentViewTests.swift            # Root TabView tests
-│   ├── ContinueWatchingCardTests.swift   # Continue watching component tests
-│   ├── PlaceholderCardTests.swift        # Placeholder card tests
-│   ├── SectionHeaderTests.swift          # Section header tests
-│   ├── SkeletonLoadingViewTests.swift    # Skeleton loading animation tests
-│   ├── StateViewsTests.swift             # Loading/error/empty state tests
-│   ├── TVCardButtonStyleTests.swift      # tvOS card button style tests
-│   └── AppInfoFooterTests.swift          # App info footer tests
-├── Configuration/
-│   └── AppConfigurationTests.swift       # Configuration loading tests
-├── ErrorHandling/
-│   ├── ErrorHandlingTests.swift          # Error and retry mechanism tests
-│   ├── ErrorLoggerTests.swift            # Logging tests
-│   ├── ErrorPresenterTests.swift         # User-friendly message tests
-│   ├── NetworkErrorTests.swift           # NetworkError enum tests
-│   └── RetryMechanismTests.swift         # Retry with backoff tests
-├── Features/
-│   ├── DescriptionViewTests.swift        # Description view tests
-│   ├── FavoriteButtonTests.swift         # Favorite button tests
-│   ├── FavoritesViewTests.swift          # Favorites view tests
-│   ├── ItemDetailPlaceholderViewTests.swift # Placeholder view tests
-│   ├── MediaHomeErrorViewTests.swift     # Error view tests
-│   ├── MediaThumbnailViewTests.swift     # Thumbnail view tests
-│   ├── MusicHomeViewTests.swift          # Music home tests
-│   ├── NowPlayingViewTests.swift         # Now playing tests
-│   ├── PeopleDetailViewTests.swift       # People detail tests
-│   ├── PlaybackButtonsTests.swift        # Playback button tests
-│   ├── SearchResultCardTests.swift       # Search result card tests
-│   ├── SearchResultsGridViewTests.swift  # Search results grid tests
-│   ├── SearchResultsHelpersTests.swift   # Search results helpers tests
-│   ├── SearchViewTests.swift             # Search view tests
-│   ├── SharedViewsTests.swift            # Shared view component tests
-│   ├── VideoHomeViewTests.swift          # Video home tests
-│   ├── VideoPlayerViewTests.swift        # Video player tests
-│   ├── YearBrowseHelpersTests.swift      # Year browse helpers tests
-│   ├── YearBrowseViewTests.swift         # Year browse view tests
-│   └── Player/
-│       └── VideoPlayerViewFromMetadataTests.swift
-├── Models/
-│   ├── AuthModelsTests.swift             # Authentication model tests
-│   ├── FavoritesModelsTests.swift        # Favorites model tests
-│   ├── MetadataModelsTests.swift         # Metadata model tests
-│   ├── PlaybackProgressTests.swift       # Playback progress tests
-│   ├── RequestModelsTests.swift          # Request model tests
-│   └── SearchModelsTests.swift           # Search model tests
-├── Protocols/
-│   └── NetworkServiceProtocolTests.swift # Protocol conformance tests
-├── Subtitles/
-│   ├── SRTtoVTTConverterTests.swift      # SRT to VTT conversion tests
-│   ├── SubtitleManagerTests.swift        # Subtitle manager tests
-│   ├── SubtitleModelsTests.swift         # Subtitle model tests
-│   └── SubtitleParserTests.swift         # Subtitle parser tests
-├── UI/
-│   ├── CompositionalLayoutBuilderTests.swift
-│   ├── DescriptionTextViewTests.swift
-│   ├── DiffableDataSourceTests.swift
-│   ├── EmptyStateViewTests.swift
-│   ├── ImageCacheManagerTests.swift
-│   ├── ImagePrefetcherTests.swift
-│   ├── MediaItemCardTests.swift
-│   ├── ModernItemCellTests.swift
-│   ├── SkeletonViewTests.swift
-│   ├── SliderTests.swift
-│   └── TrackListCellTests.swift
-├── Utilities/
-│   ├── APIManagerTests.swift
-│   ├── AppProgressHUDTests.swift
-│   ├── ContentFilter/
-│   ├── GlobalTests.swift
-│   ├── HTMLToAttributedStringTests.swift
-│   ├── ItemDetailHelpersTests.swift
-│   ├── KeychainManagerTests.swift
-│   ├── MediaCardHelpersTests.swift
-│   ├── MockAPIManagerTests.swift
-│   ├── NetworkMonitorTests.swift
-│   ├── PlaybackProgressManagerTests.swift
-│   ├── SearchHelpersTests.swift
-│   ├── UITestingHelperTests.swift
-│   └── ValidationHelperTests.swift
-├── ViewControllers/
-│   ├── NowPlayingViewControllerTests.swift
-│   ├── SubtitleSelectionViewControllerTests.swift
-│   └── VideoPlayerViewControllerTests.swift
-└── ViewModels/
-    ├── CollectionViewModelTests.swift
-    ├── FavoritesViewModelTests.swift
-    ├── ItemDetailViewModelTests.swift
-    ├── LoginViewModelTests.swift
-    ├── MusicViewModelTests.swift
-    ├── PeopleViewModelTests.swift
-    ├── SearchViewModelTests.swift
-    ├── VideoViewModelTests.swift
-    └── YearsViewModelTests.swift
+├── Mocks/               # Shared test doubles: MockFavoritesService,
+│                        # MockNetworkMonitor, MockNetworkService
+├── Fixtures/            # TestFixtures.swift — shared test data factories
+├── Helpers/             # TestHelpers.swift — AtomicCounter utility
+├── Accessibility/       # Accessibility audit tests
+├── App/                 # App state, root view, and shared component tests
+├── Configuration/       # Configuration loading tests
+├── ErrorHandling/       # Error, logger, presenter, retry tests
+├── Features/            # SwiftUI feature view + helper tests (incl. Player/)
+├── Models/              # Codable model tests
+├── Protocols/           # Protocol conformance tests
+├── Subtitles/           # Subtitle parsing/conversion/manager tests
+├── UI/                  # UIKit component and image loading tests
+├── Utilities/           # API manager, helpers, keychain, content filter tests
+├── ViewControllers/     # UIKit player controller tests
+├── ViewModels/          # View model tests
+└── (top level)          # AudioQueueManagerTests, AudioTrackTests
 
 Internet ArchiveUITests/
-├── Internet_ArchiveUITests.swift         # Original UI test suite
+├── UITestHelper.swift   # Shared launch/navigation helpers (mock-data launch)
+├── AccessibilityTests.swift
+├── BackgroundAudioTests.swift
+├── FocusNavigationTests.swift
+├── Internet_ArchiveUITests.swift
 ├── Internet_ArchiveUITestsLaunchTests.swift
-├── UITestHelper.swift                    # UI test utilities
-├── FocusNavigationTests.swift            # tvOS focus state tests
-├── RemoteInteractionTests.swift          # Apple TV remote tests
-├── AccessibilityTests.swift              # Accessibility verification
-└── BackgroundAudioTests.swift            # Background audio lifecycle
+├── RemoteInteractionTests.swift
+└── TouchSmokeTests.swift
 ```
 
 ## Framework Strategy
 
-| Test Category | Framework | Rationale |
-| ------------- | --------- | --------- |
-| Unit Tests | Swift Testing | Modern API, parameterized tests, better diagnostics |
+| Test Category | Framework | Notes |
+| ------------- | --------- | ----- |
+| Unit Tests (existing) | Mixed: XCTest (majority) and Swift Testing | Older suites use XCTest; newer suites use Swift Testing |
+| Unit Tests (new) | Swift Testing preferred | Modern API, parameterized tests, better diagnostics |
 | UI Tests | XCTest | Required by XCUIApplication (Apple requirement) |
 
-All unit tests use Swift Testing (`@Test`, `@Suite`, `#expect`). UI tests remain XCTest because `XCUIApplication` only works with XCTest.
+The unit test target contains both frameworks side by side (roughly two thirds
+XCTest, one third Swift Testing at the time of writing). **Prefer Swift Testing
+(`@Test`, `@Suite`, `#expect`) for new unit tests**; there is no requirement to
+migrate existing XCTest suites. UI tests remain XCTest because
+`XCUIApplication` only works with XCTest.
 
 ## Swift Testing Patterns
 
@@ -173,7 +91,9 @@ struct ViewModelTests {
     }
 
     @Test func loadsData() async {
-        mockService.mockResponse = TestFixtures.makeSearchResponse()
+        mockService.mockSearchResponse = TestFixtures.makeSearchResponse(
+            docs: TestFixtures.makeVideoResults(count: 2)
+        )
         await sut.loadData()
         #expect(sut.items.count == 2)
     }
@@ -328,19 +248,19 @@ protocol NetworkServiceProtocol {
 
 Mocks are stored in `Internet ArchiveTests/Mocks/` for reuse across test suites:
 
-| Mock | Purpose |
-| ---- | ------- |
-| `MockNetworkService` | Network layer test double |
-| `MockFavoritesService` | Favorites persistence test double |
-| `MockKeychainManager` | Keychain storage test double |
-| `MockPlaybackProgressManager` | Playback progress test double |
-| `MockNetworkMonitor` | Network connectivity test double |
+| Mock | Purpose | Concurrency |
+| ---- | ------- | ----------- |
+| `MockNetworkService` | Network layer test double | `@MainActor` |
+| `MockFavoritesService` | Favorites persistence test double | `@unchecked Sendable` |
+| `MockNetworkMonitor` | Network connectivity test double | `@MainActor` |
 
-All mocks are marked `@unchecked Sendable` for Swift 6 concurrency compatibility.
+Mocks are made Swift 6-safe either by isolating them to the main actor
+(`@MainActor`) or, for simple lock-free mocks, by marking them
+`@unchecked Sendable`.
 
 ```swift
 let mockService = MockNetworkService()
-mockService.mockSearchResponse = TestFixtures.makeSearchResponse()
+mockService.mockSearchResponse = TestFixtures.searchResponse
 mockService.shouldThrowError = false
 
 let result = try await mockService.search(query: "test", options: [:])
@@ -349,19 +269,30 @@ let result = try await mockService.search(query: "test", options: [:])
 
 ### 3. Test Fixtures
 
-`TestFixtures` provides factory methods for test data:
+`TestFixtures` (`Internet ArchiveTests/Fixtures/TestFixtures.swift`) provides
+static fixtures (`movieSearchResult`, `audioSearchResult`, `searchResponse`,
+`authResponse`, `itemMetadataResponse`, `favoritesResponse`, ...) plus factory
+methods:
 
 ```swift
-// Factory methods
-let item = TestFixtures.makeArchiveItem(identifier: "test-1", title: "Test Movie")
-let response = TestFixtures.makeSearchResponse(count: 5)
-let progress = TestFixtures.makePlaybackProgress(identifier: "vid-1", progress: 0.5)
-let favorite = TestFixtures.makeFavoriteItem(identifier: "fav-1")
+// Single search result (all parameters have defaults)
+let result = TestFixtures.makeSearchResult(identifier: "test-1", title: "Test Movie")
+
+// Search response wrapping a list of docs
+let response = TestFixtures.makeSearchResponse(docs: [result])
+let paged = TestFixtures.makeSearchResponse(numFound: 100, docs: [result])
+
+// Batches of typed results
+let videos = TestFixtures.makeVideoResults(count: 5)          // mediatype "movies"
+let concerts = TestFixtures.makeMusicResults(count: 5)        // mediatype "etree"
+
+// Music metadata with a given track count
+let album = TestFixtures.makeMusicMetadataResponse(trackCount: 3)
 ```
 
 ### 4. Test Categories
 
-#### Unit Tests (Swift Testing)
+#### Unit Tests (XCTest and Swift Testing)
 
 **Models** — Codable conformance, computed properties, safe accessors
 **ViewModels** — State management, data loading, error handling
@@ -582,7 +513,7 @@ See `.github/workflows/tests.yml` for test and coverage configuration (and `.git
 When adding new features:
 
 1. Extract testable logic into `*Helpers` enum types
-2. Write tests using Swift Testing (`@Test`, `@Suite`, `#expect`)
+2. Write new unit tests with Swift Testing (`@Test`, `@Suite`, `#expect`); existing XCTest suites can stay as they are
 3. Place mocks in `Internet ArchiveTests/Mocks/`
 4. Use `TestFixtures` factory methods for test data
 5. Ensure tests pass locally before pushing

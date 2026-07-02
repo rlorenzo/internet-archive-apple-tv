@@ -84,7 +84,7 @@ Internet ArchiveUITests/        # UI tests
 
 ## Technology Stack
 
-- **Platform:** tvOS 17.0+ (deployment target)
+- **Platform:** tvOS 18.0+ (deployment target)
 - **Language:** Swift 6.0 with strict concurrency
 - **UI:** SwiftUI (primary) with UIKit wrappers for video/audio playback
 - **Networking:** Alamofire 5.11
