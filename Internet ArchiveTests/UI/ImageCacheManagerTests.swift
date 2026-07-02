@@ -8,6 +8,15 @@
 import XCTest
 @testable import Internet_Archive
 
+// MARK: - CI Skip Helper
+
+private extension XCTestCase {
+    /// Skip network-dependent tests on CI, where external requests are unreliable.
+    func skipIfCI(reason: String = "Skipping network-dependent test in CI") throws {
+        try XCTSkipIf(ProcessInfo.processInfo.environment["CI"] != nil, reason)
+    }
+}
+
 @MainActor
 final class ImageCacheManagerTests: XCTestCase {
 
@@ -54,10 +63,7 @@ final class ImageCacheManagerTests: XCTestCase {
 
     func testPrefetchImages_withSingleURL() throws {
         // Skip in CI - prefetching fires real network requests
-        try XCTSkipIf(
-            ProcessInfo.processInfo.environment["CI"] != nil,
-            "Skipping network-dependent test in CI"
-        )
+        try skipIfCI()
 
         let urls = [URL(string: "https://archive.org/services/img/test_prefetch_1")!]
         ImageCacheManager.shared.prefetchImages(for: urls)
@@ -66,10 +72,7 @@ final class ImageCacheManagerTests: XCTestCase {
 
     func testPrefetchImages_withMultipleURLs() throws {
         // Skip in CI - prefetching fires real network requests
-        try XCTSkipIf(
-            ProcessInfo.processInfo.environment["CI"] != nil,
-            "Skipping network-dependent test in CI"
-        )
+        try skipIfCI()
 
         let urls = [
             URL(string: "https://archive.org/services/img/test_prefetch_a")!,
@@ -84,10 +87,7 @@ final class ImageCacheManagerTests: XCTestCase {
 
     func testLoadImage_callsCompletionHandler() throws {
         // Skip in CI - network requests to external services are unreliable
-        try XCTSkipIf(
-            ProcessInfo.processInfo.environment["CI"] != nil,
-            "Skipping network-dependent test in CI"
-        )
+        try skipIfCI()
 
         let expectation = self.expectation(description: "Load image completion")
         let url = URL(string: "https://archive.org/services/img/test_load_image")!
@@ -105,10 +105,7 @@ final class ImageCacheManagerTests: XCTestCase {
 
     func testLoadImage_withInvalidURL() throws {
         // Skip in CI - network requests to external services are unreliable
-        try XCTSkipIf(
-            ProcessInfo.processInfo.environment["CI"] != nil,
-            "Skipping network-dependent test in CI"
-        )
+        try skipIfCI()
 
         let expectation = self.expectation(description: "Load invalid image")
         let url = URL(string: "https://invalid.example.com/nonexistent_image_12345.jpg")!
@@ -166,10 +163,7 @@ final class ImageCacheManagerTests: XCTestCase {
 
     func testPrefetchImages_withDuplicateURLs() throws {
         // Skip in CI - prefetching fires real network requests
-        try XCTSkipIf(
-            ProcessInfo.processInfo.environment["CI"] != nil,
-            "Skipping network-dependent test in CI"
-        )
+        try skipIfCI()
 
         let url = URL(string: "https://archive.org/services/img/duplicate_test")!
         let urls = [url, url, url] // Same URL three times
@@ -207,10 +201,7 @@ final class ImageCacheManagerTests: XCTestCase {
 
     func testLoadImage_multipleConcurrentRequests() throws {
         // Skip in CI - network requests to external services are unreliable
-        try XCTSkipIf(
-            ProcessInfo.processInfo.environment["CI"] != nil,
-            "Skipping network-dependent test in CI"
-        )
+        try skipIfCI()
 
         let expectations = (0..<3).map { i in
             expectation(description: "Load image \(i)")
@@ -327,10 +318,7 @@ final class ImageCacheManagerExtendedTests: XCTestCase {
 
     func testPrefetchImages_handlesLargeNumberOfURLs() throws {
         // Skip in CI - prefetching fires real network requests
-        try XCTSkipIf(
-            ProcessInfo.processInfo.environment["CI"] != nil,
-            "Skipping network-dependent test in CI"
-        )
+        try skipIfCI()
 
         let urls = (0..<100).map { index in
             URL(string: "https://archive.org/services/img/batch_prefetch_\(index)")!
@@ -358,10 +346,7 @@ final class ImageCacheManagerExtendedTests: XCTestCase {
 
     func testLoadImage_callsCompletionOnMainThread() throws {
         // Skip in CI - network requests to external services are unreliable
-        try XCTSkipIf(
-            ProcessInfo.processInfo.environment["CI"] != nil,
-            "Skipping network-dependent test in CI"
-        )
+        try skipIfCI()
 
         let expectation = self.expectation(description: "Completion on main thread")
         let url = URL(string: "https://archive.org/services/img/main_thread_test")!
@@ -384,10 +369,7 @@ final class ImageCacheManagerExtendedTests: XCTestCase {
 
     func testPrefetchImages_withMixedValidAndInvalidURLs() throws {
         // Skip in CI - prefetching fires real network requests
-        try XCTSkipIf(
-            ProcessInfo.processInfo.environment["CI"] != nil,
-            "Skipping network-dependent test in CI"
-        )
+        try skipIfCI()
 
         let urls = [
             URL(string: "https://archive.org/services/img/valid1")!,
@@ -410,10 +392,7 @@ final class ImageCacheManagerExtendedTests: XCTestCase {
 
     func testLoadImage_rapidSuccessiveCalls() throws {
         // Skip in CI - network requests to external services are unreliable
-        try XCTSkipIf(
-            ProcessInfo.processInfo.environment["CI"] != nil,
-            "Skipping network-dependent test in CI"
-        )
+        try skipIfCI()
 
         let expectation = self.expectation(description: "All callbacks received")
         expectation.expectedFulfillmentCount = 5
@@ -431,10 +410,7 @@ final class ImageCacheManagerExtendedTests: XCTestCase {
 
     func testClearCache_afterPrefetch() throws {
         // Skip in CI - prefetching fires real network requests
-        try XCTSkipIf(
-            ProcessInfo.processInfo.environment["CI"] != nil,
-            "Skipping network-dependent test in CI"
-        )
+        try skipIfCI()
 
         let urls = [
             URL(string: "https://archive.org/services/img/prefetch_clear_1")!,

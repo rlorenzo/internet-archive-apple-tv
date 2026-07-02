@@ -378,6 +378,9 @@ jobs:
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+      with:
+        # The token isn't needed after checkout in this job
+        persist-credentials: false
 
     - name: Select Xcode version
       run: |
