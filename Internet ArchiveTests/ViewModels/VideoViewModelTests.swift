@@ -543,7 +543,7 @@ final class VideoViewModelTests: XCTestCase {
 final class VideoViewStateTests: XCTestCase {
 
     func testInitialState() {
-        let state = VideoViewState.initial
+        let state = MediaCollectionViewState.video
 
         XCTAssertFalse(state.isLoading)
         XCTAssertEqual(state.collection, "movies")
@@ -552,18 +552,18 @@ final class VideoViewStateTests: XCTestCase {
     }
 
     func testHasItems_whenEmpty() {
-        let state = VideoViewState.initial
+        let state = MediaCollectionViewState.video
         XCTAssertFalse(state.hasItems)
     }
 
     func testHasItems_whenNotEmpty() {
-        var state = VideoViewState.initial
+        var state = MediaCollectionViewState.video
         state.items = [TestFixtures.makeSearchResult(identifier: "test1")]
         XCTAssertTrue(state.hasItems)
     }
 
     func testItemCount() {
-        var state = VideoViewState.initial
+        var state = MediaCollectionViewState.video
         XCTAssertEqual(state.itemCount, 0)
 
         state.items = [
@@ -577,18 +577,18 @@ final class VideoViewStateTests: XCTestCase {
     // MARK: - hasLoaded Tests
 
     func testHasLoaded_initiallyFalse() {
-        let state = VideoViewState.initial
+        let state = MediaCollectionViewState.video
         XCTAssertFalse(state.hasLoaded)
     }
 
     func testHasLoaded_canBeSetToTrue() {
-        var state = VideoViewState.initial
+        var state = MediaCollectionViewState.video
         state.hasLoaded = true
         XCTAssertTrue(state.hasLoaded)
     }
 
     func testHasLoaded_remainsTrueAfterSettingItems() {
-        var state = VideoViewState.initial
+        var state = MediaCollectionViewState.video
         state.hasLoaded = true
         state.items = [TestFixtures.makeSearchResult(identifier: "test1")]
 

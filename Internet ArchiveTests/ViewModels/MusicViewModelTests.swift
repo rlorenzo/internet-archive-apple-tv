@@ -569,7 +569,7 @@ final class MusicViewModelTests: XCTestCase {
 final class MusicViewStateTests: XCTestCase {
 
     func testInitialState() {
-        let state = MusicViewState.initial
+        let state = MediaCollectionViewState.music
 
         XCTAssertFalse(state.isLoading)
         XCTAssertEqual(state.collection, "etree")
@@ -578,18 +578,18 @@ final class MusicViewStateTests: XCTestCase {
     }
 
     func testHasItems_whenEmpty() {
-        let state = MusicViewState.initial
+        let state = MediaCollectionViewState.music
         XCTAssertFalse(state.hasItems)
     }
 
     func testHasItems_whenNotEmpty() {
-        var state = MusicViewState.initial
+        var state = MediaCollectionViewState.music
         state.items = [TestFixtures.makeSearchResult(identifier: "test1")]
         XCTAssertTrue(state.hasItems)
     }
 
     func testItemCount() {
-        var state = MusicViewState.initial
+        var state = MediaCollectionViewState.music
         XCTAssertEqual(state.itemCount, 0)
 
         state.items = [
@@ -603,18 +603,18 @@ final class MusicViewStateTests: XCTestCase {
     // MARK: - hasLoaded Tests
 
     func testHasLoaded_initiallyFalse() {
-        let state = MusicViewState.initial
+        let state = MediaCollectionViewState.music
         XCTAssertFalse(state.hasLoaded)
     }
 
     func testHasLoaded_canBeSetToTrue() {
-        var state = MusicViewState.initial
+        var state = MediaCollectionViewState.music
         state.hasLoaded = true
         XCTAssertTrue(state.hasLoaded)
     }
 
     func testHasLoaded_remainsTrueAfterSettingItems() {
-        var state = MusicViewState.initial
+        var state = MediaCollectionViewState.music
         state.hasLoaded = true
         state.items = [TestFixtures.makeSearchResult(identifier: "test1")]
 
@@ -625,18 +625,18 @@ final class MusicViewStateTests: XCTestCase {
     // MARK: - displayTitle Tests
 
     func testDisplayTitle_usesCollectionTitleWhenSet() {
-        var state = MusicViewState.initial
+        var state = MediaCollectionViewState.music
         state.collectionTitle = "Live Music Archive"
         XCTAssertEqual(state.displayTitle, "Live Music Archive")
     }
 
     func testDisplayTitle_fallsBackToMusicWhenNoCollectionTitle() {
-        let state = MusicViewState.initial
+        let state = MediaCollectionViewState.music
         XCTAssertEqual(state.displayTitle, "Music")
     }
 
     func testDisplayTitle_usesCollectionTitleOverFallback() {
-        var state = MusicViewState.initial
+        var state = MediaCollectionViewState.music
         state.collectionTitle = "Grateful Dead"
         XCTAssertEqual(state.displayTitle, "Grateful Dead")
 
@@ -647,12 +647,12 @@ final class MusicViewStateTests: XCTestCase {
     // MARK: - hasTitleLoadAttempted Tests
 
     func testHasTitleLoadAttempted_initiallyFalse() {
-        let state = MusicViewState.initial
+        let state = MediaCollectionViewState.music
         XCTAssertFalse(state.hasTitleLoadAttempted)
     }
 
     func testHasTitleLoadAttempted_canBeSetToTrue() {
-        var state = MusicViewState.initial
+        var state = MediaCollectionViewState.music
         state.hasTitleLoadAttempted = true
         XCTAssertTrue(state.hasTitleLoadAttempted)
     }

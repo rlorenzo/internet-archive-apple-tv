@@ -204,15 +204,7 @@ final class YearsViewModel: ObservableObject {
     func buildItemNavigationData(at index: Int) -> ItemNavigationData? {
         guard let item = item(at: index) else { return nil }
 
-        return ItemNavigationData(
-            identifier: item.identifier,
-            title: item.title ?? "",
-            archivedBy: item.creator ?? "",
-            date: Global.formatDate(string: item.date) ?? "",
-            description: item.description ?? "",
-            mediaType: item.mediatype ?? "",
-            imageURL: IAURLHelpers.itemImageURL(for: item.identifier)
-        )
+        return ItemNavigationData(item: item, date: Global.formatDate(string: item.date) ?? "")
     }
 
     /// Clear error message
@@ -238,4 +230,20 @@ struct ItemNavigationData: Equatable {
     let description: String
     let mediaType: String
     let imageURL: URL?
+}
+
+extension ItemNavigationData {
+    /// Build navigation data from a search result. The `date` is passed in
+    /// because callers format it differently (raw string vs formatted date).
+    init(item: SearchResult, date: String) {
+        self.init(
+            identifier: item.identifier,
+            title: item.title ?? "",
+            archivedBy: item.creator ?? "",
+            date: date,
+            description: item.description ?? "",
+            mediaType: item.mediatype ?? "",
+            imageURL: IAURLHelpers.itemImageURL(for: item.identifier)
+        )
+    }
 }
