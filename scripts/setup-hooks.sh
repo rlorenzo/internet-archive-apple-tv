@@ -68,6 +68,19 @@ else
     echo "Please ensure .swiftlint.yml exists in the project root"
 fi
 
+# Check for jscpd (duplicate-code ratchet)
+echo ""
+echo "Checking for jscpd..."
+if command -v jscpd &> /dev/null; then
+    echo -e "${GREEN}✅ jscpd $(jscpd --version) is installed${NC}"
+else
+    echo -e "${YELLOW}⚠️  jscpd is not installed (the hook will skip the duplicate-code check; CI still enforces it)${NC}"
+    echo ""
+    echo "Install it with:"
+    echo "  npm install -g jscpd"
+    echo ""
+fi
+
 echo ""
 echo -e "${GREEN}🎉 Git hooks setup complete!${NC}"
 echo ""

@@ -77,7 +77,7 @@ swiftlint lint "Internet Archive/App/InternetArchiveApp.swift"
 
 ### Pre-commit Hook
 
-The pre-commit hook automatically runs SwiftLint on staged Swift files before each commit. Commits are blocked if any lint violations are found.
+The pre-commit hook automatically runs SwiftLint on staged Swift files before each commit, plus a jscpd duplicate-code check over the production sources (threshold in `.jscpd.json` — a ratchet: only ever lower it). Commits are blocked if lint violations are found or duplication exceeds the threshold. Install jscpd with `npm install -g jscpd` (the hook skips the check if missing; CI still enforces it).
 
 To bypass the hook (not recommended):
 ```bash

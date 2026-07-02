@@ -83,9 +83,20 @@ jobs:
           fi
           echo "No complexity warnings"
 
+  jscpd:
+    name: jscpd (Duplicate Code)
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
+
+      - name: Run jscpd (fail if duplication exceeds .jscpd.json threshold)
+        run: npx --yes jscpd@5.0.11 --reporters consoleFull "Internet Archive"
+
   code-quality-success:
     name: Code Quality Success
-    needs: [periphery, lizard]
+    needs: [periphery, lizard, jscpd]
     runs-on: ubuntu-latest
     timeout-minutes: 5
     if: always()
@@ -94,7 +105,10 @@ jobs:
         run: |
           echo "Periphery: ${{ needs.periphery.result }}"
           echo "Lizard:    ${{ needs.lizard.result }}"
-          if [ "${{ needs.periphery.result }}" == "success" ] && [ "${{ needs.lizard.result }}" == "success" ]; then
+          echo "jscpd:     ${{ needs.jscpd.result }}"
+          if [ "${{ needs.periphery.result }}" == "success" ] && \
+             [ "${{ needs.lizard.result }}" == "success" ] && \
+             [ "${{ needs.jscpd.result }}" == "success" ]; then
             exit 0
           else
             exit 1
