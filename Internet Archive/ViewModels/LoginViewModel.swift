@@ -97,9 +97,9 @@ final class LoginViewModel: ObservableObject {
                 ]
                 Global.saveUserData(userData: userData)
 
-                // Store credentials securely
+                // Store session data securely (the raw password is never persisted)
                 let username = response.values?.screenname ?? email
-                _ = KeychainManager.shared.saveUserCredentials(email: email, password: password, username: username)
+                _ = KeychainManager.shared.saveUserCredentials(email: email, username: username)
 
                 state.email = email
                 state.isLoggedIn = true

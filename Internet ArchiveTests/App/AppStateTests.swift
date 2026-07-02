@@ -16,7 +16,6 @@ struct AppStateTests {
 
     private let testEmail = "test@example.com"
     private let testUsername = "TestUser"
-    private let testCredential = "testcredential123"
 
     private let altEmail = "user@archive.org"
     private let altUsername = "ArchiveUser"
@@ -42,7 +41,6 @@ struct AppStateTests {
         _ = KeychainManager.shared.clearUserCredentials()
         _ = KeychainManager.shared.saveUserCredentials(
             email: testEmail,
-            password: testCredential,
             username: testUsername
         )
 
@@ -101,7 +99,6 @@ struct AppStateTests {
         _ = KeychainManager.shared.clearUserCredentials()
         _ = KeychainManager.shared.saveUserCredentials(
             email: testEmail,
-            password: testCredential,
             username: testUsername
         )
         let sut = AppState()
@@ -128,7 +125,6 @@ struct AppStateTests {
         // When: Credentials are saved to keychain and state is refreshed
         _ = KeychainManager.shared.saveUserCredentials(
             email: refreshEmail,
-            password: testCredential,
             username: refreshUsername
         )
         sut.refreshAuthState()
@@ -147,7 +143,6 @@ struct AppStateTests {
         _ = KeychainManager.shared.clearUserCredentials()
         _ = KeychainManager.shared.saveUserCredentials(
             email: testEmail,
-            password: testCredential,
             username: testUsername
         )
         let sut = AppState()

@@ -207,7 +207,7 @@ struct LoginViewModelTests {
 
     @Test func checkLoginStatusWhenLoggedIn() {
         Global.saveUserData(userData: ["logged-in": true])
-        _ = KeychainManager.shared.saveUserCredentials(email: "test@example.com", password: "password123", username: "testuser")
+        _ = KeychainManager.shared.saveUserCredentials(email: "test@example.com", username: "testuser")
 
         viewModel.checkLoginStatus()
 
