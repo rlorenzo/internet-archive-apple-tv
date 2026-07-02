@@ -382,6 +382,50 @@ struct RetryMechanismTests {
             #expect(counter.value == 1)
         }
     }
+
+    // MARK: - isRetryable Classification Tests
+
+    @Test func isRetryable_timeoutIsRetryable() {
+        #expect(RetryMechanism.isRetryable(NetworkError.timeout))
+    }
+
+    @Test func isRetryable_serverError5xxIsRetryable() {
+        #expect(RetryMechanism.isRetryable(NetworkError.serverError(statusCode: 500)))
+        #expect(RetryMechanism.isRetryable(NetworkError.serverError(statusCode: 503)))
+    }
+
+    @Test func isRetryable_serverError4xxIsNotRetryable() {
+        #expect(!RetryMechanism.isRetryable(NetworkError.serverError(statusCode: 400)))
+        #expect(!RetryMechanism.isRetryable(NetworkError.serverError(statusCode: 404)))
+    }
+
+    @Test func isRetryable_noConnectionIsNotRetryable() {
+        #expect(!RetryMechanism.isRetryable(NetworkError.noConnection))
+    }
+
+    @Test func isRetryable_contentFilteredIsNotRetryable() {
+        #expect(!RetryMechanism.isRetryable(NetworkError.contentFiltered))
+    }
+
+    @Test func isRetryable_invalidParametersIsNotRetryable() {
+        #expect(!RetryMechanism.isRetryable(NetworkError.invalidParameters))
+    }
+
+    @Test func isRetryable_rawURLErrorTimedOutIsRetryable() {
+        #expect(RetryMechanism.isRetryable(URLError(.timedOut)))
+    }
+
+    @Test func isRetryable_rawURLErrorConnectionLostIsRetryable() {
+        #expect(RetryMechanism.isRetryable(URLError(.networkConnectionLost)))
+    }
+
+    @Test func isRetryable_rawURLErrorBadURLIsNotRetryable() {
+        #expect(!RetryMechanism.isRetryable(URLError(.badURL)))
+    }
+
+    @Test func isRetryable_arbitraryErrorIsNotRetryable() {
+        #expect(!RetryMechanism.isRetryable(NSError(domain: "test", code: 1)))
+    }
 }
 
 // MARK: - Network Injection Tests

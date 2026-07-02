@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import Alamofire
 
 /// Comprehensive error types for network operations
 enum NetworkError: Error, Sendable {
@@ -84,4 +85,69 @@ enum NetworkError: Error, Sendable {
 
     Please check archive.org for the latest status, or try again later.
     """
+
+    // MARK: - Error Mapping
+
+    /// Map an arbitrary error (Alamofire `AFError`, `URLError`, ...) to a
+    /// `NetworkError` so the whole error-handling stack (RetryMechanism,
+    /// ErrorLogger, ErrorPresenter) works with a single error type.
+    /// Existing `NetworkError` values pass through unchanged.
+    init(mapping error: Error) {
+        if let networkError = error as? NetworkError {
+            self = networkError
+            return
+        }
+
+        if let afError = error.asAFError {
+            // Validation failures carry the HTTP status code
+            if let statusCode = afError.responseCode {
+                switch statusCode {
+                case 401:
+                    self = .unauthorized
+                case 404:
+                    self = .resourceNotFound
+                default:
+                    self = .serverError(statusCode: statusCode)
+                }
+                return
+            }
+
+            if afError.isResponseSerializationError {
+                self = .decodingFailed(afError)
+                return
+            }
+
+            // Session task failures wrap the transport-level error (usually a URLError)
+            if case .sessionTaskFailed(let underlyingError) = afError {
+                self.init(mapping: underlyingError)
+                return
+            }
+
+            self = .requestFailed(afError)
+            return
+        }
+
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .notConnectedToInternet, .networkConnectionLost, .dataNotAllowed:
+                self = .noConnection
+            case .timedOut:
+                self = .timeout
+            default:
+                self = .requestFailed(urlError)
+            }
+            return
+        }
+
+        self = .unknown(error)
+    }
+}
+
+// MARK: - LocalizedError Conformance
+
+/// Bridges the human-readable descriptions through `Error` existentials.
+/// Without this, `(error as Error).localizedDescription` produces generic
+/// Cocoa text like "NetworkError error 12" instead of our messages.
+extension NetworkError: LocalizedError {
+    var errorDescription: String? { localizedDescription }
 }

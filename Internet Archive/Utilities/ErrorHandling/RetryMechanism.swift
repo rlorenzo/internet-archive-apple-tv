@@ -52,91 +52,12 @@ struct RetryMechanism {
 
     // MARK: - Retry Logic
 
-    /// Execute an async operation with automatic retry on failure (static convenience).
+    /// Execute an async operation with automatic retry on failure.
     ///
-    /// This is the primary API for most use cases. Uses `NetworkMonitor.shared` for connectivity checks.
-    /// Network check runs on MainActor, but the operation itself runs off the main thread.
-    ///
-    /// - Parameters:
-    ///   - config: Retry configuration
-    ///   - shouldRetry: Optional closure to determine if error is retryable
-    ///   - operation: The async operation to execute
-    /// - Returns: The result of the operation
-    static func execute<T>(
-        config: RetryConfig = .standard,
-        shouldRetry: ((Error) -> Bool)? = nil,
-        operation: @escaping @Sendable () async throws -> T
-    ) async throws -> T {
-        var lastError: Error?
-        var delay = config.initialDelay
-
-        for attempt in 1...config.maxAttempts {
-            do {
-                // Check network connection before attempting (requires MainActor for NetworkMonitor)
-                try await MainActor.run {
-                    try NetworkMonitor.shared.checkConnection()
-                }
-
-                // Execute the operation
-                let result = try await operation()
-
-                // Log success on retry (suppressed during tests)
-                if attempt > 1 && !isRunningTests {
-                    await MainActor.run {
-                        ErrorLogger.shared.logWarning(
-                            "Succeeded on attempt \(attempt)",
-                            operation: .unknown
-                        )
-                    }
-                }
-
-                return result
-
-            } catch {
-                lastError = error
-
-                // Check if we should retry this error
-                if let shouldRetry = shouldRetry, !shouldRetry(error) {
-                    throw error
-                }
-
-                // Check if error is retryable
-                if !isRetryable(error) {
-                    throw error
-                }
-
-                // Don't retry on last attempt
-                if attempt == config.maxAttempts {
-                    break
-                }
-
-                // Log retry attempt (suppressed during tests)
-                if !isRunningTests {
-                    let errorDescription = error.localizedDescription
-                    await MainActor.run {
-                        ErrorLogger.shared.logWarning(
-                            "Attempt \(attempt) failed, retrying in \(String(format: "%.1f", delay))s: \(errorDescription)",
-                            operation: .unknown
-                        )
-                    }
-                }
-
-                // Wait before retrying with exponential backoff
-                try await Task.sleep(nanoseconds: UInt64(delay * 1_000_000_000))
-
-                // Increase delay with exponential backoff
-                delay = min(delay * config.backoffMultiplier, config.maxDelay)
-            }
-        }
-
-        // All retries failed, throw the last error
-        throw lastError ?? NetworkError.unknown(nil)
-    }
-
-    /// Execute an async operation with automatic retry on failure with injected network monitor.
-    ///
-    /// Use this overload for testing with a mock network monitor.
-    /// This method runs on MainActor to safely access the injected network monitor.
+    /// This is the primary API for all use cases. Uses `NetworkMonitor.shared`
+    /// for connectivity checks unless a monitor is injected (e.g. a
+    /// `MockNetworkMonitor` in tests). Runs on MainActor to safely access the
+    /// network monitor; the operation itself still runs off the main thread.
     ///
     /// - Parameters:
     ///   - config: Retry configuration
@@ -148,7 +69,7 @@ struct RetryMechanism {
     static func execute<T>(
         config: RetryConfig = .standard,
         networkMonitor: (any NetworkMonitorProtocol)? = nil,
-        shouldRetry: ((Error) -> Bool)? = nil,
+        shouldRetry: (@Sendable (Error) -> Bool)? = nil,
         operation: @escaping @Sendable () async throws -> T
     ) async throws -> T {
         var lastError: Error?
@@ -157,11 +78,7 @@ struct RetryMechanism {
         for attempt in 1...config.maxAttempts {
             do {
                 // Check network connection before attempting
-                if let monitor = networkMonitor {
-                    try monitor.checkConnection()
-                } else {
-                    try NetworkMonitor.shared.checkConnection()
-                }
+                try (networkMonitor ?? NetworkMonitor.shared).checkConnection()
 
                 // Execute the operation
                 let result = try await operation()
@@ -216,8 +133,9 @@ struct RetryMechanism {
 
     // MARK: - Retryable Error Detection
 
-    /// Determine if an error is retryable
-    private static func isRetryable(_ error: Error) -> Bool {
+    /// Determine if an error is retryable.
+    /// Internal (rather than private) so retry classification can be unit tested.
+    static func isRetryable(_ error: Error) -> Bool {
         if let networkError = error as? NetworkError {
             switch networkError {
             // Retryable network errors
@@ -258,6 +176,17 @@ struct RetryMechanism {
 
             case .unknown:
                 return true
+            }
+        }
+
+        // Fallback for raw URLErrors that escaped mapping to NetworkError:
+        // transient transport failures are worth retrying.
+        if let urlError = error as? URLError {
+            switch urlError.code {
+            case .timedOut, .networkConnectionLost:
+                return true
+            default:
+                return false
             }
         }
 

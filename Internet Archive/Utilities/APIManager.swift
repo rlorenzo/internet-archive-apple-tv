@@ -77,18 +77,31 @@ final class APIManager: NSObject {
 
     // MARK: - Type-Safe Async/Await Methods (Codable Models, Sendable-compliant)
 
+    /// Executes a request and rethrows any failure as `NetworkError` so the
+    /// whole error-handling stack (RetryMechanism, ErrorLogger, ErrorPresenter)
+    /// receives a single, well-known error type instead of raw AFError/URLError.
+    private func withNetworkErrorMapping<T>(_ operation: () async throws -> T) async throws -> T {
+        do {
+            return try await operation()
+        } catch {
+            throw NetworkError(mapping: error)
+        }
+    }
+
     /// Register new account with typed response (async/await)
     func registerTyped(params: [String: Any]) async throws -> AuthResponse {
         let request = RegisterRequest(params: params, access: access, secret: secret, version: apiVersion)
 
-        return try await AF.request("\(baseURL)\(apiCreate)",
-                                    method: .post,
-                                    parameters: request,
-                                    encoder: URLEncodedFormParameterEncoder.default,
-                                    headers: headers)
-            .validate()
-            .serializingDecodable(AuthResponse.self)
-            .value
+        return try await withNetworkErrorMapping {
+            try await AF.request("\(baseURL)\(apiCreate)",
+                                 method: .post,
+                                 parameters: request,
+                                 encoder: URLEncodedFormParameterEncoder.default,
+                                 headers: headers)
+                .validate()
+                .serializingDecodable(AuthResponse.self)
+                .value
+        }
     }
 
     /// Login with typed response (async/await)
@@ -101,14 +114,16 @@ final class APIManager: NSObject {
             version: apiVersion
         )
 
-        return try await AF.request("\(baseURL)\(apiLogin)",
-                                    method: .post,
-                                    parameters: request,
-                                    encoder: URLEncodedFormParameterEncoder.default,
-                                    headers: headers)
-            .validate()
-            .serializingDecodable(AuthResponse.self)
-            .value
+        return try await withNetworkErrorMapping {
+            try await AF.request("\(baseURL)\(apiLogin)",
+                                 method: .post,
+                                 parameters: request,
+                                 encoder: URLEncodedFormParameterEncoder.default,
+                                 headers: headers)
+                .validate()
+                .serializingDecodable(AuthResponse.self)
+                .value
+        }
     }
 
     /// Get account info with typed response (async/await)
@@ -120,14 +135,16 @@ final class APIManager: NSObject {
             version: apiVersion
         )
 
-        return try await AF.request("\(baseURL)\(apiInfo)",
-                                    method: .post,
-                                    parameters: request,
-                                    encoder: URLEncodedFormParameterEncoder.default,
-                                    headers: headers)
-            .validate()
-            .serializingDecodable(AccountInfoResponse.self)
-            .value
+        return try await withNetworkErrorMapping {
+            try await AF.request("\(baseURL)\(apiInfo)",
+                                 method: .post,
+                                 parameters: request,
+                                 encoder: URLEncodedFormParameterEncoder.default,
+                                 headers: headers)
+                .validate()
+                .serializingDecodable(AccountInfoResponse.self)
+                .value
+        }
     }
 
     /// Search with typed response (async/await)
@@ -148,15 +165,17 @@ final class APIManager: NSObject {
             throw NetworkError.invalidParameters
         }
 
-        let response = try await AF.request(
-            url,
-            method: .get,
-            encoding: URLEncoding.default,
-            headers: headers
-        )
-        .validate()
-        .serializingDecodable(SearchResponse.self)
-        .value
+        let response = try await withNetworkErrorMapping {
+            try await AF.request(
+                url,
+                method: .get,
+                encoding: URLEncoding.default,
+                headers: headers
+            )
+            .validate()
+            .serializingDecodable(SearchResponse.self)
+            .value
+        }
 
         // Apply additional client-side filtering for results that may have slipped through
         if applyContentFilter {
@@ -298,15 +317,17 @@ final class APIManager: NSObject {
             throw NetworkError.invalidParameters
         }
 
-        let response = try await AF.request(
-            "\(baseURL)\(apiMetadata)\(encodedId)",
-            method: .get,
-            encoding: URLEncoding.default,
-            headers: headers
-        )
-        .validate()
-        .serializingDecodable(ItemMetadataResponse.self)
-        .value
+        let response = try await withNetworkErrorMapping {
+            try await AF.request(
+                "\(baseURL)\(apiMetadata)\(encodedId)",
+                method: .get,
+                encoding: URLEncoding.default,
+                headers: headers
+            )
+            .validate()
+            .serializingDecodable(ItemMetadataResponse.self)
+            .value
+        }
 
         // Apply content filtering if enabled
         if applyContentFilter, let metadata = response.metadata {
@@ -329,12 +350,14 @@ final class APIManager: NSObject {
 
         let url = "\(baseURL)\(apiGetFavorite)\(encodedUsername)"
 
-        return try await AF.request(url,
-                                    method: .get,
-                                    encoding: URLEncoding.default,
-                                    headers: headers)
-            .validate()
-            .serializingDecodable(FavoritesResponse.self)
-            .value
+        return try await withNetworkErrorMapping {
+            try await AF.request(url,
+                                 method: .get,
+                                 encoding: URLEncoding.default,
+                                 headers: headers)
+                .validate()
+                .serializingDecodable(FavoritesResponse.self)
+                .value
+        }
     }
 }

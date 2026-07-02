@@ -6,6 +6,7 @@
 //
 
 import XCTest
+import Alamofire
 @testable import Internet_Archive
 
 final class NetworkErrorTests: XCTestCase {
@@ -140,6 +141,119 @@ final class NetworkErrorTests: XCTestCase {
     func testNetworkErrorConformsToError() {
         let error: Error = NetworkError.noConnection
         XCTAssertNotNil(error)
+    }
+
+    /// The custom descriptions must bridge through `Error` existentials via
+    /// `LocalizedError`; without it, logs show "NetworkError error N" garbage.
+    func testLocalizedDescriptionBridgesThroughErrorExistential() {
+        let error: Error = NetworkError.timeout
+        XCTAssertEqual(error.localizedDescription, "Request timed out")
+
+        let serverError: Error = NetworkError.serverError(statusCode: 502)
+        XCTAssertEqual(serverError.localizedDescription, "Server error (HTTP 502)")
+    }
+
+    func testErrorDescriptionMatchesLocalizedDescription() {
+        let error = NetworkError.noConnection
+        XCTAssertEqual(error.errorDescription, error.localizedDescription)
+    }
+
+    // MARK: - Error Mapping
+
+    func testMappingPassesThroughExistingNetworkError() {
+        let mapped = NetworkError(mapping: NetworkError.contentFiltered)
+        guard case .contentFiltered = mapped else {
+            XCTFail("Expected contentFiltered to pass through, got \(mapped)")
+            return
+        }
+    }
+
+    func testMappingURLErrorNotConnectedToNoConnection() {
+        let mapped = NetworkError(mapping: URLError(.notConnectedToInternet))
+        guard case .noConnection = mapped else {
+            XCTFail("Expected noConnection, got \(mapped)")
+            return
+        }
+    }
+
+    func testMappingURLErrorConnectionLostToNoConnection() {
+        let mapped = NetworkError(mapping: URLError(.networkConnectionLost))
+        guard case .noConnection = mapped else {
+            XCTFail("Expected noConnection, got \(mapped)")
+            return
+        }
+    }
+
+    func testMappingURLErrorTimedOutToTimeout() {
+        let mapped = NetworkError(mapping: URLError(.timedOut))
+        guard case .timeout = mapped else {
+            XCTFail("Expected timeout, got \(mapped)")
+            return
+        }
+    }
+
+    func testMappingOtherURLErrorToRequestFailed() {
+        let mapped = NetworkError(mapping: URLError(.badURL))
+        guard case .requestFailed = mapped else {
+            XCTFail("Expected requestFailed, got \(mapped)")
+            return
+        }
+    }
+
+    func testMappingAFError500ToServerError() {
+        let afError = AFError.responseValidationFailed(reason: .unacceptableStatusCode(code: 500))
+        let mapped = NetworkError(mapping: afError)
+        guard case .serverError(let statusCode) = mapped else {
+            XCTFail("Expected serverError, got \(mapped)")
+            return
+        }
+        XCTAssertEqual(statusCode, 500)
+    }
+
+    func testMappingAFError404ToResourceNotFound() {
+        let afError = AFError.responseValidationFailed(reason: .unacceptableStatusCode(code: 404))
+        let mapped = NetworkError(mapping: afError)
+        guard case .resourceNotFound = mapped else {
+            XCTFail("Expected resourceNotFound, got \(mapped)")
+            return
+        }
+    }
+
+    func testMappingAFError401ToUnauthorized() {
+        let afError = AFError.responseValidationFailed(reason: .unacceptableStatusCode(code: 401))
+        let mapped = NetworkError(mapping: afError)
+        guard case .unauthorized = mapped else {
+            XCTFail("Expected unauthorized, got \(mapped)")
+            return
+        }
+    }
+
+    func testMappingAFErrorSerializationFailureToDecodingFailed() {
+        let afError = AFError.responseSerializationFailed(reason: .inputDataNilOrZeroLength)
+        let mapped = NetworkError(mapping: afError)
+        guard case .decodingFailed = mapped else {
+            XCTFail("Expected decodingFailed, got \(mapped)")
+            return
+        }
+    }
+
+    func testMappingAFErrorSessionTaskFailedUnwrapsUnderlyingURLError() {
+        let afError = AFError.sessionTaskFailed(error: URLError(.timedOut))
+        let mapped = NetworkError(mapping: afError)
+        guard case .timeout = mapped else {
+            XCTFail("Expected timeout, got \(mapped)")
+            return
+        }
+    }
+
+    func testMappingUnrecognizedErrorToUnknown() {
+        let nsError = NSError(domain: "SomeDomain", code: 7)
+        let mapped = NetworkError(mapping: nsError)
+        guard case .unknown(let underlying) = mapped else {
+            XCTFail("Expected unknown, got \(mapped)")
+            return
+        }
+        XCTAssertEqual((underlying as? NSError)?.domain, "SomeDomain")
     }
 
     func testNetworkErrorConformsToSendable() {
