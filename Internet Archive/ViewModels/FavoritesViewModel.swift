@@ -188,7 +188,7 @@ final class FavoritesViewModel: ObservableObject {
                 state.movieResults = []
                 state.musicResults = []
                 state.peopleResults = []
-                state.allItems = members
+                state.allItems = []
                 state.isLoading = false
                 state.hasLoaded = true
                 return
