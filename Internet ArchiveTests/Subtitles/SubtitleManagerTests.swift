@@ -412,11 +412,26 @@ final class SubtitleManagerTests: XCTestCase {
     }
 
     func testParseLanguageFromHindiFilename() {
-        // "hi" is the language code for Hindi
-        let result = manager.parseLanguage(from: "movie_hi.srt")
+        // Unambiguous Hindi tokens are still detected as Hindi
+        let result = manager.parseLanguage(from: "movie_hindi.srt")
         XCTAssertEqual(result.code, "hi")
         XCTAssertEqual(result.displayName, "Hindi")
         XCTAssertFalse(result.isDefault)
+    }
+
+    func testParseLanguageFromHindiShortCode() {
+        let result = manager.parseLanguage(from: "movie_hin.srt")
+        XCTAssertEqual(result.code, "hi")
+        XCTAssertEqual(result.displayName, "Hindi")
+        XCTAssertFalse(result.isDefault)
+    }
+
+    func testParseLanguageTreatsBareHiAsClosedCaptions() {
+        // "hi" conventionally marks hearing-impaired subtitles, not Hindi
+        let result = manager.parseLanguage(from: "movie.hi.srt")
+        XCTAssertNil(result.code)
+        XCTAssertEqual(result.displayName, "Closed Captions")
+        XCTAssertTrue(result.isDefault)
     }
 
     func testParseLanguageFromMultipleSeparators() {

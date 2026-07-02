@@ -149,6 +149,28 @@ struct SRTConversionHelpersTests {
         #expect(vtt.contains("<b>bold</b>"))
     }
 
+    @Test("Converts timing lines without spaces around arrow")
+    func convertsArrowWithoutSpaces() {
+        let srt = """
+        1
+        00:00:01,000-->00:00:02,000
+        No spaces around arrow
+        """
+        let vtt = SRTConversionHelpers.convertSRTStringToVTT(srt)
+
+        #expect(vtt.contains("00:00:01.000 --> 00:00:02.000"))
+        #expect(vtt.contains("No spaces around arrow"))
+    }
+
+    @Test("Converts timing lines with tabs around arrow")
+    func convertsArrowWithTabs() {
+        let srt = "1\n00:00:01,000\t-->\t00:00:02,000\nTabs around arrow\n"
+        let vtt = SRTConversionHelpers.convertSRTStringToVTT(srt)
+
+        #expect(vtt.contains("00:00:01.000 --> 00:00:02.000"))
+        #expect(vtt.contains("Tabs around arrow"))
+    }
+
     @Test("Handles many cues efficiently")
     func manyCues() {
         var srt = ""
@@ -200,6 +222,33 @@ struct SRTConversionHelpersTests {
         #expect(decoded == text)
     }
 
+    @Test("Decodes UTF-16 little-endian with BOM")
+    func decodeUTF16LittleEndianBOM() {
+        let text = "Héllo UTF-16 Wörld"
+        var data = Data([0xFF, 0xFE]) // UTF-16 LE BOM
+        data.append(text.data(using: .utf16LittleEndian)!)
+        let decoded = SRTConversionHelpers.decodeSubtitleData(data)
+        #expect(decoded == text)
+    }
+
+    @Test("Decodes UTF-16 big-endian with BOM")
+    func decodeUTF16BigEndianBOM() {
+        let text = "Héllo UTF-16 Wörld"
+        var data = Data([0xFE, 0xFF]) // UTF-16 BE BOM
+        data.append(text.data(using: .utf16BigEndian)!)
+        let decoded = SRTConversionHelpers.decodeSubtitleData(data)
+        #expect(decoded == text)
+    }
+
+    @Test("Strips UTF-8 BOM")
+    func decodeUTF8BOMStripped() {
+        let text = "Hello BOM"
+        var data = Data([0xEF, 0xBB, 0xBF]) // UTF-8 BOM
+        data.append(text.data(using: .utf8)!)
+        let decoded = SRTConversionHelpers.decodeSubtitleData(data)
+        #expect(decoded == text)
+    }
+
     // MARK: - VTT Filename Generation
 
     @Test("Converts lowercase .srt to .vtt")
@@ -237,13 +286,59 @@ struct SRTConversionHelpersTests {
         #expect(SRTConversionHelpers.vttFilename(from: input) == expected)
     }
 
+    // MARK: - Cache Filename Generation
+
+    @Test("Cache filename differs for same filename from different URLs")
+    func cacheFilenameDiffersPerSourceURL() throws {
+        let urlA = try #require(URL(string: "https://archive.org/download/item-a/english.srt"))
+        let urlB = try #require(URL(string: "https://archive.org/download/item-b/english.srt"))
+
+        let nameA = SRTConversionHelpers.cacheFilename(for: urlA, filename: "english.srt")
+        let nameB = SRTConversionHelpers.cacheFilename(for: urlB, filename: "english.srt")
+
+        #expect(nameA != nameB)
+    }
+
+    @Test("Cache filename is stable for the same URL")
+    func cacheFilenameStableForSameURL() throws {
+        let url = try #require(URL(string: "https://archive.org/download/item-a/english.srt"))
+
+        let first = SRTConversionHelpers.cacheFilename(for: url, filename: "english.srt")
+        let second = SRTConversionHelpers.cacheFilename(for: url, filename: "english.srt")
+
+        #expect(first == second)
+    }
+
+    @Test("Cache filename keeps .vtt extension and base name")
+    func cacheFilenameKeepsExtension() throws {
+        let url = try #require(URL(string: "https://archive.org/download/item-a/movie.en.srt"))
+
+        let name = SRTConversionHelpers.cacheFilename(for: url, filename: "movie.en.srt")
+
+        #expect(name.hasSuffix(".vtt"))
+        #expect(name.hasPrefix("movie.en."))
+        #expect(name != "movie.en.vtt")
+    }
+
+    @Test("Cache filename handles names without extension")
+    func cacheFilenameNoExtension() throws {
+        let url = try #require(URL(string: "https://archive.org/download/item-a/subtitles"))
+
+        let name = SRTConversionHelpers.cacheFilename(for: url, filename: "subtitles")
+
+        #expect(name.hasPrefix("subtitles."))
+        #expect(name.count > "subtitles.".count)
+    }
+
     // MARK: - Timing Validation
 
     @Test("Valid timing lines detected",
           arguments: [
             "00:00:01,000 --> 00:00:04,000",
             "00:00:01.000 --> 00:00:04.000",
-            "01:23:45,678 --> 02:34:56,789"
+            "01:23:45,678 --> 02:34:56,789",
+            "00:00:01,000-->00:00:04,000",
+            "00:00:01,000\t-->\t00:00:04,000"
           ])
     func isTimingLineValid(line: String) {
         #expect(SRTConversionHelpers.isTimingLine(line))
@@ -254,8 +349,7 @@ struct SRTConversionHelpersTests {
             "1",
             "Hello World",
             "",
-            "00:00:01 -> 00:00:04",
-            "00:00:01-->00:00:04"
+            "00:00:01 -> 00:00:04"
           ])
     func isTimingLineInvalid(line: String) {
         #expect(!SRTConversionHelpers.isTimingLine(line))
