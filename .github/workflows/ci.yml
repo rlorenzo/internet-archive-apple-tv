@@ -44,11 +44,7 @@ jobs:
 
       - name: Select Xcode version
         run: |
-          if [ "${{ matrix.xcode }}" = "latest-stable" ]; then
-            sudo xcode-select -s /Applications/Xcode.app
-          else
-            sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
-          fi
+          sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app
           xcodebuild -version
           swift --version
 

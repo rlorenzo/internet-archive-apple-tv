@@ -1,5 +1,0 @@
-// Configuration for test targets
-// Project uses SPM for dependencies
-
-// Framework search paths are handled automatically by SPM
-FRAMEWORK_SEARCH_PATHS = $(inherited)
