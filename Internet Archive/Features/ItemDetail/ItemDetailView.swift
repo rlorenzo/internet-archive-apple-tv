@@ -85,7 +85,11 @@ struct ItemDetailView: View {
         }
         .background(Color.libraryCharcoal)
         .onAppear {
-            loadMetadata()
+            // Only fetch metadata when we don't have it yet - onAppear
+            // re-fires when returning from the player
+            if metadataResponse == nil {
+                loadMetadata()
+            }
             checkFavoriteStatus()
             checkSavedProgress()
         }
@@ -93,8 +97,18 @@ struct ItemDetailView: View {
             loadMetadataTask?.cancel()
             loadMetadataTask = nil
         }
-        .fullScreenCover(isPresented: $showPlayer) {
+        .fullScreenCover(isPresented: $showPlayer, onDismiss: handlePlayerCoverDismiss) {
             playerView
+        }
+    }
+
+    /// Present the deferred player once the loading cover has fully
+    /// dismissed. Presenting synchronously while the cover is still
+    /// animating away makes UIKit reject the presentation, leaving the
+    /// user with no player.
+    private func handlePlayerCoverDismiss() {
+        if playbackPending && metadataResponse != nil {
+            presentPlayer()
         }
     }
 
@@ -355,10 +369,11 @@ struct ItemDetailView: View {
                 files = response.files
                 isLoading = false
 
-                // If playback was pending, present player now that metadata is loaded
+                // If playback was pending, dismiss the loading cover; the
+                // player is presented from the cover's onDismiss handler
+                // once the dismissal has actually completed
                 if playbackPending {
-                    showPlayer = false // Dismiss loading view first
-                    presentPlayer()
+                    showPlayer = false
                 }
             } catch let networkError as NetworkError {
                 guard !Task.isCancelled else { return }

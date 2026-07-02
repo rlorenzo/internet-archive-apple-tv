@@ -176,7 +176,9 @@ final class VideoViewModel: ObservableObject {
             )
 
             guard loadToken == currentLoadToken else { return }
-            state.items.append(contentsOf: response.response.docs)
+            // De-duplicate: IA sort orders shift between pages, so page N+1
+            // can re-contain page-N items (duplicate ForEach IDs break focus)
+            SearchResultDeduplicator.appendUnique(response.response.docs, to: &state.items)
             state.currentPage = nextPage
             state.totalFound = response.response.numFound
             state.hasMore = SearchResultsGridHelpers.hasMorePages(

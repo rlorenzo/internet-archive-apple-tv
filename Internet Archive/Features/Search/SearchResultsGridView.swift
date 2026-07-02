@@ -149,18 +149,24 @@ struct SearchResultsGridView: View {
                     "sort[]": "downloads desc"
                 ]
 
-                let fullQuery = "\(query) AND mediatype:(\(apiMediaType))"
+                let fullQuery = SearchQueryBuilder.buildQuery(searchText: query, mediaType: apiMediaType)
                 let response = try await APIManager.networkService.search(
                     query: fullQuery,
                     options: options
                 )
 
-                guard !Task.isCancelled else { return }
+                guard !Task.isCancelled else {
+                    // Always reset the flags, or skeletons show forever and
+                    // load-more stays dead after navigating away mid-load
+                    isLoading = false
+                    isLoadingMore = false
+                    return
+                }
 
                 if page == 0 {
                     results = response.response.docs
                 } else {
-                    results.append(contentsOf: response.response.docs)
+                    SearchResultDeduplicator.appendUnique(response.response.docs, to: &results)
                 }
 
                 currentPage = page
@@ -170,10 +176,10 @@ struct SearchResultsGridView: View {
                 isLoading = false
                 isLoadingMore = false
             } catch {
-                guard !Task.isCancelled else { return }
-
                 isLoading = false
                 isLoadingMore = false
+
+                guard !Task.isCancelled else { return }
 
                 if let networkError = error as? NetworkError {
                     errorMessage = ErrorPresenter.shared.userFriendlyMessage(for: networkError)

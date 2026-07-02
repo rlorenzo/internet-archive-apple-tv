@@ -97,7 +97,9 @@ final class SearchViewModel: ObservableObject {
             let options = buildSearchOptions(page: nextPage)
             let response = try await searchService.search(query: query, options: options)
 
-            state.results.append(contentsOf: response.response.docs)
+            // De-duplicate: IA sort orders shift between pages, so page N+1
+            // can re-contain page-N items (duplicate ForEach IDs break focus)
+            SearchResultDeduplicator.appendUnique(response.response.docs, to: &state.results)
             state.currentPage = nextPage
             state.hasMoreResults = state.results.count < state.totalResults
             state.isLoading = false

@@ -62,7 +62,13 @@ struct MusicHomeView: View {
             }
         }
         .task {
-            await loadContent()
+            // Only load on first appearance - .task re-runs every time the
+            // tab is revisited and an unconditional load would reset the
+            // grid (and the user's scroll/focus position) each time.
+            // Sort changes still reload via onChange below.
+            if !viewModel.state.hasLoaded {
+                await loadContent()
+            }
         }
         .onAppear {
             refreshContinueListening()

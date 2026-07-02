@@ -124,7 +124,7 @@ final class MusicViewModel: ObservableObject {
             state.hasLoaded = true
 
             // Fetch the collection display title (non-fatal on error)
-            await loadCollectionTitle()
+            await loadCollectionTitle(loadToken: loadToken)
 
             ErrorLogger.shared.logSuccess(
                 operation: .getCollections,
@@ -190,7 +190,9 @@ final class MusicViewModel: ObservableObject {
             )
 
             guard loadToken == currentLoadToken else { return }
-            state.items.append(contentsOf: response.response.docs)
+            // De-duplicate: IA sort orders shift between pages, so page N+1
+            // can re-contain page-N items (duplicate ForEach IDs break focus)
+            SearchResultDeduplicator.appendUnique(response.response.docs, to: &state.items)
             state.currentPage = nextPage
             state.totalFound = response.response.numFound
             state.hasMore = SearchResultsGridHelpers.hasMorePages(
@@ -240,7 +242,7 @@ final class MusicViewModel: ObservableObject {
             state.hasLoaded = true
 
             // Fetch collection metadata for the display title
-            await loadCollectionTitle()
+            await loadCollectionTitle(loadToken: currentLoadToken)
 
             ErrorLogger.shared.logSuccess(
                 operation: .getCollections,
@@ -262,12 +264,18 @@ final class MusicViewModel: ObservableObject {
         }
     }
 
-    /// Load the collection's display title from metadata
-    private func loadCollectionTitle() async {
+    /// Load the collection's display title from metadata.
+    ///
+    /// Guards against stale responses: if `setCollection` + a new load ran
+    /// while this metadata request was in flight, the outdated title is
+    /// discarded instead of overwriting the newer collection's title.
+    private func loadCollectionTitle(loadToken: UUID) async {
         do {
             let metadata = try await collectionService.getMetadata(identifier: state.collection)
+            guard loadToken == currentLoadToken else { return }
             state.collectionTitle = metadata.metadata?.title
         } catch {
+            guard loadToken == currentLoadToken else { return }
             // Non-fatal: use fallback title, but log for debugging
             ErrorLogger.shared.log(
                 error: error,

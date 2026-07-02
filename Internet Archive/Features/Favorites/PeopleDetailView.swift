@@ -60,7 +60,12 @@ struct PeopleDetailView: View {
             ItemDetailView(item: item, mediaType: selectedMediaType)
         }
         .onAppear {
-            configureAndLoad()
+            // Only load on first appearance - onAppear re-fires when
+            // returning from item detail and an unconditional load would
+            // reset the grids and the user's focus position.
+            if !viewModel.state.hasLoaded {
+                configureAndLoad()
+            }
         }
         .onDisappear {
             loadTask?.cancel()
