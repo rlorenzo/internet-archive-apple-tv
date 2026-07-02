@@ -2,9 +2,23 @@ name: Tests
 
 on:
   push:
-    branches: [ master, main, develop, sprint* ]
+    branches: [ master, main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   pull_request:
     branches: [ master, main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+  schedule:
+    # Nightly UI test run at 09:00 UTC
+    - cron: '0 9 * * *'
+  workflow_dispatch:
+
+concurrency:
+  group: tests-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   XCODE_VERSION: "26.4"
@@ -13,7 +27,9 @@ jobs:
   # Smoke test to verify app builds and launches on tvOS
   smoke-test:
     name: Smoke Test (tvOS ${{ matrix.tvos-version }})
+    if: github.event_name != 'schedule'
     runs-on: macos-26
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -52,8 +68,11 @@ jobs:
     - name: Cache SPM packages
       uses: actions/cache@v4
       with:
+        # The build below uses a repo-local derived data path
+        # (-derivedDataPath DerivedData), so cache that SourcePackages
+        # directory, not the one under ~/Library.
         path: |
-          ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+          DerivedData/SourcePackages
           .swiftpm
         key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
         restore-keys: |
@@ -101,7 +120,7 @@ jobs:
         DEVICE_ID="${{ steps.find-simulator.outputs.DEVICE_ID }}"
         echo "Booting simulator: $DEVICE_ID"
         xcrun simctl boot "$DEVICE_ID" || true
-        sleep 15
+        xcrun simctl bootstatus "$DEVICE_ID" -b
         echo "Booted devices:"
         xcrun simctl list devices | grep -i booted || true
 
@@ -154,7 +173,9 @@ jobs:
   # Unit tests run on latest tvOS only
   test:
     name: Run Tests
+    if: github.event_name != 'schedule'
     runs-on: macos-26
+    timeout-minutes: 45
 
     steps:
     - name: Checkout code
@@ -208,7 +229,7 @@ jobs:
         echo "Booting simulator: $DEVICE_ID"
         xcrun simctl boot "$DEVICE_ID" || true
         # Wait for simulator to fully boot
-        sleep 10
+        xcrun simctl bootstatus "$DEVICE_ID" -b
         xcrun simctl list devices | grep -i "apple tv"
 
     - name: Run tests
@@ -235,7 +256,7 @@ jobs:
               sleep 5
               DEVICE_ID=$(xcrun simctl list devices available | grep "Apple TV" | head -1 | grep -oE '[A-F0-9-]{36}')
               xcrun simctl boot "$DEVICE_ID" || true
-              sleep 10
+              xcrun simctl bootstatus "$DEVICE_ID" -b
             fi
           fi
         done
@@ -255,6 +276,7 @@ jobs:
       with:
         name: test-results
         path: TestResults.xcresult
+        retention-days: 14
 
     - name: Upload coverage report
       if: success()
@@ -262,6 +284,7 @@ jobs:
       with:
         name: coverage-report
         path: coverage.json
+        retention-days: 14
 
     - name: Check coverage threshold
       if: success()
@@ -342,3 +365,67 @@ jobs:
         else
           echo "✅ Adjusted coverage ${ADJUSTED_COVERAGE}% meets threshold ${threshold}%"
         fi
+
+  # UI tests are too slow/flaky for every PR, so they run nightly (schedule)
+  # and on demand (workflow_dispatch) for signal without blocking merges.
+  ui-test:
+    name: UI Tests (nightly)
+    if: github.event_name == 'schedule' || github.event_name == 'workflow_dispatch'
+    runs-on: macos-26
+    timeout-minutes: 45
+    continue-on-error: false
+
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+
+    - name: Select Xcode version
+      run: |
+        XCODE_PATH="/Applications/Xcode_${{ env.XCODE_VERSION }}.app/Contents/Developer"
+        if [ ! -d "$XCODE_PATH" ]; then
+          echo "Requested Xcode ${{ env.XCODE_VERSION }} not found. Available Xcode versions:"
+          ls /Applications | grep Xcode || true
+          exit 1
+        fi
+        sudo xcode-select -s "$XCODE_PATH"
+        xcodebuild -version
+
+    - name: Cache SPM packages
+      uses: actions/cache@v4
+      with:
+        path: |
+          ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
+          .swiftpm
+        key: ${{ runner.os }}-spm-${{ hashFiles('**/Package.resolved') }}
+        restore-keys: |
+          ${{ runner.os }}-spm-
+
+    - name: Boot simulator
+      run: |
+        # Pre-boot the simulator to avoid FrontBoard launch failures.
+        DEVICE_ID=$(xcrun simctl list devices available | grep "Apple TV" | head -1 | grep -oE '[A-F0-9-]{36}')
+        echo "Booting simulator: $DEVICE_ID"
+        xcrun simctl boot "$DEVICE_ID" || true
+        xcrun simctl bootstatus "$DEVICE_ID" -b
+        xcrun simctl list devices | grep -i "apple tv"
+
+    - name: Run UI tests
+      run: |
+        # The UI tests configure the app themselves via launch arguments
+        # (--uitesting) and launch environment (USE_MOCK_DATA=true); see
+        # Internet ArchiveUITests/UITestHelper.swift.
+        rm -rf UITestResults.xcresult
+        xcodebuild test \
+          -project "Internet Archive.xcodeproj" \
+          -scheme "Internet Archive" \
+          -destination "platform=tvOS Simulator,name=Apple TV" \
+          -only-testing:"Internet ArchiveUITests" \
+          -resultBundlePath UITestResults.xcresult
+
+    - name: Upload UI test results
+      if: always()
+      uses: actions/upload-artifact@v4
+      with:
+        name: ui-test-results
+        path: UITestResults.xcresult
+        retention-days: 14

@@ -3,8 +3,18 @@ name: CI - Lint and Build
 on:
   push:
     branches: [ master, main ]  # Only run on direct pushes to main/master
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   pull_request:
     branches: [ master, main ]  # Run on PRs targeting main/master
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   SCHEME: "Internet Archive"
@@ -14,6 +24,7 @@ jobs:
   swiftlint:
     name: SwiftLint
     runs-on: macos-26
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -27,6 +38,7 @@ jobs:
   build:
     name: Build (${{ matrix.os }})
     runs-on: ${{ matrix.os }}
+    timeout-minutes: 45
     strategy:
       fail-fast: false
       matrix:
@@ -83,6 +95,7 @@ jobs:
     name: CI Success
     needs: [swiftlint, build]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: always()
     steps:
       - name: Check all jobs

@@ -52,13 +52,25 @@ final class ImageCacheManagerTests: XCTestCase {
         XCTAssertNotNil(ImageCacheManager.shared)
     }
 
-    func testPrefetchImages_withSingleURL() {
+    func testPrefetchImages_withSingleURL() throws {
+        // Skip in CI - prefetching fires real network requests
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
         let urls = [URL(string: "https://archive.org/services/img/test_prefetch_1")!]
         ImageCacheManager.shared.prefetchImages(for: urls)
         XCTAssertNotNil(ImageCacheManager.shared)
     }
 
-    func testPrefetchImages_withMultipleURLs() {
+    func testPrefetchImages_withMultipleURLs() throws {
+        // Skip in CI - prefetching fires real network requests
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
         let urls = [
             URL(string: "https://archive.org/services/img/test_prefetch_a")!,
             URL(string: "https://archive.org/services/img/test_prefetch_b")!,
@@ -152,7 +164,13 @@ final class ImageCacheManagerTests: XCTestCase {
         XCTAssertLessThan(usage, 1_000_000) // Less than 1 MB
     }
 
-    func testPrefetchImages_withDuplicateURLs() {
+    func testPrefetchImages_withDuplicateURLs() throws {
+        // Skip in CI - prefetching fires real network requests
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
         let url = URL(string: "https://archive.org/services/img/duplicate_test")!
         let urls = [url, url, url] // Same URL three times
 
@@ -307,7 +325,13 @@ final class ImageCacheManagerExtendedTests: XCTestCase {
         XCTAssertNotNil(ImageCacheManager.shared)
     }
 
-    func testPrefetchImages_handlesLargeNumberOfURLs() {
+    func testPrefetchImages_handlesLargeNumberOfURLs() throws {
+        // Skip in CI - prefetching fires real network requests
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
         let urls = (0..<100).map { index in
             URL(string: "https://archive.org/services/img/batch_prefetch_\(index)")!
         }
@@ -358,7 +382,13 @@ final class ImageCacheManagerExtendedTests: XCTestCase {
         XCTAssertEqual(usage1, usage2)
     }
 
-    func testPrefetchImages_withMixedValidAndInvalidURLs() {
+    func testPrefetchImages_withMixedValidAndInvalidURLs() throws {
+        // Skip in CI - prefetching fires real network requests
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
         let urls = [
             URL(string: "https://archive.org/services/img/valid1")!,
             URL(string: "https://archive.org/services/img/valid2")!,
@@ -399,7 +429,13 @@ final class ImageCacheManagerExtendedTests: XCTestCase {
         wait(for: [expectation], timeout: 30.0)
     }
 
-    func testClearCache_afterPrefetch() {
+    func testClearCache_afterPrefetch() throws {
+        // Skip in CI - prefetching fires real network requests
+        try XCTSkipIf(
+            ProcessInfo.processInfo.environment["CI"] != nil,
+            "Skipping network-dependent test in CI"
+        )
+
         let urls = [
             URL(string: "https://archive.org/services/img/prefetch_clear_1")!,
             URL(string: "https://archive.org/services/img/prefetch_clear_2")!

@@ -3,8 +3,18 @@ name: Code Quality
 on:
   push:
     branches: [ master, main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
   pull_request:
     branches: [ master, main ]
+    paths-ignore:
+      - '**.md'
+      - 'docs/**'
+
+concurrency:
+  group: code-quality-${{ github.ref }}
+  cancel-in-progress: true
 
 env:
   XCODE_VERSION: "26.4"
@@ -13,6 +23,7 @@ jobs:
   periphery:
     name: Periphery (Unused Code)
     runs-on: macos-26
+    timeout-minutes: 45
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -51,6 +62,7 @@ jobs:
   lizard:
     name: Lizard (Complexity)
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
@@ -75,6 +87,7 @@ jobs:
     name: Code Quality Success
     needs: [periphery, lizard]
     runs-on: ubuntu-latest
+    timeout-minutes: 5
     if: always()
     steps:
       - name: Check all jobs
