@@ -1,0 +1,5 @@
+{
+  "format": ["swift"],
+  "threshold": 2,
+  "gitignore": true
+}

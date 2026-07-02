@@ -62,6 +62,46 @@ final class MediaThumbnailViewTests: XCTestCase {
         XCTAssertEqual(view.cornerRadius, 20)
     }
 
+    // MARK: - Placeholder Icon Size Tests
+
+    func testInit_defaultPlaceholderIconSize() {
+        let view = MediaThumbnailView(
+            identifier: "test-item",
+            mediaType: .video,
+            size: CGSize(width: 380, height: 214)
+        )
+        XCTAssertEqual(view.placeholderIconSize, 40)
+    }
+
+    func testInit_customPlaceholderIconSize() {
+        let view = MediaThumbnailView(
+            identifier: "test-item",
+            mediaType: .video,
+            size: CGSize(width: 300, height: 169),
+            placeholderIconSize: 50
+        )
+        XCTAssertEqual(view.placeholderIconSize, 50)
+    }
+
+    func testInit_aspectRatioDefaultPlaceholderIconSize() {
+        let view = MediaThumbnailView(
+            identifier: "test-item",
+            mediaType: .music,
+            aspectRatio: 1.0
+        )
+        XCTAssertEqual(view.placeholderIconSize, 40)
+    }
+
+    func testInit_aspectRatioCustomPlaceholderIconSize() {
+        let view = MediaThumbnailView(
+            identifier: "test-item",
+            mediaType: .music,
+            aspectRatio: 1.0,
+            placeholderIconSize: 50
+        )
+        XCTAssertEqual(view.placeholderIconSize, 50)
+    }
+
     // MARK: - MediaType Tests
 
     func testMediaType_video() {

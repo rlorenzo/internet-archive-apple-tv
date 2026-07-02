@@ -201,15 +201,7 @@ final class PeopleViewModel: ObservableObject {
 
     /// Build navigation data for item
     func buildItemNavigationData(for item: SearchResult) -> ItemNavigationData {
-        ItemNavigationData(
-            identifier: item.identifier,
-            title: item.title ?? "",
-            archivedBy: item.creator ?? "",
-            date: item.date ?? "",
-            description: item.description ?? "",
-            mediaType: item.mediatype ?? "",
-            imageURL: IAURLHelpers.itemImageURL(for: item.identifier)
-        )
+        ItemNavigationData(item: item, date: item.date ?? "")
     }
 
     /// Clear error message
