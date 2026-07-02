@@ -35,18 +35,15 @@ struct YearBrowseView: View {
 
     // MARK: - State
 
-    /// ViewModel for year data management
+    /// ViewModel for year data management (owns the year selection)
     @StateObject private var viewModel: YearsViewModel
-
-    /// Currently selected year
-    @State private var selectedYear: String?
 
     @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
-    // MARK: - Constants
-
-    private let videoCardWidth: CGFloat = 320
-    private let musicCardSize: CGFloat = 180
+    /// Currently selected year, owned by the view model
+    private var selectedYear: String? {
+        viewModel.state.selectedYear
+    }
 
     // MARK: - Initialization
 
@@ -71,14 +68,18 @@ struct YearBrowseView: View {
         HStack(spacing: 0) {
             // Left sidebar: Year list
             yearSidebar
-                .frame(minWidth: 300, idealWidth: 320, maxWidth: 360)
+                .frame(minWidth: YearBrowseHelpers.sidebarWidth, idealWidth: 320, maxWidth: 360)
 
             // Right content: Items grid
             contentArea
         }
         .background(Color.libraryCharcoal)
         .task {
-            await loadData()
+            // Only load on first appearance - .task re-runs when returning
+            // from item detail, and reloading would reset the selection
+            if !viewModel.state.hasYears && viewModel.state.errorMessage == nil {
+                await loadData()
+            }
         }
     }
 
@@ -138,8 +139,8 @@ struct YearBrowseView: View {
         ScrollViewReader { proxy in
             ScrollView {
                 LazyVStack(spacing: 4) {
-                    ForEach(viewModel.state.sortedKeys, id: \.self) { year in
-                        yearButton(year: year)
+                    ForEach(Array(viewModel.state.sortedKeys.enumerated()), id: \.element) { index, year in
+                        yearButton(year: year, index: index)
                             .id(year)
                     }
                 }
@@ -160,12 +161,12 @@ struct YearBrowseView: View {
         }
     }
 
-    private func yearButton(year: String) -> some View {
+    private func yearButton(year: String, index: Int) -> some View {
         let isSelected = selectedYear == year
         let itemCount = viewModel.state.sortedData[year]?.count ?? 0
 
         return Button {
-            selectedYear = year
+            viewModel.selectYear(at: index)
         } label: {
             HStack {
                 Text(year)
@@ -186,8 +187,8 @@ struct YearBrowseView: View {
             )
         }
         .buttonStyle(.plain)
-        .accessibilityLabel("\(year), \(itemCount) items")
-        .accessibilityHint(isSelected ? "Currently selected" : "Double-tap to browse items from \(year)")
+        .accessibilityLabel(YearBrowseHelpers.yearButtonAccessibilityLabel(year: year, itemCount: itemCount))
+        .accessibilityHint(YearBrowseHelpers.yearButtonAccessibilityHint(year: year, isSelected: isSelected))
         .accessibilityAddTraits(isSelected ? .isSelected : [])
     }
 
@@ -213,8 +214,8 @@ struct YearBrowseView: View {
             loadingView
         } else if let errorMessage = viewModel.state.errorMessage {
             errorView(message: errorMessage)
-        } else if let year = selectedYear, let items = viewModel.state.sortedData[year] {
-            itemsGridView(year: year, items: items)
+        } else if let year = selectedYear {
+            itemsGridView(year: year, items: viewModel.state.selectedYearItems)
         } else {
             emptySelectionView
         }
@@ -243,8 +244,8 @@ struct YearBrowseView: View {
 
                 // Items grid
                 LazyVGrid(
-                    columns: gridColumns,
-                    spacing: mediaType == .video ? 48 : 40
+                    columns: YearBrowseHelpers.gridColumns(for: mediaType),
+                    spacing: YearBrowseHelpers.gridSpacing(for: mediaType)
                 ) {
                     ForEach(items) { item in
                         Button {
@@ -267,23 +268,12 @@ struct YearBrowseView: View {
 
     /// Generate accessibility label for an item
     private func itemAccessibilityLabel(for item: SearchResult) -> String {
-        var components = [item.safeTitle]
-        if let creator = item.creator {
-            components.append(creator)
-        }
-        let typeLabel = mediaType == .video ? "Video" : "Music"
-        components.append(typeLabel)
-        return components.joined(separator: ", ")
-    }
-
-    private var gridColumns: [GridItem] {
-        let count = mediaType == .video ? 4 : 5
-        return Array(repeating: GridItem(.flexible(), spacing: mediaType == .video ? 48 : 40), count: count)
+        YearBrowseHelpers.itemAccessibilityLabel(for: item, mediaType: mediaType)
     }
 
     private func itemCard(for item: SearchResult) -> some View {
-        let cardWidth = mediaType == .video ? videoCardWidth : musicCardSize
-        let cardHeight = mediaType == .video ? videoCardWidth * 9 / 16 : musicCardSize
+        let cardWidth = YearBrowseHelpers.cardWidth(for: mediaType)
+        let cardHeight = YearBrowseHelpers.cardHeight(for: mediaType)
 
         return VStack(alignment: .leading, spacing: 12) {
             // Thumbnail
@@ -296,14 +286,14 @@ struct YearBrowseView: View {
             // Text
             VStack(alignment: .leading, spacing: 4) {
                 Text(item.safeTitle)
-                    .font(mediaType == .video ? .callout : .caption)
+                    .font(YearBrowseHelpers.titleFont(for: mediaType))
                     .fontWeight(.medium)
                     .lineLimit(2)
                     .foregroundStyle(.primary)
 
                 if let creator = item.creator {
                     Text(creator)
-                        .font(mediaType == .video ? .caption : .caption2)
+                        .font(YearBrowseHelpers.creatorFont(for: mediaType))
                         .foregroundStyle(.secondary)
                         .lineLimit(1)
                 }
@@ -361,28 +351,14 @@ struct YearBrowseView: View {
     // MARK: - Data Loading
 
     private func loadData() async {
-        // Map media type to collection type for API query
-        let collectionType: String
-        switch mediaType {
-        case .video:
-            collectionType = "movies"
-        case .music:
-            collectionType = "etree"
-        }
-
         viewModel.configure(
             name: collection.safeTitle,
             identifier: collection.identifier,
-            collection: collectionType
+            collection: YearBrowseHelpers.collectionType(for: mediaType)
         )
 
-        // Load the data
+        // Load the data; the view model auto-selects the first year
         await viewModel.loadYearsData()
-
-        // Select the first year if available
-        if selectedYear == nil, let firstYear = viewModel.state.sortedKeys.first {
-            selectedYear = firstYear
-        }
     }
 }
 

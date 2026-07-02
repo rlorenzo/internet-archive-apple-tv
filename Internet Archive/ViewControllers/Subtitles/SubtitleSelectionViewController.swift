@@ -98,7 +98,7 @@ final class SubtitleSelectionViewController: UIViewController {
         containerView.contentView.addSubview(tableView)
 
         let containerWidth: CGFloat = 600
-        let containerHeight = min(CGFloat((tracks.count + 1) * 66 + 80), 500)
+        let containerHeight = VideoPlayerHelpers.containerHeight(trackCount: tracks.count)
 
         NSLayoutConstraint.activate([
             containerView.centerXAnchor.constraint(equalTo: view.centerXAnchor),
@@ -155,24 +155,17 @@ extension SubtitleSelectionViewController: UITableViewDataSource {
             return UITableViewCell()
         }
 
-        if indexPath.row == 0 {
-            // "Off" option
-            cell.configure(
-                title: "Off",
-                subtitle: nil,
-                isSelected: selectedTrack == nil,
-                accessibilityHint: "Turn off subtitles"
-            )
-        } else {
-            let track = tracks[indexPath.row - 1]
-            let subtitle = track.format == .srt ? "SRT" : "WebVTT"
-            cell.configure(
-                title: track.languageDisplayName,
-                subtitle: subtitle,
-                isSelected: selectedTrack?.identifier == track.identifier,
-                accessibilityHint: "Select \(track.languageDisplayName) subtitles"
-            )
-        }
+        let cellData = VideoPlayerHelpers.subtitleCellData(
+            index: indexPath.row,
+            tracks: tracks,
+            selectedTrack: selectedTrack
+        )
+        cell.configure(
+            title: cellData.title,
+            subtitle: cellData.subtitle,
+            isSelected: cellData.isSelected,
+            accessibilityHint: cellData.accessibilityHint
+        )
 
         return cell
     }

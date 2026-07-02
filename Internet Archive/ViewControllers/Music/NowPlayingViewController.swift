@@ -31,6 +31,21 @@ final class NowPlayingViewController: UIViewController {
     /// Timer for periodic progress saving
     private var progressSaveTimer: Timer?
 
+    /// Block-based observer token for AVPlayerItemDidPlayToEndTime
+    /// (nonisolated(unsafe) so it can be removed from the nonisolated deinit)
+    nonisolated(unsafe) private var trackEndObserver: NSObjectProtocol?
+
+    /// Block-based observer token for AVPlayerItemFailedToPlayToEndTime
+    nonisolated(unsafe) private var trackFailedObserver: NSObjectProtocol?
+
+    /// KVO observation of the current player item's status, used to detect
+    /// items that fail to load (e.g. 404) and would otherwise stall silently
+    private var playerItemStatusObservation: NSKeyValueObservation?
+
+    /// Number of consecutive tracks that failed to play; guards against
+    /// endlessly skipping through a broken album
+    private var consecutiveFailureCount = 0
+
     /// Flag to track if we're currently scrubbing
     private var isScrubbing: Bool = false
 
@@ -181,6 +196,12 @@ final class NowPlayingViewController: UIViewController {
 
     deinit {
         NotificationCenter.default.removeObserver(self)
+        if let observer = trackEndObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        if let observer = trackFailedObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
     }
 
     // MARK: - Setup
@@ -389,7 +410,10 @@ final class NowPlayingViewController: UIViewController {
         // Animate album art
         albumArtView.animatePulse()
 
-        // Reset slider (will update after seeking if resuming)
+        // Reset slider (will update after seeking if resuming).
+        // The max must be reset too: a stale duration from the previous
+        // track would corrupt progress calculations in saveProgress.
+        slider.max = track.duration ?? 0
         let initialTime = resumeTime ?? 0
         slider.set(value: initialTime, animated: false)
         slider.leftLabel.text = formatTime(initialTime)
@@ -397,6 +421,25 @@ final class NowPlayingViewController: UIViewController {
 
         // Setup player
         let playerItem = AVPlayerItem(url: track.streamURL)
+
+        // Observe item status to catch failures (e.g. 404): without this a
+        // broken stream stalls silently with the UI stuck on "playing"
+        playerItemStatusObservation?.invalidate()
+        playerItemStatusObservation = playerItem.observe(\.status, options: [.new]) { [weak self] item, _ in
+            let status = item.status
+            let errorDescription = item.error?.localizedDescription
+            Task { @MainActor [weak self] in
+                guard let self else { return }
+                switch status {
+                case .readyToPlay:
+                    self.consecutiveFailureCount = 0
+                case .failed:
+                    self.handleTrackPlaybackFailure(errorDescription: errorDescription)
+                default:
+                    break
+                }
+            }
+        }
 
         if player == nil {
             player = AVPlayer(playerItem: playerItem)
@@ -456,18 +499,37 @@ final class NowPlayingViewController: UIViewController {
         startTimeObserver()
         startProgressTracking()
 
-        // Setup end notification
-        NotificationCenter.default.removeObserver(
-            self,
-            name: .AVPlayerItemDidPlayToEndTime,
-            object: nil
-        )
-        NotificationCenter.default.addObserver(
-            self,
-            selector: #selector(trackDidEnd),
-            name: .AVPlayerItemDidPlayToEndTime,
-            object: playerItem
-        )
+        // Setup end/failure notifications. Block-based observers with
+        // queue: .main are used because the selector API does not guarantee
+        // main-thread delivery and the handlers are @MainActor.
+        if let observer = trackEndObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        trackEndObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: playerItem,
+            queue: .main
+        ) { [weak self] _ in
+            Task { @MainActor [weak self] in
+                self?.trackDidEnd()
+            }
+        }
+
+        if let observer = trackFailedObserver {
+            NotificationCenter.default.removeObserver(observer)
+        }
+        trackFailedObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemFailedToPlayToEndTime,
+            object: playerItem,
+            queue: .main
+        ) { [weak self] notification in
+            let errorDescription = (
+                notification.userInfo?[AVPlayerItemFailedToPlayToEndTimeErrorKey] as? Error
+            )?.localizedDescription
+            Task { @MainActor [weak self] in
+                self?.handleTrackPlaybackFailure(errorDescription: errorDescription)
+            }
+        }
 
         UIApplication.shared.isIdleTimerDisabled = true
 
@@ -482,7 +544,7 @@ final class NowPlayingViewController: UIViewController {
         )
     }
 
-    @objc private func trackDidEnd() {
+    private func trackDidEnd() {
         if let nextTrack = queueManager.next() {
             // Continue to next track - progress will be updated on next save
             playTrack(nextTrack)
@@ -497,13 +559,66 @@ final class NowPlayingViewController: UIViewController {
         }
     }
 
+    /// Handle a player item that failed to load or play (e.g. 404, network
+    /// error): log it and auto-advance, stopping after several consecutive
+    /// failures instead of skipping through a broken album forever
+    private func handleTrackPlaybackFailure(errorDescription: String?) {
+        let failedTrack = queueManager.currentTrack
+
+        ErrorLogger.shared.logWarning(
+            "Track failed to play: \(failedTrack?.filename ?? "unknown") - \(errorDescription ?? "unknown error")",
+            operation: .playAudio
+        )
+
+        consecutiveFailureCount += 1
+
+        // Tear down observers for the failed item so the status KVO and the
+        // failed-to-play notification can't both trigger a skip
+        playerItemStatusObservation?.invalidate()
+        playerItemStatusObservation = nil
+        if let observer = trackFailedObserver {
+            NotificationCenter.default.removeObserver(observer)
+            trackFailedObserver = nil
+        }
+
+        guard consecutiveFailureCount < 3 else {
+            // Several tracks in a row failed - stop playback
+            player?.pause()
+            controlsView.setPlaying(false)
+            UIApplication.shared.isIdleTimerDisabled = false
+
+            let alert = UIAlertController(
+                title: "Playback Error",
+                message: "Unable to play the tracks in this item. Please try again later.",
+                preferredStyle: .alert
+            )
+            alert.addAction(UIAlertAction(title: "OK", style: .default))
+            present(alert, animated: true)
+            return
+        }
+
+        // Skip to the next track, mirroring trackDidEnd
+        if let nextTrack = queueManager.next() {
+            playTrack(nextTrack)
+        } else {
+            controlsView.setPlaying(false)
+            UIApplication.shared.isIdleTimerDisabled = false
+        }
+    }
+
     private func updateControlsState() {
         controlsView.setHasNext(queueManager.hasNext)
-        controlsView.setHasPrevious(queueManager.hasPrevious)
+        // Previous is always available while a track is loaded: tapping it
+        // restarts the current track (>3s in) or goes back when possible,
+        // so it must not be disabled just because we're on the first track
+        controlsView.setHasPrevious(queueManager.currentTrack != nil)
     }
 
     private func updateTrackPositionLabel() {
-        trackPositionLabel.text = "Track \(queueManager.currentPosition) of \(queueManager.trackCount)"
+        trackPositionLabel.text = NowPlayingHelpers.trackPositionText(
+            currentPosition: queueManager.currentPosition,
+            trackCount: queueManager.trackCount
+        )
     }
 
     // MARK: - Time Observer
@@ -545,7 +660,13 @@ final class NowPlayingViewController: UIViewController {
 
     private func startProgressTracking() {
         stopProgressTracking()
-        progressSaveTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
+        progressSaveTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] timer in
+            // Self-invalidate if the controller is gone without having
+            // received viewWillDisappear (repeating timers retain themselves)
+            guard self != nil else {
+                timer.invalidate()
+                return
+            }
             Task { @MainActor in
                 self?.saveProgress()
             }
@@ -564,27 +685,36 @@ final class NowPlayingViewController: UIViewController {
         let currentTime = player.currentTime().seconds
         let trackDuration = slider.max
 
-        // Don't save if at the very beginning
-        guard currentTime >= 10, trackDuration > 0 else { return }
+        // Don't save at the very beginning or when the duration is unknown
+        guard NowPlayingHelpers.shouldSaveProgress(
+            currentTime: currentTime,
+            trackDuration: trackDuration
+        ) else { return }
 
         // Calculate album-level progress using consistent normalized scale (0-100)
         // This ensures the progress bar displays smoothly across all tracks
         let trackProgressPercentage = currentTime / trackDuration
-        let albumProgress = (Double(queueManager.currentIndex) + trackProgressPercentage) / Double(queueManager.trackCount)
+        let albumProgress = NowPlayingHelpers.calculateAlbumProgress(
+            currentIndex: queueManager.currentIndex,
+            trackProgressPercentage: trackProgressPercentage,
+            trackCount: queueManager.trackCount
+        )
 
-        // Always use normalized 0-100 scale for consistent progress bar display
-        let effectiveDuration = 100.0
-        let effectiveCurrentTime = albumProgress * 100.0
-
-        // Save at album level using marker filename, with track index for resume
+        // Save at album level using marker filename, with track index for
+        // resume. The index refers to the original (unshuffled) order so
+        // resume works against the sorted track list even after shuffling.
         let progress = PlaybackProgress.audio(MediaProgressInfo(
             identifier: itemIdentifier,
             filename: PlaybackProgressManager.albumMarkerFilename,
-            currentTime: effectiveCurrentTime,
-            duration: effectiveDuration,
-            title: "\(track.artist ?? itemTitle ?? ""): \(track.title)",
+            currentTime: albumProgress.currentTime,
+            duration: albumProgress.duration,
+            title: NowPlayingHelpers.progressTitle(
+                artist: track.artist,
+                itemTitle: itemTitle,
+                trackTitle: track.title
+            ),
             imageURL: (track.thumbnailURL ?? imageURL)?.absoluteString,
-            trackIndex: queueManager.currentIndex,
+            trackIndex: queueManager.currentIndexInOriginalOrder ?? queueManager.currentIndex,
             trackFilename: track.filename,
             trackCurrentTime: currentTime  // Actual track position for resume
         ))
@@ -599,25 +729,14 @@ final class NowPlayingViewController: UIViewController {
     // MARK: - Helpers
 
     private func formatTime(_ time: Double) -> String {
-        let sign = time < 0 ? -1.0 : 1.0
-        let absTime = abs(time)
-        let hours = Int(absTime) / 3600
-        let minutes = (Int(absTime) % 3600) / 60
-        let seconds = Int(absTime) % 60
-
-        let prefix = sign < 0 ? "-" : ""
-
-        if hours > 0 {
-            return prefix + String(format: "%d:%02d:%02d", hours, minutes, seconds)
-        } else {
-            return prefix + String(format: "%d:%02d", minutes, seconds)
-        }
+        NowPlayingHelpers.formatTime(time)
     }
 
     private func updateSliderAccessibility(currentTime: Double) {
-        let currentFormatted = formatTime(currentTime)
-        let durationFormatted = formatTime(slider.max)
-        slider.accessibilityValue = "\(currentFormatted) of \(durationFormatted)"
+        slider.accessibilityValue = NowPlayingHelpers.sliderAccessibilityValue(
+            currentTime: currentTime,
+            duration: slider.max
+        )
     }
 }
 

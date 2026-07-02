@@ -80,12 +80,11 @@ Internet Archive/
 
 Internet ArchiveTests/          # Unit tests
 Internet ArchiveUITests/        # UI tests
-Config/                         # Build configurations
 ```
 
 ## Technology Stack
 
-- **Platform:** tvOS 17.0+ (deployment target)
+- **Platform:** tvOS 18.0+ (deployment target)
 - **Language:** Swift 6.0 with strict concurrency
 - **UI:** SwiftUI (primary) with UIKit wrappers for video/audio playback
 - **Networking:** Alamofire 5.11
@@ -154,6 +153,3 @@ If SPM packages fail to resolve:
 2. Close Xcode
 3. Delete `~/Library/Developer/Xcode/DerivedData/Internet_Archive-*`
 4. Reopen and let Xcode resolve packages
-
-### Test Target Build Issues
-Ensure `Config/Tests.xcconfig` is properly configured with framework search paths.

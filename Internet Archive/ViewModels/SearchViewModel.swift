@@ -52,6 +52,11 @@ final class SearchViewModel: ObservableObject {
     private let searchService: SearchServiceProtocol
     private let pageSize: Int
 
+    /// Generation counter for in-flight loads. Each `search`/`loadNextPage`
+    /// call bumps it; a response only mutates state if its captured generation
+    /// is still current, so a superseded call can't clobber a newer one.
+    private var searchGeneration = 0
+
     // MARK: - Initialization
 
     init(searchService: SearchServiceProtocol, pageSize: Int = 50) {
@@ -68,6 +73,9 @@ final class SearchViewModel: ObservableObject {
             return
         }
 
+        searchGeneration += 1
+        let requestGeneration = searchGeneration
+
         state.isLoading = true
         state.errorMessage = nil
         state.currentPage = 0
@@ -76,19 +84,30 @@ final class SearchViewModel: ObservableObject {
             let options = buildSearchOptions(page: 0)
             let response = try await searchService.search(query: query, options: options)
 
+            // A superseded search must not overwrite the newer search's state
+            // (the newer call owns the flags now, so don't touch them either)
+            guard requestGeneration == searchGeneration else { return }
+
             state.results = response.response.docs
             state.totalResults = response.response.numFound
             state.hasMoreResults = response.response.docs.count < response.response.numFound
             state.isLoading = false
         } catch {
-            state.errorMessage = mapErrorToMessage(error)
+            // A superseded search must not touch state owned by the newer call
+            guard requestGeneration == searchGeneration else { return }
             state.isLoading = false
+            // Don't surface an error for a search the caller cancelled
+            guard !(error is CancellationError) else { return }
+            state.errorMessage = mapErrorToMessage(error)
         }
     }
 
     /// Load the next page of results
     func loadNextPage(query: String) async {
         guard state.hasMoreResults, !state.isLoading else { return }
+
+        searchGeneration += 1
+        let requestGeneration = searchGeneration
 
         state.isLoading = true
         let nextPage = state.currentPage + 1
@@ -97,13 +116,23 @@ final class SearchViewModel: ObservableObject {
             let options = buildSearchOptions(page: nextPage)
             let response = try await searchService.search(query: query, options: options)
 
-            state.results.append(contentsOf: response.response.docs)
+            // A superseded load must not append to a newer search's results
+            // (the newer call owns the flags now, so don't touch them either)
+            guard requestGeneration == searchGeneration else { return }
+
+            // De-duplicate: IA sort orders shift between pages, so page N+1
+            // can re-contain page-N items (duplicate ForEach IDs break focus)
+            SearchResultDeduplicator.appendUnique(response.response.docs, to: &state.results)
             state.currentPage = nextPage
             state.hasMoreResults = state.results.count < state.totalResults
             state.isLoading = false
         } catch {
-            state.errorMessage = mapErrorToMessage(error)
+            // A superseded load must not touch state owned by the newer call
+            guard requestGeneration == searchGeneration else { return }
             state.isLoading = false
+            // Don't surface an error for a load the caller cancelled
+            guard !(error is CancellationError) else { return }
+            state.errorMessage = mapErrorToMessage(error)
         }
     }
 
@@ -152,19 +181,14 @@ final class SearchViewModel: ObservableObject {
 
     // MARK: - Private Methods
 
+    /// Build search options via the shared query-builder helper.
+    /// Includes the "downloads desc" sort the search UI has always shipped.
     private func buildSearchOptions(page: Int) -> [String: String] {
-        [
-            "rows": "\(pageSize)",
-            "page": "\(page + 1)",
-            "fl[]": "identifier,title,mediatype,creator,description,date,year,downloads"
-        ]
+        SearchQueryBuilder.buildOptions(pageSize: pageSize, page: page)
     }
 
     private func mapErrorToMessage(_ error: Error) -> String {
-        if let networkError = error as? NetworkError {
-            return ErrorPresenter.shared.userFriendlyMessage(for: networkError)
-        }
-        return "An unexpected error occurred. Please try again."
+        ErrorMessageMapper.message(for: error)
     }
 }
 

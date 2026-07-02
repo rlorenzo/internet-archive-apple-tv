@@ -113,6 +113,27 @@ enum SearchQueryBuilder {
     }
 }
 
+// MARK: - Result De-duplication
+
+/// Helper for de-duplicating paginated search results.
+///
+/// Internet Archive sort orders can shift between page requests, so page N+1
+/// routinely re-contains items from page N. Appending those duplicates
+/// produces repeated `ForEach` IDs (`SearchResult.id == identifier`), which
+/// breaks tvOS focus navigation.
+enum SearchResultDeduplicator {
+    /// Append only the results whose identifiers aren't already present.
+    /// - Parameters:
+    ///   - newResults: The freshly fetched page of results.
+    ///   - existing: The already displayed results, modified in place.
+    static func appendUnique(_ newResults: [SearchResult], to existing: inout [SearchResult]) {
+        var seenIdentifiers = Set(existing.map(\.identifier))
+        for result in newResults where seenIdentifiers.insert(result.identifier).inserted {
+            existing.append(result)
+        }
+    }
+}
+
 // MARK: - Pagination Helpers
 
 /// Helper for managing search pagination state

@@ -116,6 +116,6 @@ enum ContinueWatchingHelpers {
     /// - Parameter identifier: The item's identifier
     /// - Returns: URL for the Archive.org thumbnail service
     static func thumbnailURL(for identifier: String) -> URL? {
-        URL(string: "https://archive.org/services/img/\(identifier)")
+        IAURLHelpers.thumbnailURL(for: identifier)
     }
 }

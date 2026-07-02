@@ -124,7 +124,7 @@ final class MusicViewModel: ObservableObject {
             state.hasLoaded = true
 
             // Fetch the collection display title (non-fatal on error)
-            await loadCollectionTitle()
+            await loadCollectionTitle(loadToken: loadToken)
 
             ErrorLogger.shared.logSuccess(
                 operation: .getCollections,
@@ -190,7 +190,9 @@ final class MusicViewModel: ObservableObject {
             )
 
             guard loadToken == currentLoadToken else { return }
-            state.items.append(contentsOf: response.response.docs)
+            // De-duplicate: IA sort orders shift between pages, so page N+1
+            // can re-contain page-N items (duplicate ForEach IDs break focus)
+            SearchResultDeduplicator.appendUnique(response.response.docs, to: &state.items)
             state.currentPage = nextPage
             state.totalFound = response.response.numFound
             state.hasMore = SearchResultsGridHelpers.hasMorePages(
@@ -219,6 +221,9 @@ final class MusicViewModel: ObservableObject {
 
     /// Load collection data (legacy non-paginated method; retained for compatibility)
     func loadCollection() async {
+        let loadToken = UUID()
+        currentLoadToken = loadToken
+
         state.isLoading = true
         state.errorMessage = nil
 
@@ -231,6 +236,10 @@ final class MusicViewModel: ObservableObject {
                 )
             }
 
+            // A stale response (a newer load started meanwhile) must not
+            // overwrite the newer load's state
+            guard loadToken == currentLoadToken else { return }
+
             // Update collection name from response
             state.collection = result.collection
 
@@ -239,8 +248,9 @@ final class MusicViewModel: ObservableObject {
             state.isLoading = false
             state.hasLoaded = true
 
-            // Fetch collection metadata for the display title
-            await loadCollectionTitle()
+            // Fetch collection metadata for the display title, passing the
+            // token captured at the start so a stale title is discarded
+            await loadCollectionTitle(loadToken: loadToken)
 
             ErrorLogger.shared.logSuccess(
                 operation: .getCollections,
@@ -248,6 +258,7 @@ final class MusicViewModel: ObservableObject {
             )
 
         } catch {
+            guard loadToken == currentLoadToken else { return }
             state.isLoading = false
             state.hasLoaded = true
             state.errorMessage = mapErrorToMessage(error)
@@ -262,12 +273,18 @@ final class MusicViewModel: ObservableObject {
         }
     }
 
-    /// Load the collection's display title from metadata
-    private func loadCollectionTitle() async {
+    /// Load the collection's display title from metadata.
+    ///
+    /// Guards against stale responses: if `setCollection` + a new load ran
+    /// while this metadata request was in flight, the outdated title is
+    /// discarded instead of overwriting the newer collection's title.
+    private func loadCollectionTitle(loadToken: UUID) async {
         do {
             let metadata = try await collectionService.getMetadata(identifier: state.collection)
+            guard loadToken == currentLoadToken else { return }
             state.collectionTitle = metadata.metadata?.title
         } catch {
+            guard loadToken == currentLoadToken else { return }
             // Non-fatal: use fallback title, but log for debugging
             ErrorLogger.shared.log(
                 error: error,
@@ -312,10 +329,7 @@ final class MusicViewModel: ObservableObject {
     // MARK: - Private Methods
 
     private func mapErrorToMessage(_ error: Error) -> String {
-        if let networkError = error as? NetworkError {
-            return ErrorPresenter.shared.userFriendlyMessage(for: networkError)
-        }
-        return "An unexpected error occurred. Please try again."
+        ErrorMessageMapper.message(for: error)
     }
 }
 

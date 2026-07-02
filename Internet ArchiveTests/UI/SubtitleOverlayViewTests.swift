@@ -136,6 +136,37 @@ final class SubtitleOverlayViewTests: XCTestCase {
         XCTAssertTrue(view.isHidden)
     }
 
+    // MARK: - Cue Transition Tests
+
+    func testUpdateCues_cueActiveAtCurrentTime_setsAccessibilityValue() {
+        // With no player configured, updateCues evaluates cues at time 0
+        let view = SubtitleOverlayView(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080))
+        view.updateCues([makeCue(startTime: 0, endTime: 5, text: "Visible cue")])
+        XCTAssertEqual(view.accessibilityValue, "Visible cue")
+    }
+
+    func testUpdateCues_newCueDuringHideAnimation_isNotWiped() {
+        // Regression test: a cue starting shortly after the previous one
+        // ended must not be cleared by the in-flight hide animation
+        let view = SubtitleOverlayView(frame: CGRect(x: 0, y: 0, width: 1920, height: 1080))
+
+        view.updateCues([makeCue(startTime: 0, endTime: 5, text: "First cue")])
+        XCTAssertEqual(view.accessibilityValue, "First cue")
+
+        // Gap with no active cue starts the hide animation...
+        view.updateCues([])
+        // ...and a new cue becomes active before the fade-out completes
+        view.updateCues([makeCue(startTime: 0, endTime: 5, text: "Second cue")])
+
+        let expectation = expectation(description: "hide animation completed")
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.4) {
+            expectation.fulfill()
+        }
+        waitForExpectations(timeout: 2.0)
+
+        XCTAssertEqual(view.accessibilityValue, "Second cue")
+    }
+
     // MARK: - Lifecycle Tests
 
     func testConfigure_reconfigure_doesNotCrash() {

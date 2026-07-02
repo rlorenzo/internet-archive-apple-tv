@@ -67,8 +67,9 @@ actor SRTtoVTTConverter {
             throw SubtitleConversionError.cacheDirectoryUnavailable
         }
 
-        // Generate cache filename
-        let vttFilename = SRTConversionHelpers.vttFilename(from: filename)
+        // Generate cache filename keyed by the source URL so that items
+        // sharing a subtitle filename (e.g. "english.srt") don't collide
+        let vttFilename = SRTConversionHelpers.cacheFilename(for: srtURL, filename: filename)
         let cacheURL = cacheDir.appendingPathComponent(vttFilename)
 
         // Check if already cached and not expired (7-day TTL)

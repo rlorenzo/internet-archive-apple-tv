@@ -27,6 +27,8 @@ class KeychainManager {
 
     enum KeychainKey: String {
         case userEmail = "user_email"
+        /// Legacy key: raw passwords are no longer written. Kept only so
+        /// `clearUserCredentials()` can scrub values persisted by older versions.
         case userPassword = "user_password"
         case username = "username"
         case isLoggedIn = "is_logged_in"
@@ -34,25 +36,40 @@ class KeychainManager {
 
     // MARK: - Public Methods
 
-    /// Save a string value to the keychain
+    /// Save a string value to the keychain.
+    ///
+    /// Updates the existing item in place when present (so a failed write can
+    /// never destroy the previous value) and only adds a new item when none exists.
     func save(_ value: String, forKey key: KeychainKey) -> Bool {
         guard let data = value.data(using: .utf8) else {
             return false
         }
 
-        // Delete any existing item
-        delete(forKey: key)
-
-        // Create query
         let query: [String: Any] = [
             kSecClass as String: kSecClassGenericPassword,
             kSecAttrService as String: service,
-            kSecAttrAccount as String: key.rawValue,
+            kSecAttrAccount as String: key.rawValue
+        ]
+
+        // Try updating an existing item first
+        let attributes: [String: Any] = [
             kSecValueData as String: data,
             kSecAttrAccessible as String: kSecAttrAccessibleWhenUnlockedThisDeviceOnly
         ]
+        let updateStatus = SecItemUpdate(query as CFDictionary, attributes as CFDictionary)
+        if updateStatus == errSecSuccess {
+            return true
+        }
+        guard updateStatus == errSecItemNotFound else {
+            return false
+        }
 
-        let status = SecItemAdd(query as CFDictionary, nil)
+        // No existing item - add a new one
+        var addQuery = query
+        addQuery[kSecValueData as String] = data
+        addQuery[kSecAttrAccessible as String] = kSecAttrAccessibleWhenUnlockedThisDeviceOnly
+
+        let status = SecItemAdd(addQuery as CFDictionary, nil)
         return status == errSecSuccess
     }
 
@@ -123,11 +140,13 @@ class KeychainManager {
 
     // MARK: - Convenience Methods for User Data
 
-    /// Save complete user data securely
-    func saveUserCredentials(email: String, password: String, username: String) -> Bool {
+    /// Save user session data securely.
+    ///
+    /// The raw password is intentionally not persisted: nothing in the app
+    /// ever reads it back, and storing it would only widen the attack surface.
+    func saveUserCredentials(email: String, username: String) -> Bool {
         var success = true
         success = success && save(email, forKey: .userEmail)
-        success = success && save(password, forKey: .userPassword)
         success = success && save(username, forKey: .username)
         success = success && save(true, forKey: .isLoggedIn)
         return success
@@ -135,9 +154,6 @@ class KeychainManager {
 
     /// Get user email
     var userEmail: String? { getString(forKey: .userEmail) }
-
-    /// Get user password
-    var userPassword: String? { getString(forKey: .userPassword) }
 
     /// Get username
     var username: String? { getString(forKey: .username) }
@@ -149,6 +165,8 @@ class KeychainManager {
     func clearUserCredentials() -> Bool {
         var success = true
         success = success && delete(forKey: .userEmail)
+        // Legacy scrub: older versions persisted the raw password; keep
+        // deleting it so existing installs are cleaned up on logout.
         success = success && delete(forKey: .userPassword)
         success = success && delete(forKey: .username)
         success = success && delete(forKey: .isLoggedIn)

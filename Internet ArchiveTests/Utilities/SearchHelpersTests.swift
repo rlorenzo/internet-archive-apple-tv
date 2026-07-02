@@ -8,6 +8,84 @@
 import XCTest
 @testable import Internet_Archive
 
+// MARK: - SearchResultDeduplicator Tests
+
+final class SearchResultDeduplicatorTests: XCTestCase {
+
+    func testAppendUnique_appendsNewResults() {
+        var existing = [
+            TestFixtures.makeSearchResult(identifier: "a"),
+            TestFixtures.makeSearchResult(identifier: "b")
+        ]
+        let newResults = [
+            TestFixtures.makeSearchResult(identifier: "c"),
+            TestFixtures.makeSearchResult(identifier: "d")
+        ]
+
+        SearchResultDeduplicator.appendUnique(newResults, to: &existing)
+
+        XCTAssertEqual(existing.map(\.identifier), ["a", "b", "c", "d"])
+    }
+
+    func testAppendUnique_skipsDuplicatesOfExisting() {
+        var existing = [
+            TestFixtures.makeSearchResult(identifier: "a"),
+            TestFixtures.makeSearchResult(identifier: "b")
+        ]
+        let newResults = [
+            TestFixtures.makeSearchResult(identifier: "b"), // Overlap from shifted sort
+            TestFixtures.makeSearchResult(identifier: "c")
+        ]
+
+        SearchResultDeduplicator.appendUnique(newResults, to: &existing)
+
+        XCTAssertEqual(existing.map(\.identifier), ["a", "b", "c"])
+    }
+
+    func testAppendUnique_skipsDuplicatesWithinNewResults() {
+        var existing = [TestFixtures.makeSearchResult(identifier: "a")]
+        let newResults = [
+            TestFixtures.makeSearchResult(identifier: "b"),
+            TestFixtures.makeSearchResult(identifier: "b")
+        ]
+
+        SearchResultDeduplicator.appendUnique(newResults, to: &existing)
+
+        XCTAssertEqual(existing.map(\.identifier), ["a", "b"])
+    }
+
+    func testAppendUnique_intoEmptyArray() {
+        var existing: [SearchResult] = []
+        let newResults = [TestFixtures.makeSearchResult(identifier: "a")]
+
+        SearchResultDeduplicator.appendUnique(newResults, to: &existing)
+
+        XCTAssertEqual(existing.map(\.identifier), ["a"])
+    }
+
+    func testAppendUnique_emptyNewResults() {
+        var existing = [TestFixtures.makeSearchResult(identifier: "a")]
+
+        SearchResultDeduplicator.appendUnique([], to: &existing)
+
+        XCTAssertEqual(existing.map(\.identifier), ["a"])
+    }
+
+    func testAppendUnique_preservesOrder() {
+        var existing = [TestFixtures.makeSearchResult(identifier: "z")]
+        let newResults = [
+            TestFixtures.makeSearchResult(identifier: "m"),
+            TestFixtures.makeSearchResult(identifier: "a"),
+            TestFixtures.makeSearchResult(identifier: "z"),
+            TestFixtures.makeSearchResult(identifier: "k")
+        ]
+
+        SearchResultDeduplicator.appendUnique(newResults, to: &existing)
+
+        XCTAssertEqual(existing.map(\.identifier), ["z", "m", "a", "k"])
+    }
+}
+
 // MARK: - SearchContentFilter Tests
 
 final class SearchContentFilterTests: XCTestCase {

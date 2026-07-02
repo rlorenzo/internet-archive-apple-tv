@@ -112,6 +112,30 @@ final class YearsViewModelTests: XCTestCase {
         XCTAssertEqual(viewModel.state.sortedKeys[2], "2018")
     }
 
+    func testLoadYearsData_sortsUndatedLast() async {
+        viewModel.configure(name: "Test", identifier: "test_id", collection: "collection")
+
+        let testResults = [
+            TestFixtures.makeSearchResult(identifier: "item1", year: nil), // "Undated"
+            TestFixtures.makeSearchResult(identifier: "item2", year: "2020"),
+            TestFixtures.makeSearchResult(identifier: "item3", year: "1999")
+        ]
+        mockService.mockCollectionsResponse = (collection: "collection", results: testResults)
+
+        await viewModel.loadYearsData()
+
+        // Lexicographic sort would put "Undated" first ("U" > "2") and
+        // auto-select it; numeric sort keeps years first, Undated last
+        XCTAssertEqual(viewModel.state.sortedKeys, ["2020", "1999", "Undated"])
+        XCTAssertEqual(viewModel.state.selectedYear, "2020")
+    }
+
+    func testSortYearKeys_numericDescendingWithNonNumericLast() {
+        let sorted = YearsViewModel.sortYearKeys(["Undated", "1999", "2020", "515", "2005"])
+
+        XCTAssertEqual(sorted, ["2020", "2005", "1999", "515", "Undated"])
+    }
+
     func testLoadYearsData_handlesNilYearAsUndated() async {
         viewModel.configure(name: "Test", identifier: "test_id", collection: "collection")
 

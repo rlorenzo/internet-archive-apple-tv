@@ -45,6 +45,13 @@ final class VideoPlayerViewController: AVPlayerViewController {
     /// Timer for periodic progress saving
     private var progressSaveTimer: Timer?
 
+    /// Cached asset duration in seconds, so progress saves can be synchronous
+    /// (important when saving from appWillResignActive)
+    private var cachedDurationSeconds: Double?
+
+    /// In-flight subtitle cue loading task; cancelled when the selection changes
+    private var subtitleLoadTask: Task<Void, Never>?
+
     /// Whether we should resume from a saved position
     private var resumeFromTime: Double?
 
@@ -112,7 +119,17 @@ final class VideoPlayerViewController: AVPlayerViewController {
         let blankDate = AVMutableMetadataItem()
         blankDate.identifier = .commonIdentifierCreationDate
         blankDate.value = "" as NSString
-        player.currentItem?.externalMetadata = [blankDate]
+        var externalMetadata: [AVMetadataItem] = [blankDate]
+
+        // Show the item title in the transport bar when available
+        if let title = title {
+            let titleItem = AVMutableMetadataItem()
+            titleItem.identifier = .commonIdentifierTitle
+            titleItem.value = title as NSString
+            titleItem.extendedLanguageTag = "und"
+            externalMetadata.append(titleItem)
+        }
+        player.currentItem?.externalMetadata = externalMetadata
 
         // If viewDidLoad already ran (during super.init), we need to complete setup now
         // that player is available
@@ -177,6 +194,8 @@ final class VideoPlayerViewController: AVPlayerViewController {
         // Save progress when leaving the player
         saveCurrentProgress()
         stopProgressTracking()
+        subtitleLoadTask?.cancel()
+        subtitleLoadTask = nil
 
         // Notify caller that player is being dismissed
         if isBeingDismissed || isMovingFromParent {
@@ -265,6 +284,8 @@ final class VideoPlayerViewController: AVPlayerViewController {
         guard let player = player else { return }
         playerItemObservation = player.observe(\.currentItem, options: [.new]) { [weak self] _, _ in
             Task { @MainActor in
+                // The cached duration belongs to the previous item
+                self?.cachedDurationSeconds = nil
                 self?.disableNativeSubtitles()
             }
         }
@@ -296,13 +317,13 @@ final class VideoPlayerViewController: AVPlayerViewController {
         }
         menuActions.append(offAction)
 
-        let displayNames = subtitleTracks.map { $0.languageDisplayName }
-        let hasDuplicateNames = Set(displayNames).count < displayNames.count
+        let hasDuplicateNames = VideoPlayerHelpers.hasDuplicateDisplayNames(subtitleTracks)
 
         for track in subtitleTracks {
-            let title = hasDuplicateNames
-                ? "\(track.languageDisplayName) (\(track.format.rawValue.uppercased()))"
-                : track.languageDisplayName
+            let title = VideoPlayerHelpers.subtitleDisplayName(
+                track: track,
+                hasDuplicateNames: hasDuplicateNames
+            )
 
             let action = UIAction(
                 title: title,
@@ -340,7 +361,13 @@ final class VideoPlayerViewController: AVPlayerViewController {
         guard itemIdentifier != nil, videoFilename != nil else { return }
 
         // Save progress every 10 seconds
-        progressSaveTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] _ in
+        progressSaveTimer = Timer.scheduledTimer(withTimeInterval: 10.0, repeats: true) { [weak self] timer in
+            // Self-invalidate if the controller is gone without having
+            // received viewWillDisappear (repeating timers retain themselves)
+            guard self != nil else {
+                timer.invalidate()
+                return
+            }
             Task { @MainActor in
                 self?.saveCurrentProgress()
             }
@@ -367,7 +394,20 @@ final class VideoPlayerViewController: AVPlayerViewController {
         // Don't save if at the very beginning (less than 10 seconds)
         guard currentTime >= 10 else { return }
 
-        // Get duration and save progress on MainActor
+        // Fast synchronous path once the duration is known. This matters when
+        // called from appWillResignActive: a deferred Task could be lost to
+        // app suspension before the write happens.
+        if let durationSeconds = cachedDurationSeconds {
+            persistProgress(
+                identifier: identifier,
+                filename: filename,
+                currentTime: currentTime,
+                durationSeconds: durationSeconds
+            )
+            return
+        }
+
+        // Duration not cached yet - load it once, cache it, then save
         Task { [weak self] in
             guard let self else { return }
             do {
@@ -377,22 +417,39 @@ final class VideoPlayerViewController: AVPlayerViewController {
                 // Don't save if duration is invalid
                 guard durationSeconds > 0, !durationSeconds.isNaN, !durationSeconds.isInfinite else { return }
 
-                let progress = PlaybackProgress.video(MediaProgressInfo(
+                // The player item may have changed while the duration loaded;
+                // don't cache (or persist) a stale item's duration
+                guard self.player?.currentItem === currentItem else { return }
+
+                self.cachedDurationSeconds = durationSeconds
+                self.persistProgress(
                     identifier: identifier,
                     filename: filename,
                     currentTime: currentTime,
-                    duration: durationSeconds,
-                    title: videoTitle,
-                    imageURL: thumbnailURL
-                ))
-
-                await MainActor.run {
-                    PlaybackProgressManager.shared.saveProgress(progress)
-                }
+                    durationSeconds: durationSeconds
+                )
             } catch {
                 // Duration not available yet, skip saving
             }
         }
+    }
+
+    /// Persist playback progress synchronously on the main actor
+    private func persistProgress(
+        identifier: String,
+        filename: String,
+        currentTime: Double,
+        durationSeconds: Double
+    ) {
+        let progress = PlaybackProgress.video(MediaProgressInfo(
+            identifier: identifier,
+            filename: filename,
+            currentTime: currentTime,
+            duration: durationSeconds,
+            title: videoTitle,
+            imageURL: thumbnailURL
+        ))
+        PlaybackProgressManager.shared.saveProgress(progress)
     }
 
     /// Seek to the resume position
@@ -443,6 +500,11 @@ final class VideoPlayerViewController: AVPlayerViewController {
     /// Select a subtitle track and load its cues
     /// - Parameter track: The track to select, or nil to disable subtitles
     func selectSubtitleTrack(_ track: SubtitleTrack?) {
+        // Cancel any in-flight load so a slow, stale download can't
+        // resurrect the overlay after the selection changed
+        subtitleLoadTask?.cancel()
+        subtitleLoadTask = nil
+
         selectedSubtitleTrack = track
 
         if let track = track {
@@ -479,7 +541,8 @@ final class VideoPlayerViewController: AVPlayerViewController {
 
     /// Load and parse subtitle cues for a track
     private func loadSubtitleCues(for track: SubtitleTrack) {
-        Task {
+        subtitleLoadTask?.cancel()
+        subtitleLoadTask = Task {
             do {
                 // Convert SRT to VTT if necessary
                 let vttURL: URL
@@ -492,8 +555,17 @@ final class VideoPlayerViewController: AVPlayerViewController {
                     )
                 }
 
+                guard !Task.isCancelled else { return }
+
                 // Parse the VTT file
                 let cues = try await SubtitleParser.shared.parse(from: vttURL)
+
+                // A stale load must not reconfigure the overlay after the
+                // user switched tracks or turned subtitles off
+                guard !Task.isCancelled,
+                      selectedSubtitleTrack?.identifier == track.identifier else {
+                    return
+                }
 
                 // Configure overlay
                 if let player = player {
@@ -501,6 +573,12 @@ final class VideoPlayerViewController: AVPlayerViewController {
                 }
 
             } catch {
+                // Don't log or alert for a load that is no longer relevant
+                guard !Task.isCancelled,
+                      selectedSubtitleTrack?.identifier == track.identifier else {
+                    return
+                }
+
                 ErrorLogger.shared.log(
                     error: error,
                     context: ErrorContext(
@@ -529,9 +607,9 @@ final class VideoPlayerViewController: AVPlayerViewController {
     private func updateSubtitleButtonAppearance() {
         let hasSubtitles = selectedSubtitleTrack != nil
         subtitleButton.tintColor = hasSubtitles ? .systemBlue : .white
-        subtitleButton.accessibilityValue = hasSubtitles
-            ? "On - \(selectedSubtitleTrack?.languageDisplayName ?? "")"
-            : "Off"
+        subtitleButton.accessibilityValue = VideoPlayerHelpers.subtitleButtonAccessibilityValue(
+            selectedTrack: selectedSubtitleTrack
+        )
     }
 
     // MARK: - Actions
@@ -569,9 +647,12 @@ extension VideoPlayerViewController: AVPlayerViewControllerDelegate {
         willTransitionToVisibilityOfTransportBar visible: Bool,
         with coordinator: AVPlayerViewControllerAnimationCoordinator
     ) {
-        // Animate subtitle position change in sync with transport bar animation
+        // Animate subtitle position change in sync with transport bar animation.
+        // The delegate callback and animation block run on the main thread, so
+        // hop isolation synchronously - a Task would defer the constraint
+        // change out of the animation transaction.
         coordinator.addCoordinatedAnimations({
-            Task { @MainActor in
+            MainActor.assumeIsolated {
                 self.subtitleOverlay.updateSubtitlePosition(controlsVisible: visible)
             }
         }, completion: nil)

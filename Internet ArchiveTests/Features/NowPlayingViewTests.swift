@@ -79,33 +79,6 @@ final class NowPlayingViewInitializationTests: XCTestCase {
     }
 }
 
-// MARK: - NowPlayingView Coordinator Tests
-
-@MainActor
-final class NowPlayingViewCoordinatorTests: XCTestCase {
-
-    func testCoordinator_initWithOnDismiss() {
-        var dismissCalled = false
-        let coordinator = NowPlayingView.Coordinator(onDismiss: { dismissCalled = true })
-
-        XCTAssertNotNil(coordinator.onDismiss)
-        coordinator.onDismiss?()
-        XCTAssertTrue(dismissCalled)
-    }
-
-    func testCoordinator_initWithNilOnDismiss() {
-        let coordinator = NowPlayingView.Coordinator(onDismiss: nil)
-
-        XCTAssertNil(coordinator.onDismiss)
-    }
-
-    func testCoordinator_viewControllerInitiallyNil() {
-        let coordinator = NowPlayingView.Coordinator(onDismiss: nil)
-
-        XCTAssertNil(coordinator.viewController)
-    }
-}
-
 // MARK: - NowPlayingView fromMetadata Tests
 
 @MainActor

@@ -284,6 +284,28 @@ struct AudioQueueManagerTests {
         #expect(!sut.isEmpty)
     }
 
+    // MARK: - Original Order Index Tests
+
+    @Test func currentIndexInOriginalOrderMatchesCurrentIndexWhenUnshuffled() {
+        sut.setQueue(testTracks, startAt: 2)
+
+        #expect(sut.currentIndexInOriginalOrder == 2)
+    }
+
+    @Test func currentIndexInOriginalOrderTracksOriginalPositionWhenShuffled() {
+        sut.setQueue(testTracks, startAt: 3)
+        sut.toggleShuffle()
+
+        // The current track ("Track 4") moves to position 0 in the shuffled
+        // queue, but its original-order index must still be 3
+        #expect(sut.currentIndex == 0)
+        #expect(sut.currentIndexInOriginalOrder == 3)
+    }
+
+    @Test func currentIndexInOriginalOrderNilForEmptyQueue() {
+        #expect(sut.currentIndexInOriginalOrder == nil)
+    }
+
     // MARK: - Edge Cases
 
     @Test func emptyQueueNavigationReturnsNil() {

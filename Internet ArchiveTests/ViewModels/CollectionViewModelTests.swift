@@ -347,6 +347,102 @@ final class CollectionViewModelTests: XCTestCase {
 
         XCTAssertNil(viewModel.state.errorMessage)
     }
+
+    // MARK: - Load Collection Contents Tests
+
+    func testLoadCollectionContents_populatesItemsAndMetadata() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(numFound: 2, docs: [
+            TestFixtures.makeSearchResult(identifier: "item1"),
+            TestFixtures.makeSearchResult(identifier: "item2")
+        ])
+        mockService.mockMetadataResponse = ItemMetadataResponse(
+            files: nil,
+            metadata: ItemMetadata(title: "Feature Films", description: "Classic films")
+        )
+
+        await viewModel.loadCollectionContents(
+            identifier: "feature_films",
+            mediaTypeFilter: "movies",
+            sort: "week desc"
+        )
+
+        XCTAssertTrue(mockService.getCollectionPageCalled)
+        XCTAssertEqual(mockService.lastCollection, "feature_films")
+        XCTAssertEqual(mockService.lastResultType, "movies")
+        XCTAssertEqual(mockService.lastSort, "week desc")
+        XCTAssertEqual(viewModel.state.items.count, 2)
+        XCTAssertEqual(viewModel.state.collectionMetadata?.description, "Classic films")
+        XCTAssertFalse(viewModel.state.isLoading)
+        XCTAssertTrue(viewModel.state.hasLoaded)
+        XCTAssertNil(viewModel.state.errorMessage)
+    }
+
+    func testLoadCollectionContents_metadataFailureIsNonFatal() async {
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "item1")
+        ])
+        // mockMetadataResponse left nil - MockCollectionService throws for getMetadata
+
+        await viewModel.loadCollectionContents(
+            identifier: "feature_films",
+            mediaTypeFilter: "movies",
+            sort: "week desc"
+        )
+
+        XCTAssertEqual(viewModel.state.items.count, 1)
+        XCTAssertNil(viewModel.state.collectionMetadata)
+        XCTAssertTrue(viewModel.state.hasLoaded)
+        XCTAssertNil(viewModel.state.errorMessage)
+    }
+
+    func testLoadCollectionContents_metadataFailureClearsPreviousMetadata() async {
+        // First load: identifier A with metadata success
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "item1")
+        ])
+        mockService.mockMetadataResponse = ItemMetadataResponse(
+            files: nil,
+            metadata: ItemMetadata(title: "Collection A", description: "A's description")
+        )
+
+        await viewModel.loadCollectionContents(
+            identifier: "collection_a",
+            mediaTypeFilter: "movies",
+            sort: "week desc"
+        )
+
+        XCTAssertEqual(viewModel.state.collectionMetadata?.title, "Collection A")
+
+        // Second load: identifier B where the metadata fetch fails
+        // (nil mockMetadataResponse makes the mock throw for getMetadata)
+        mockService.mockMetadataResponse = nil
+
+        await viewModel.loadCollectionContents(
+            identifier: "collection_b",
+            mediaTypeFilter: "movies",
+            sort: "week desc"
+        )
+
+        // A's stale metadata must not survive into B's state
+        XCTAssertNil(viewModel.state.collectionMetadata)
+        XCTAssertTrue(viewModel.state.hasLoaded)
+        XCTAssertNil(viewModel.state.errorMessage)
+    }
+
+    func testLoadCollectionContents_errorSetsErrorMessage() async {
+        mockService.errorToThrow = NetworkError.timeout
+
+        await viewModel.loadCollectionContents(
+            identifier: "feature_films",
+            mediaTypeFilter: "movies",
+            sort: "week desc"
+        )
+
+        XCTAssertTrue(viewModel.state.items.isEmpty)
+        XCTAssertNotNil(viewModel.state.errorMessage)
+        XCTAssertFalse(viewModel.state.isLoading)
+        XCTAssertTrue(viewModel.state.hasLoaded)
+    }
 }
 
 // MARK: - CollectionViewState Tests

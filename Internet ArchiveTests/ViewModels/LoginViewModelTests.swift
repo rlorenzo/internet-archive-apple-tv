@@ -203,11 +203,33 @@ struct LoginViewModelTests {
         _ = KeychainManager.shared.clearUserCredentials()
     }
 
+    @Test func logoutPreservesLocalFavorites() async {
+        mockService.mockLoginResponse = TestFixtures.successfulAuthResponse
+        _ = await viewModel.login(email: "test@example.com", password: "password123")
+
+        // Local favorites are device-scoped and must survive sign-out.
+        // The favorites store (UserDefaults) is shared with concurrently
+        // running suites that reset it wholesale, so keep the window between
+        // this write and the assertion minimal: save right before the
+        // synchronous logout instead of before the async login round-trip.
+        Global.saveFavoriteData(identifier: "kept_after_logout")
+
+        viewModel.logout()
+
+        #expect(Global.getFavoriteData()?.contains("kept_after_logout") ?? false)
+
+        // Targeted cleanup - a wholesale reset here would clobber other
+        // suites' in-flight favorites state the same way
+        Global.removeFavoriteData(identifier: "kept_after_logout")
+        Global.saveUserData(userData: [:])
+        _ = KeychainManager.shared.clearUserCredentials()
+    }
+
     // MARK: - Check Login Status Tests
 
     @Test func checkLoginStatusWhenLoggedIn() {
         Global.saveUserData(userData: ["logged-in": true])
-        _ = KeychainManager.shared.saveUserCredentials(email: "test@example.com", password: "password123", username: "testuser")
+        _ = KeychainManager.shared.saveUserCredentials(email: "test@example.com", username: "testuser")
 
         viewModel.checkLoginStatus()
 

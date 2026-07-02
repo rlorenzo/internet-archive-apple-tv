@@ -135,6 +135,29 @@ final class SliderTests: XCTestCase {
         XCTAssertEqual(mockDelegate.lastChangedValue, 100)
     }
 
+    func testSetValue_clampsToMax() {
+        createTestObjects()
+        slider.max = 100
+        slider.value = 150
+        XCTAssertEqual(slider.value, 100)
+    }
+
+    func testSetValue_clampsToMin() {
+        createTestObjects()
+        slider.min = 10
+        slider.max = 100
+        slider.value = 5
+        XCTAssertEqual(slider.value, 10)
+    }
+
+    func testSetValue_delegateReceivesClampedValue() {
+        createTestObjects()
+        slider.delegate = mockDelegate
+        slider.max = 100
+        slider.value = 500
+        XCTAssertEqual(mockDelegate.lastChangedValue, 100)
+    }
+
     // MARK: - Min/Max Tests
 
     func testSetMin() {
@@ -156,6 +179,24 @@ final class SliderTests: XCTestCase {
         XCTAssertEqual(slider.max, 50)
     }
 
+    func testLoweringMax_reclampsValue() {
+        createTestObjects()
+        slider.value = 80
+
+        slider.max = 50
+
+        XCTAssertEqual(slider.value, 50)
+    }
+
+    func testRaisingMin_reclampsValue() {
+        createTestObjects()
+        slider.value = 20
+
+        slider.min = 40
+
+        XCTAssertEqual(slider.value, 40)
+    }
+
     // MARK: - Animated Value Setting
 
     func testSetValueAnimated() {
@@ -170,12 +211,13 @@ final class SliderTests: XCTestCase {
         XCTAssertEqual(slider.value, 75)
     }
 
-    func testSetValue_whenDistanceIsZero() {
+    func testSetValue_whenDistanceIsZero_clampsToMax() {
         createTestObjects()
         slider.max = 0
         slider.min = 0
         slider.set(value: 50, animated: false)
-        XCTAssertEqual(slider.value, 50)
+        // Value is clamped into [min, max] even when the range is empty
+        XCTAssertEqual(slider.value, 0)
     }
 
     // MARK: - Animation Speed Tests

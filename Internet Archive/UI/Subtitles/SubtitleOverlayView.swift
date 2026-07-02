@@ -225,6 +225,9 @@ final class SubtitleOverlayView: UIView {
         UIView.animate(withDuration: 0.15) {
             self.textContainer.alpha = 0
         } completion: { _ in
+            // A new cue may have started during the fade-out; don't wipe
+            // its text or it would stay invisible for its whole duration.
+            guard self.currentCue == nil else { return }
             self.textContainer.isHidden = true
             self.subtitleLabel.text = nil
             self.accessibilityValue = nil

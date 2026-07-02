@@ -351,6 +351,56 @@ final class SubtitleParserTests: XCTestCase {
         XCTAssertEqual(cues[0].startTime, 36000.0) // 10 hours in seconds
     }
 
+    // MARK: - Malformed Timestamp Tests
+
+    func testParseWebVTTDropsFourPartTimestamps() throws {
+        // Timestamps with 4+ colon-separated parts are invalid and must be
+        // dropped rather than silently parsed as 0.0
+        let vttContent = """
+        WEBVTT
+
+        0:00:01:000 --> 0:00:02:000
+        Invalid timestamp block
+
+        00:00:05.000 --> 00:00:08.000
+        Valid block
+        """
+
+        let cues = try parser.parse(vttContent: vttContent)
+
+        XCTAssertEqual(cues.count, 1)
+        XCTAssertEqual(cues[0].text, "Valid block")
+    }
+
+    // MARK: - Arrow Whitespace Tolerance Tests
+
+    func testParseWebVTTWithArrowWithoutSpaces() throws {
+        let vttContent = """
+        WEBVTT
+
+        00:00:01.000-->00:00:04.000
+        No spaces around arrow
+        """
+
+        let cues = try parser.parse(vttContent: vttContent)
+
+        XCTAssertEqual(cues.count, 1)
+        XCTAssertEqual(cues[0].startTime, 1.0)
+        XCTAssertEqual(cues[0].endTime, 4.0)
+        XCTAssertEqual(cues[0].text, "No spaces around arrow")
+    }
+
+    func testParseWebVTTWithTabsAroundArrow() throws {
+        let vttContent = "WEBVTT\n\n00:00:01.000\t-->\t00:00:04.000\nTabs around arrow"
+
+        let cues = try parser.parse(vttContent: vttContent)
+
+        XCTAssertEqual(cues.count, 1)
+        XCTAssertEqual(cues[0].startTime, 1.0)
+        XCTAssertEqual(cues[0].endTime, 4.0)
+        XCTAssertEqual(cues[0].text, "Tabs around arrow")
+    }
+
     // MARK: - SubtitleParseError Tests
 
     func testSubtitleParseErrorMissingHeaderDescription() {

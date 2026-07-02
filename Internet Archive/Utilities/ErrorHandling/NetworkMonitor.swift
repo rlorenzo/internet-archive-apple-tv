@@ -17,10 +17,14 @@ final class NetworkMonitor: ObservableObject, NetworkMonitorProtocol {
 
     static let shared = NetworkMonitor()
 
+    /// Optimistic initial value: assumed connected until the first path update arrives.
     @Published private(set) var isConnected = true
     @Published private(set) var connectionType: NetworkConnectionType = .unknown
 
-    private let monitor = NWPathMonitor()
+    private var monitor = NWPathMonitor()
+    /// Whether the current `monitor` instance has been cancelled.
+    /// `NWPathMonitor` is one-shot: once cancelled it never delivers updates again.
+    private var isMonitorCancelled = false
     private let queue = DispatchQueue(label: "NetworkMonitor")
 
     /// Check if running in test environment
@@ -38,6 +42,14 @@ final class NetworkMonitor: ObservableObject, NetworkMonitorProtocol {
     // MARK: - Monitoring
 
     func startMonitoring() {
+        // NWPathMonitor is one-shot: a cancelled instance silently ignores
+        // start(queue:), which would freeze `isConnected` forever. Create a
+        // fresh instance (with a fresh handler below) when restarting.
+        if isMonitorCancelled {
+            monitor = NWPathMonitor()
+            isMonitorCancelled = false
+        }
+
         monitor.pathUpdateHandler = { [weak self] path in
             Task { @MainActor [weak self] in
                 guard let self = self else { return }
@@ -73,6 +85,7 @@ final class NetworkMonitor: ObservableObject, NetworkMonitorProtocol {
 
     func stopMonitoring() {
         monitor.cancel()
+        isMonitorCancelled = true
     }
 
     // MARK: - Offline Check

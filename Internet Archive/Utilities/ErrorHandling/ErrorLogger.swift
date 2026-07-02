@@ -6,7 +6,12 @@
 //
 
 import Foundation
+import os
 import os.log
+
+/// Lock guarding `ErrorLogger.isConsoleOutputEnabled` so the toggle can be
+/// read and written from any thread without data races.
+private let consoleOutputLock = OSAllocatedUnfairLock(initialState: true)
 
 /// Centralized error logging system
 @MainActor
@@ -17,7 +22,10 @@ final class ErrorLogger {
     private let logger = Logger(subsystem: "org.archive.InternetArchive", category: "Errors")
 
     /// Controls whether console output is enabled (can be disabled during tests)
-    nonisolated(unsafe) static var isConsoleOutputEnabled: Bool = true
+    nonisolated static var isConsoleOutputEnabled: Bool {
+        get { consoleOutputLock.withLock { $0 } }
+        set { consoleOutputLock.withLock { $0 = newValue } }
+    }
 
     /// Check if running in test environment
     nonisolated private static var isRunningTests: Bool {

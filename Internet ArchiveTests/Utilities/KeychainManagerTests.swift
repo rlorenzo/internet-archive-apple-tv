@@ -113,22 +113,29 @@ struct KeychainManagerTests {
     @Test func saveUserCredentials() {
         let result = KeychainManager.shared.saveUserCredentials(
             email: testEmail,
-            password: testPassword,
             username: testUsername
         )
         #expect(result)
 
         #expect(KeychainManager.shared.userEmail == testEmail)
-        #expect(KeychainManager.shared.userPassword == testPassword)
         #expect(KeychainManager.shared.username == testUsername)
         #expect(KeychainManager.shared.isLoggedIn)
+    }
+
+    @Test func saveUserCredentialsDoesNotPersistPassword() {
+        _ = KeychainManager.shared.saveUserCredentials(
+            email: testEmail,
+            username: testUsername
+        )
+
+        #expect(KeychainManager.shared.getString(forKey: .userPassword) == nil,
+                "The raw password must never be written to the keychain")
     }
 
     @Test func clearUserCredentials() {
         // First save some credentials
         _ = KeychainManager.shared.saveUserCredentials(
             email: testEmail,
-            password: testPassword,
             username: testUsername
         )
 
@@ -137,9 +144,20 @@ struct KeychainManagerTests {
         #expect(clearResult)
 
         #expect(KeychainManager.shared.userEmail == nil)
-        #expect(KeychainManager.shared.userPassword == nil)
         #expect(KeychainManager.shared.username == nil)
         #expect(!KeychainManager.shared.isLoggedIn)
+    }
+
+    @Test func clearUserCredentialsScrubsLegacyPassword() {
+        // Simulate a password persisted by an older app version
+        _ = KeychainManager.shared.save(testPassword, forKey: .userPassword)
+        #expect(KeychainManager.shared.getString(forKey: .userPassword) == testPassword)
+
+        let clearResult = KeychainManager.shared.clearUserCredentials()
+        #expect(clearResult)
+
+        #expect(KeychainManager.shared.getString(forKey: .userPassword) == nil,
+                "Logout must scrub passwords stored by older versions")
     }
 
     // MARK: - Computed Properties Tests
@@ -147,11 +165,6 @@ struct KeychainManagerTests {
     @Test func userEmailProperty() {
         _ = KeychainManager.shared.save(testEmail, forKey: .userEmail)
         #expect(KeychainManager.shared.userEmail == testEmail)
-    }
-
-    @Test func userPasswordProperty() {
-        _ = KeychainManager.shared.save(testPassword, forKey: .userPassword)
-        #expect(KeychainManager.shared.userPassword == testPassword)
     }
 
     @Test func usernameProperty() {

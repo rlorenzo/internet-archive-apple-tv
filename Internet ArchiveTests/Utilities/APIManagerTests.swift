@@ -111,15 +111,17 @@ struct APIManagerTests {
         #expect(manager.headers["User-Agent"] != nil)
     }
 
-    @Test func headersContainsWaybackExtensionVersion() {
+    @Test func headersDoNotContainWaybackExtensionVersion() {
         let manager = APIManager.sharedManager
-        #expect(manager.headers["Wayback-Extension-Version"] != nil)
+        #expect(manager.headers["Wayback-Extension-Version"] == nil)
     }
 
-    @Test func headersUserAgentContainsWayback() {
+    @Test func headersUserAgentIdentifiesThisApp() {
         let manager = APIManager.sharedManager
         let userAgent = manager.headers["User-Agent"]
-        #expect(userAgent?.contains("Wayback_Machine_iOS") ?? false)
+        #expect(userAgent?.contains("InternetArchive-AppleTV") ?? false)
+        #expect(userAgent?.contains("(tvOS)") ?? false)
+        #expect(!(userAgent?.contains("Wayback") ?? true))
     }
 
     // MARK: - Network Service Tests
@@ -176,7 +178,7 @@ struct APIManagerTests {
 
     @Test func searchURLEncoding() {
         // Test that search queries can be properly encoded
-        let query = "collection:(test) And mediatype:movies"
+        let query = "collection:(test) AND mediatype:movies"
         let encodedQuery = query.addingPercentEncoding(withAllowedCharacters: .urlQueryAllowed)
         #expect(encodedQuery != nil)
         #expect(encodedQuery?.contains("%") ?? false)
@@ -492,6 +494,45 @@ struct APIManagerTests {
         #expect(items.filter { $0.name == "q" }.compactMap { $0.value } == ["cats"])
         #expect(items.filter { $0.name == "output" }.compactMap { $0.value } == ["json"])
         #expect(items.filter { $0.name == "rows" }.compactMap { $0.value } == ["5"])
+    }
+
+    /// `URLQueryItem` leaves "+" unescaped, but advancedsearch.php decodes "+"
+    /// as a space, so the plus sign must be percent-encoded in the final URL.
+    @Test func buildSearchURLPercentEncodesPlusSign() throws {
+        let manager = APIManager.sharedManager
+
+        let url = try #require(manager.buildSearchURL(
+            query: "C++ programming",
+            options: [:],
+            applyContentFilter: false
+        ))
+
+        // No literal "+" may remain anywhere in the query string.
+        #expect(!(url.query ?? "").contains("+"))
+        #expect(url.absoluteString.contains("%2B"))
+
+        // Decoding the components must round-trip the original query.
+        let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
+        #expect(components.queryItems?.first { $0.name == "q" }?.value == "C++ programming")
+    }
+
+    /// Field presence checks must compare exact tokens: "collection_size"
+    /// must not be treated as already containing "collection".
+    @Test func buildSearchURLAddsFilterFieldsUsingExactTokenMatching() throws {
+        let manager = APIManager.sharedManager
+
+        let url = try #require(manager.buildSearchURL(
+            query: "cats",
+            options: ["fl[]": "identifier,collection_size,licenseurl_extra"],
+            applyContentFilter: true
+        ))
+
+        let components = try #require(URLComponents(url: url, resolvingAgainstBaseURL: false))
+        let fields = try #require(components.queryItems?.first { $0.name == "fl[]" }?.value)
+        let tokens = fields.split(separator: ",").map(String.init)
+
+        #expect(tokens.contains("collection"))
+        #expect(tokens.contains("licenseurl"))
     }
 }
 

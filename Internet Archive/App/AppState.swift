@@ -36,6 +36,11 @@ final class AppState: ObservableObject {
     /// The authenticated user's email, if available
     @Published private(set) var userEmail: String?
 
+    /// Monotonically increasing counter bumped whenever the device-local
+    /// favorites list changes (heart button). Views displaying favorites
+    /// observe this to refresh their content.
+    @Published private(set) var favoritesVersion = 0
+
     // MARK: - Initialization
 
     init() {
@@ -69,12 +74,27 @@ final class AppState: ObservableObject {
 
     /// Clears the authentication state after logout.
     ///
-    /// This method clears both the in-memory state and the persisted
-    /// Keychain credentials.
+    /// This method clears the in-memory state, the persisted Keychain
+    /// credentials, and the legacy UserDefaults login flag written by
+    /// `LoginViewModel.login` (so `Global.isLoggedIn()` agrees with the
+    /// Keychain state).
+    ///
+    /// Device-local favorites are intentionally preserved: they are
+    /// device-scoped, not account-bound.
     func logout() {
         _ = KeychainManager.shared.clearUserCredentials()
+        Global.saveUserData(userData: [:])
         isAuthenticated = false
         username = nil
         userEmail = nil
+    }
+
+    // MARK: - Favorites
+
+    /// Notify observers that the device-local favorites list changed.
+    ///
+    /// Call this after toggling a favorite so the Favorites tab reloads.
+    func notifyFavoritesChanged() {
+        favoritesVersion += 1
     }
 }

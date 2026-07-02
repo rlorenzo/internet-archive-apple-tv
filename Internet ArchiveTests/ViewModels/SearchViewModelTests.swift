@@ -13,6 +13,7 @@ import Foundation
 
 final class MockSearchService: SearchServiceProtocol, @unchecked Sendable {
     var searchCalled = false
+    var searchCallCount = 0
     var lastQuery: String?
     var lastOptions: [String: String]?
     var mockResponse: SearchResponse?
@@ -20,6 +21,7 @@ final class MockSearchService: SearchServiceProtocol, @unchecked Sendable {
 
     func search(query: String, options: [String: String]) async throws -> SearchResponse {
         searchCalled = true
+        searchCallCount += 1
         lastQuery = query
         lastOptions = options
 
@@ -36,6 +38,7 @@ final class MockSearchService: SearchServiceProtocol, @unchecked Sendable {
 
     func reset() {
         searchCalled = false
+        searchCallCount = 0
         lastQuery = nil
         lastOptions = nil
         mockResponse = nil
@@ -259,6 +262,9 @@ struct SearchViewModelTests {
         #expect(mockService.lastOptions?["rows"] == "10")
         #expect(mockService.lastOptions?["page"] == "1")
         #expect(mockService.lastOptions?["fl[]"] != nil)
+        // Options come from SearchQueryBuilder, which includes the
+        // "downloads desc" sort the search UI has always shipped
+        #expect(mockService.lastOptions?["sort[]"] == "downloads desc")
     }
 
     // MARK: - Error Type Tests

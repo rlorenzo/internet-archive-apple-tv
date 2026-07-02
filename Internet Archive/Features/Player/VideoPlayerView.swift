@@ -210,13 +210,10 @@ struct VideoPlayerView: UIViewControllerRepresentable {
         viewController.allowsPictureInPicturePlayback = false
         viewController.showsPlaybackControls = true
 
-        // Store coordinator reference for dismiss handling
-        context.coordinator.viewController = viewController
-
-        // Delay play() until player is ready
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            player.play()
-        }
+        // Start playback immediately - AVPlayer begins once the item is
+        // ready, and a blind delay could start audio after dismissal or
+        // fight the resume-seek
+        player.play()
 
         return viewController
     }
@@ -224,21 +221,6 @@ struct VideoPlayerView: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: VideoPlayerViewController, context: Context) {
         // Updates are not needed after initial setup
         // The VideoPlayerViewController manages its own state
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onDismiss: onDismiss)
-    }
-
-    // MARK: - Coordinator
-
-    class Coordinator: NSObject {
-        weak var viewController: VideoPlayerViewController?
-        var onDismiss: (() -> Void)?
-
-        init(onDismiss: (() -> Void)?) {
-            self.onDismiss = onDismiss
-        }
     }
 }
 

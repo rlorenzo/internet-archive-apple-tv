@@ -107,10 +107,10 @@ final class YearsViewModel: ObservableObject {
             let grouped = groupByYear(results)
             state.sortedData = grouped
 
-            // Sort keys (years) in descending order
-            state.sortedKeys = grouped.keys.sorted { year1, year2 in
-                year1 > year2
-            }
+            // Sort years numerically descending, with non-numeric keys
+            // ("Undated") last. A plain string sort would put "Undated"
+            // first ("U" > "2") and auto-select it.
+            state.sortedKeys = Self.sortYearKeys(Array(grouped.keys))
 
             state.selectedYearIndex = 0
             state.isLoading = false
@@ -156,6 +156,23 @@ final class YearsViewModel: ObservableObject {
         return grouped
     }
 
+    /// Sort year keys numerically descending with non-numeric keys
+    /// (e.g. "Undated") at the end.
+    static func sortYearKeys(_ keys: [String]) -> [String] {
+        keys.sorted { year1, year2 in
+            switch (Int(year1), Int(year2)) {
+            case let (value1?, value2?):
+                return value1 > value2
+            case (.some, .none):
+                return true
+            case (.none, .some):
+                return false
+            case (.none, .none):
+                return year1 < year2
+            }
+        }
+    }
+
     /// Select a year by index
     func selectYear(at index: Int) {
         guard index >= 0 && index < state.sortedKeys.count else { return }
@@ -194,7 +211,7 @@ final class YearsViewModel: ObservableObject {
             date: Global.formatDate(string: item.date) ?? "",
             description: item.description ?? "",
             mediaType: item.mediatype ?? "",
-            imageURL: URL(string: "https://archive.org/services/get-item-image.php?identifier=\(item.identifier)")
+            imageURL: IAURLHelpers.itemImageURL(for: item.identifier)
         )
     }
 
@@ -206,10 +223,7 @@ final class YearsViewModel: ObservableObject {
     // MARK: - Private Methods
 
     private func mapErrorToMessage(_ error: Error) -> String {
-        if let networkError = error as? NetworkError {
-            return ErrorPresenter.shared.userFriendlyMessage(for: networkError)
-        }
-        return "An unexpected error occurred. Please try again."
+        ErrorMessageMapper.message(for: error)
     }
 }
 

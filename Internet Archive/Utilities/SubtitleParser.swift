@@ -81,8 +81,8 @@ final class SubtitleParser: Sendable {
 
         guard !lines.isEmpty else { return nil }
 
-        // Find the timing line
-        guard let timingLineIndex = lines.firstIndex(where: { $0.contains(" --> ") }) else {
+        // Find the timing line (arrow spacing is optional in real-world files)
+        guard let timingLineIndex = lines.firstIndex(where: { SRTConversionHelpers.isTimingLine($0) }) else {
             return nil
         }
 
@@ -106,8 +106,14 @@ final class SubtitleParser: Sendable {
     }
 
     /// Parse a VTT timing line (e.g., "00:00:01.000 --> 00:00:04.000")
+    /// Tolerates missing or non-space whitespace around the arrow.
     private func parseTimingLine(_ line: String) -> (start: Double, end: Double)? {
-        let components = line.components(separatedBy: " --> ")
+        let normalized = line.replacingOccurrences(
+            of: SRTConversionHelpers.timingArrowPattern,
+            with: " --> ",
+            options: .regularExpression
+        )
+        let components = normalized.components(separatedBy: " --> ")
         guard components.count >= 2 else { return nil }
 
         // The end timestamp might have additional settings after it
@@ -150,6 +156,9 @@ final class SubtitleParser: Sendable {
             let secondsPart = parts[1].replacingOccurrences(of: ",", with: ".")
             guard let secondsValue = Double(secondsPart) else { return nil }
             seconds = secondsValue
+        } else {
+            // 4+ colon-separated parts is not a valid VTT timestamp
+            return nil
         }
 
         return hours * 3600 + minutes * 60 + seconds

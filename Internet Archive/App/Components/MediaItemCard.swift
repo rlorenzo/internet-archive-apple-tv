@@ -5,6 +5,7 @@
 //  Reusable card component for displaying media items in grids
 //
 
+import NukeUI
 import SwiftUI
 
 /// A card component displaying a media item with thumbnail, title, and optional progress.
@@ -110,47 +111,30 @@ struct MediaItemCard: View {
 
     /// Combined accessibility label describing the media item
     private var accessibilityLabelText: String {
-        var components: [String] = [title]
-
-        if let subtitle = subtitle {
-            components.append(subtitle)
-        }
-
-        let typeLabel = mediaType == .video ? "Video" : "Music"
-        components.append(typeLabel)
-
-        if let progress = progress, progress > 0 {
-            let percentage = Int(progress * 100)
-            components.append("\(percentage)% complete")
-        }
-
-        return components.joined(separator: ", ")
+        AccessibilityHelpers.buildMediaItemLabel(
+            title: title,
+            subtitle: subtitle,
+            isVideo: mediaType == .video,
+            progress: progress
+        )
     }
 
     /// Accessibility hint for VoiceOver
     private var accessibilityHintText: String {
-        if let progress = progress, progress > 0 {
-            return "Double-tap to resume playback"
-        }
-        return "Double-tap to view details"
+        AccessibilityHelpers.buildMediaItemHint(hasProgress: (progress ?? 0) > 0)
     }
 
     // MARK: - Subviews
 
     private var thumbnailView: some View {
         ZStack(alignment: .bottom) {
-            // Thumbnail
-            AsyncImage(url: thumbnailURL) { phase in
-                switch phase {
-                case .empty:
-                    placeholderView
-                case .success(let image):
+            // Thumbnail (loads via the configured Nuke pipeline)
+            LazyImage(url: thumbnailURL) { state in
+                if let image = state.image {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                case .failure:
-                    placeholderView
-                @unknown default:
+                } else {
                     placeholderView
                 }
             }
@@ -220,23 +204,32 @@ struct MediaItemCard: View {
         if let customURL = customThumbnailURL {
             return customURL
         }
-        // Internet Archive thumbnail URL pattern
-        return URL(string: "https://archive.org/services/img/\(identifier)")
+        // Internet Archive thumbnail URL pattern (percent-encoded)
+        return IAURLHelpers.thumbnailURL(for: identifier)
     }
 }
 
 // MARK: - Convenience Initializers
 
 extension MediaItemCard {
-    /// Create a MediaItemCard from a SearchResult
-    init(searchResult: SearchResult, progress: Double? = nil) {
-        let mediaType: MediaType = searchResult.mediatype == "etree" ? .music : .video
+    /// Create a MediaItemCard from a SearchResult.
+    ///
+    /// - Parameters:
+    ///   - searchResult: The item to display.
+    ///   - mediaType: Explicit card type. Pass the section's media type when
+    ///     known. When nil, the type is derived from the item's `mediatype`
+    ///     via `MediaTypeHelpers` so both "audio" and "etree" render as
+    ///     square music cards.
+    ///   - progress: Optional playback progress (0.0 to 1.0).
+    init(searchResult: SearchResult, mediaType: MediaType? = nil, progress: Double? = nil) {
+        let resolvedType = mediaType
+            ?? (MediaTypeHelpers.isAudioType(searchResult.mediatype) ? .music : .video)
 
         self.init(
             identifier: searchResult.identifier,
             title: searchResult.safeTitle,
             subtitle: searchResult.creator ?? searchResult.year,
-            mediaType: mediaType,
+            mediaType: resolvedType,
             progress: progress
         )
     }
@@ -303,7 +296,7 @@ struct MediaGridSection: View {
                     Button {
                         onItemSelected(item)
                     } label: {
-                        MediaItemCard(searchResult: item)
+                        MediaItemCard(searchResult: item, mediaType: mediaType)
                     }
                     .tvCardStyle()
                 }

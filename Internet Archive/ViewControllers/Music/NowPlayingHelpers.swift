@@ -57,6 +57,32 @@ enum NowPlayingHelpers {
         "Track \(currentPosition) of \(trackCount)"
     }
 
+    // MARK: - Resume
+
+    /// Resolve the track index to resume playback from saved progress.
+    /// Prefers filename matching, which is robust against index drift
+    /// (e.g. progress saved while the queue was shuffled), and falls back
+    /// to the saved index when the filename is missing or no longer found.
+    /// - Parameters:
+    ///   - trackFilename: Saved filename of the track that was playing
+    ///   - trackIndex: Saved index of the track that was playing
+    ///   - tracks: The current (sorted) track list
+    /// - Returns: Index into `tracks` to resume from, or nil if unresolvable
+    static func resumeStartIndex(
+        trackFilename: String?,
+        trackIndex: Int?,
+        tracks: [AudioTrack]
+    ) -> Int? {
+        if let filename = trackFilename,
+           let matchIndex = tracks.firstIndex(where: { $0.filename == filename }) {
+            return matchIndex
+        }
+        if let index = trackIndex, index >= 0, index < tracks.count {
+            return index
+        }
+        return nil
+    }
+
     // MARK: - Progress Calculation
 
     /// Check if progress should be saved (validates minimum thresholds)

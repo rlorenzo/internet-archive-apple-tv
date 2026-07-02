@@ -38,6 +38,8 @@ struct ItemDetailViewState: Sendable {
     var errorMessage: String?
     var playableFiles: [FileInfo] = []
     var currentMediaURL: URL?
+    /// Full metadata response (files + server info) for display and playback
+    var metadataResponse: ItemMetadataResponse?
 
     static let initial = ItemDetailViewState()
 
@@ -63,7 +65,7 @@ struct ItemDetailViewState: Sendable {
 
     /// Build image URL from identifier
     mutating func setImageFromIdentifier(_ identifier: String) {
-        imageURL = URL(string: "https://archive.org/services/get-item-image.php?identifier=\(identifier)")
+        imageURL = IAURLHelpers.itemImageURL(for: identifier)
     }
 }
 
@@ -128,6 +130,40 @@ final class ItemDetailViewModel: ObservableObject {
         return state.isFavorite
     }
 
+    /// Load the full item metadata (files, server info) for display and
+    /// playback. Uses the retry mechanism and the injected metadata service,
+    /// so UI tests get mock data.
+    ///
+    /// - Returns: The metadata response, or nil on failure/cancellation
+    ///   (with `state.errorMessage` set for real failures).
+    @discardableResult
+    func loadMetadata() async -> ItemMetadataResponse? {
+        guard !state.identifier.isEmpty else {
+            state.errorMessage = "Missing item information"
+            return nil
+        }
+
+        state.isLoading = true
+        state.errorMessage = nil
+
+        do {
+            let response = try await fetchMetadata(identifier: state.identifier)
+
+            state.isLoading = false
+
+            // A cancelled load must not overwrite newer metadata
+            guard !Task.isCancelled else { return nil }
+
+            state.metadataResponse = response
+            return response
+        } catch {
+            state.isLoading = false
+            guard !(error is CancellationError), !Task.isCancelled else { return nil }
+            state.errorMessage = mapErrorToMessage(error)
+            return nil
+        }
+    }
+
     /// Load metadata and prepare for playback
     func loadMediaForPlayback() async -> URL? {
         guard !state.identifier.isEmpty else {
@@ -139,9 +175,7 @@ final class ItemDetailViewModel: ObservableObject {
         state.errorMessage = nil
 
         do {
-            let metadataResponse = try await RetryMechanism.execute(config: .single) {
-                try await self.metadataService.getMetadata(identifier: self.state.identifier)
-            }
+            let metadataResponse = try await fetchMetadata(identifier: state.identifier)
 
             state.isLoading = false
 
@@ -253,10 +287,27 @@ final class ItemDetailViewModel: ObservableObject {
 
     // MARK: - Private Methods
 
-    private func mapErrorToMessage(_ error: Error) -> String {
-        if let networkError = error as? NetworkError {
-            return ErrorPresenter.shared.userFriendlyMessage(for: networkError)
+    /// Fetch the item metadata via the injected service with a single retry.
+    /// Shared by `loadMetadata()` and `loadMediaForPlayback()`, which apply
+    /// their own state handling around it.
+    private func fetchMetadata(identifier: String) async throws -> ItemMetadataResponse {
+        try await RetryMechanism.execute(config: .single) {
+            try await self.metadataService.getMetadata(identifier: identifier)
         }
-        return "An unexpected error occurred. Please try again."
+    }
+
+    private func mapErrorToMessage(_ error: Error) -> String {
+        ErrorMessageMapper.message(for: error)
+    }
+}
+
+// MARK: - Default Metadata Service Implementation
+
+/// Default implementation using APIManager.networkService (supports mock data for UI testing)
+struct DefaultMetadataService: MetadataServiceProtocol {
+
+    @MainActor
+    func getMetadata(identifier: String) async throws -> ItemMetadataResponse {
+        try await APIManager.networkService.getMetadata(identifier: identifier)
     }
 }

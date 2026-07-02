@@ -5,11 +5,17 @@
 //  Testable helper functions for SRT to VTT conversion
 //
 
+import CryptoKit
 import Foundation
 
 /// Pure functions for SRT to VTT subtitle conversion
 /// Extracted from SRTtoVTTConverter to enable comprehensive unit testing
 enum SRTConversionHelpers {
+
+    /// Regex matching the SRT/VTT timing arrow with optional surrounding whitespace.
+    /// Real-world files use "-->" without spaces or with tabs around it.
+    /// Internal so `SubtitleParser` can share the same pattern.
+    static let timingArrowPattern = "\\s*-->\\s*"
 
     // MARK: - SRT to VTT Conversion
 
@@ -33,13 +39,19 @@ enum SRTConversionHelpers {
 
             guard lines.count >= 2 else { continue }
 
-            // Find the timing line (contains " --> ")
-            guard let timingLineIndex = lines.firstIndex(where: { $0.contains(" --> ") }) else {
+            // Find the timing line (contains the "-->" arrow, spacing optional)
+            guard let timingLineIndex = lines.firstIndex(where: { isTimingLine($0) }) else {
                 continue
             }
 
-            // Convert timing line (SRT uses comma for milliseconds, VTT uses period)
+            // Normalize the arrow spacing, then convert the timestamps
+            // (SRT uses comma for milliseconds, VTT uses period)
             let timingLine = lines[timingLineIndex]
+                .replacingOccurrences(
+                    of: timingArrowPattern,
+                    with: " --> ",
+                    options: .regularExpression
+                )
                 .replacingOccurrences(of: ",", with: ".")
 
             // Get subtitle text (everything after timing line)
@@ -60,10 +72,26 @@ enum SRTConversionHelpers {
     // MARK: - Encoding Detection
 
     /// Decode subtitle data with encoding detection
-    /// Tries UTF-8, then Windows-1252, then falls back to Latin-1
+    /// Honors UTF-8/UTF-16 byte-order marks, then tries UTF-8,
+    /// then Windows-1252, then falls back to Latin-1
     /// - Parameter data: The raw subtitle data
     /// - Returns: The decoded string
     static func decodeSubtitleData(_ data: Data) -> String {
+        // Check byte-order marks first. UTF-16 data would otherwise fail the
+        // UTF-8 decode and "succeed" as CP1252/Latin-1 garbage.
+        if data.starts(with: [0xEF, 0xBB, 0xBF]),
+           let utf8String = String(data: data.dropFirst(3), encoding: .utf8) {
+            return utf8String
+        }
+        if data.starts(with: [0xFF, 0xFE]),
+           let utf16String = String(data: data.dropFirst(2), encoding: .utf16LittleEndian) {
+            return utf16String
+        }
+        if data.starts(with: [0xFE, 0xFF]),
+           let utf16String = String(data: data.dropFirst(2), encoding: .utf16BigEndian) {
+            return utf16String
+        }
+
         // Try UTF-8 first (most common)
         if let utf8String = String(data: data, encoding: .utf8) {
             return utf8String
@@ -89,13 +117,38 @@ enum SRTConversionHelpers {
         srtFilename.replacingOccurrences(of: ".srt", with: ".vtt", options: .caseInsensitive)
     }
 
+    /// Generate a cache filename for a converted VTT file that is unique per source URL.
+    /// Different archive items often share subtitle filenames (e.g. "english.srt"),
+    /// so a stable hash of the source URL is inserted before the extension to
+    /// prevent cache collisions between items.
+    /// - Parameters:
+    ///   - srtURL: The source URL of the SRT file
+    ///   - filename: The original SRT filename
+    /// - Returns: A cache filename like "english.3f6a9b2c1d4e.vtt"
+    static func cacheFilename(for srtURL: URL, filename: String) -> String {
+        let digest = SHA256.hash(data: Data(srtURL.absoluteString.utf8))
+        let hashPrefix = digest
+            .map { String(format: "%02x", $0) }
+            .joined()
+            .prefix(12)
+
+        let vttName = vttFilename(from: filename)
+        if let dotIndex = vttName.lastIndex(of: ".") {
+            let base = vttName[..<dotIndex]
+            let ext = vttName[dotIndex...]
+            return "\(base).\(hashPrefix)\(ext)"
+        }
+        return "\(vttName).\(hashPrefix)"
+    }
+
     // MARK: - Timing Validation
 
     /// Check if a string is a valid SRT/VTT timing line
+    /// Tolerates missing or non-space whitespace around the arrow ("a-->b", "a\t-->\tb")
     /// - Parameter line: The line to check
     /// - Returns: True if the line contains a valid timing arrow
     static func isTimingLine(_ line: String) -> Bool {
-        line.contains(" --> ")
+        line.range(of: timingArrowPattern, options: .regularExpression) != nil
     }
 
     /// Convert SRT timestamp format to VTT format (comma to period)

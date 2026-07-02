@@ -97,9 +97,9 @@ final class LoginViewModel: ObservableObject {
                 ]
                 Global.saveUserData(userData: userData)
 
-                // Store credentials securely
+                // Store session data securely (the raw password is never persisted)
                 let username = response.values?.screenname ?? email
-                _ = KeychainManager.shared.saveUserCredentials(email: email, password: password, username: username)
+                _ = KeychainManager.shared.saveUserCredentials(email: email, username: username)
 
                 state.email = email
                 state.isLoggedIn = true
@@ -111,18 +111,24 @@ final class LoginViewModel: ObservableObject {
                 return false
             }
         } catch {
-            state.errorMessage = mapErrorToMessage(error)
             state.isLoading = false
+            // Don't surface an error for a login the user abandoned
+            guard !(error is CancellationError), !Task.isCancelled else {
+                return false
+            }
+            state.errorMessage = mapErrorToMessage(error)
             return false
         }
     }
 
-    /// Log out the current user
+    /// Log out the current user.
+    ///
+    /// Clears the UserDefaults login flag and Keychain credentials (matching
+    /// `AppState.logout()`). Device-local favorites are intentionally
+    /// preserved: they are device-scoped, not account-bound.
     func logout() {
-        // Clear stored data
         Global.saveUserData(userData: [:])
         _ = KeychainManager.shared.clearUserCredentials()
-        Global.resetFavoriteData()
 
         state = LoginViewState.initial
     }
@@ -149,10 +155,7 @@ final class LoginViewModel: ObservableObject {
     }
 
     private func mapErrorToMessage(_ error: Error) -> String {
-        if let networkError = error as? NetworkError {
-            return ErrorPresenter.shared.userFriendlyMessage(for: networkError)
-        }
-        return "An unexpected error occurred. Please try again."
+        ErrorMessageMapper.message(for: error)
     }
 }
 

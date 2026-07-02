@@ -5,6 +5,7 @@
 //  Detail view for browsing a creator's/person's content
 //
 
+import NukeUI
 import SwiftUI
 
 /// Detail view for browsing content by a specific creator/person.
@@ -60,7 +61,12 @@ struct PeopleDetailView: View {
             ItemDetailView(item: item, mediaType: selectedMediaType)
         }
         .onAppear {
-            configureAndLoad()
+            // Only load on first appearance - onAppear re-fires when
+            // returning from item detail and an unconditional load would
+            // reset the grids and the user's focus position.
+            if !viewModel.state.hasLoaded {
+                configureAndLoad()
+            }
         }
         .onDisappear {
             loadTask?.cancel()
@@ -168,18 +174,13 @@ struct PeopleDetailView: View {
 
     private var creatorHeader: some View {
         VStack(spacing: 16) {
-            // Avatar
-            AsyncImage(url: avatarURL) { phase in
-                switch phase {
-                case .empty:
-                    avatarPlaceholder
-                case .success(let image):
+            // Avatar (loads via the configured Nuke pipeline)
+            LazyImage(url: avatarURL) { state in
+                if let image = state.image {
                     image
                         .resizable()
                         .aspectRatio(contentMode: .fill)
-                case .failure:
-                    avatarPlaceholder
-                @unknown default:
+                } else {
                     avatarPlaceholder
                 }
             }
@@ -230,7 +231,7 @@ struct PeopleDetailView: View {
     // MARK: - Helper Methods
 
     private var avatarURL: URL? {
-        URL(string: "https://archive.org/services/img/\(identifier)")
+        FavoritesViewHelpers.avatarURL(for: identifier)
     }
 
     private func configureAndLoad() {

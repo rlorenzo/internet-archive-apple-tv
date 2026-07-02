@@ -94,13 +94,16 @@ enum DateFormattingHelpers {
         return formatter
     }()
 
-    /// Display formatter for medium date style
+    /// Display formatter ("MMM dd, yyyy", e.g. "Jun 01, 2024")
+    /// Fixed POSIX format so output matches `Global.formatDate`'s ISO-datetime
+    /// path exactly, regardless of the device locale.
     /// Uses UTC to match parsing formatters and avoid day shifts for date-only values
     private static let displayFormatter: DateFormatter = {
         let formatter = DateFormatter()
-        formatter.dateStyle = .medium
-        formatter.timeStyle = .none
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.calendar = Calendar(identifier: .gregorian)
         formatter.timeZone = TimeZone(identifier: "UTC")
+        formatter.dateFormat = "MMM dd, yyyy"
         return formatter
     }()
 
@@ -193,10 +196,27 @@ enum IAURLHelpers {
     }()
 
     /// Build thumbnail URL for an item
-    /// - Parameter identifier: Item identifier
+    /// - Parameter identifier: Item identifier (percent-encoded for the URL path)
     /// - Returns: URL for the item's thumbnail image
     static func thumbnailURL(for identifier: String) -> URL? {
-        URL(string: "\(baseURL)/services/img/\(identifier)")
+        guard let encodedIdentifier = identifier.addingPercentEncoding(
+            withAllowedCharacters: pathAllowedCharacters
+        ) else {
+            return nil
+        }
+        return URL(string: "\(baseURL)/services/img/\(encodedIdentifier)")
+    }
+
+    /// Build the get-item-image URL for an item
+    /// - Parameter identifier: Item identifier (percent-encoded for the query)
+    /// - Returns: URL for the item's image via get-item-image.php
+    static func itemImageURL(for identifier: String) -> URL? {
+        guard let encodedIdentifier = identifier.addingPercentEncoding(
+            withAllowedCharacters: pathAllowedCharacters
+        ) else {
+            return nil
+        }
+        return URL(string: "\(baseURL)/services/get-item-image.php?identifier=\(encodedIdentifier)")
     }
 
     /// Build download URL for a file

@@ -63,6 +63,14 @@ struct ContentView: View {
                     .accessibilityHint(Tab.account.accessibilityHint)
             }
         }
+        .onAppear {
+            // @SceneStorage can restore a tab that doesn't exist when the
+            // app runs without API configuration - clamp to an available tab
+            if !AppConfiguration.shared.isConfigured
+                && (selectedTab == .favorites || selectedTab == .account) {
+                selectedTab = .videos
+            }
+        }
     }
 }
 

@@ -15,6 +15,9 @@ protocol FavoritesServiceProtocol: Sendable {
 /// ViewModel state for favorites
 struct FavoritesViewState: Sendable {
     var isLoading: Bool = false
+    /// Whether a load has run to completion (success or failure).
+    /// Stays false when a load is cancelled so the view retries on reappear.
+    var hasLoaded: Bool = false
     var allItems: [FavoriteItem] = []
     var movieItems: [FavoriteItem] = []
     var musicItems: [FavoriteItem] = []
@@ -42,6 +45,10 @@ final class FavoritesViewModel: ObservableObject {
     /// Media types supported for favorites display (case-insensitive matching)
     static let supportedMediaTypes = ["movies", "video", "audio", "etree", "account"]
 
+    /// Maximum identifiers per details request. Keeps the
+    /// `identifier:(a OR b OR ...)` query comfortably within URL length limits.
+    static let detailsChunkSize = 50
+
     // MARK: - Published State
 
     @Published private(set) var state = FavoritesViewState.initial
@@ -67,6 +74,9 @@ final class FavoritesViewModel: ObservableObject {
 
         state.isLoading = true
         state.errorMessage = nil
+        // Reset for this load: hasLoaded reflects the current load, not a
+        // previous one, so views don't skip a reload based on stale state.
+        state.hasLoaded = false
 
         do {
             let response = try await favoritesService.getFavoriteItems(username: username)
@@ -76,9 +86,11 @@ final class FavoritesViewModel: ObservableObject {
             state.movieItems = filterByMediaType(items: items, types: ["movies", "video"])
             state.musicItems = filterByMediaType(items: items, types: ["audio", "etree"])
             state.isLoading = false
+            state.hasLoaded = true
         } catch {
             state.errorMessage = mapErrorToMessage(error)
             state.isLoading = false
+            state.hasLoaded = true
         }
     }
 
@@ -134,33 +146,35 @@ final class FavoritesViewModel: ObservableObject {
         state.peopleResults.count
     }
 
-    /// Load favorites with full details (used by FavoriteVC)
-    /// This fetches the favorites then loads SearchResult details for each
+    /// Load favorites with full details for display in the Favorites tab.
+    ///
+    /// Merges the account favorites (the server-side `fav-{username}` list,
+    /// fetched when a username is provided) with the device-local favorites
+    /// saved via the heart button (`Global.saveFavoriteData`) so locally
+    /// favorited items always appear. Pass an empty username when logged out
+    /// to show local favorites only.
     func loadFavoritesWithDetails(username: String, searchService: SearchServiceProtocol) async {
-        guard !username.isEmpty else {
-            state.errorMessage = "Please log in to view favorites"
-            return
-        }
-
         state.isLoading = true
         state.errorMessage = nil
+        // Reset for this load: if it's cancelled, hasLoaded stays false so the
+        // view retries on reappear instead of trusting a previous load's flag.
+        state.hasLoaded = false
 
         do {
-            // First fetch the favorites list
-            let favoritesResponse = try await favoritesService.getFavoriteItems(username: username)
-
-            guard let favorites = favoritesResponse.members, !favorites.isEmpty else {
-                // Clear existing results when no favorites
-                state.movieResults = []
-                state.musicResults = []
-                state.peopleResults = []
-                state.allItems = []
-                state.isLoading = false
-                return
+            // Account favorites are only available when logged in
+            var members: [FavoriteItem] = []
+            if !username.isEmpty {
+                let favoritesResponse = try await favoritesService.getFavoriteItems(username: username)
+                guard !Task.isCancelled else {
+                    state.isLoading = false
+                    return
+                }
+                members = favoritesResponse.members ?? []
             }
 
-            // Filter for supported media types (case-insensitive to match loadFavorites behavior)
-            let identifiers = favorites.compactMap { item -> String? in
+            // Filter account favorites for supported media types
+            // (case-insensitive to match loadFavorites behavior)
+            var identifiers = members.compactMap { item -> String? in
                 guard let mediaType = item.mediatype?.lowercased(),
                       Self.supportedMediaTypes.contains(mediaType) else {
                     return nil
@@ -168,31 +182,40 @@ final class FavoritesViewModel: ObservableObject {
                 return item.identifier
             }
 
+            // Merge device-local favorites (heart button), de-duplicated.
+            // Their media types aren't stored locally, so they're categorized
+            // from the details response below like everything else.
+            var seenIdentifiers = Set(identifiers)
+            for localIdentifier in Global.getFavoriteData() ?? []
+            where seenIdentifiers.insert(localIdentifier).inserted {
+                identifiers.append(localIdentifier)
+            }
+
             guard !identifiers.isEmpty else {
-                // Clear existing results when no supported identifiers
+                // Clear existing results when there is nothing to show
                 state.movieResults = []
                 state.musicResults = []
                 state.peopleResults = []
                 state.allItems = []
                 state.isLoading = false
+                state.hasLoaded = true
                 return
             }
 
-            // Fetch full details for each identifier
-            let options = [
-                "fl[]": "identifier,title,year,downloads,date,creator,description,mediatype",
-                "sort[]": "date+desc"
-            ]
+            // Fetch full details for the merged identifier list
+            let docs = try await fetchFavoriteDetails(identifiers: identifiers, searchService: searchService)
 
-            let query = "identifier:(\(identifiers.joined(separator: " OR ")))"
-            let searchResponse = try await searchService.search(query: query, options: options)
+            guard !Task.isCancelled else {
+                state.isLoading = false
+                return
+            }
 
             // Categorize results by media type (case-insensitive)
             var movies: [SearchResult] = []
             var music: [SearchResult] = []
             var people: [SearchResult] = []
 
-            for item in searchResponse.response.docs {
+            for item in docs {
                 switch item.safeMediaType.lowercased() {
                 case "movies", "video":
                     movies.append(item)
@@ -208,21 +231,54 @@ final class FavoritesViewModel: ObservableObject {
             state.movieResults = movies
             state.musicResults = music
             state.peopleResults = people
-            state.allItems = favorites
+            state.allItems = members
             state.isLoading = false
+            state.hasLoaded = true
 
             ErrorLogger.shared.logSuccess(
                 operation: .getFavorites,
-                info: ["username": username, "count": favorites.count]
+                info: ["username": username, "count": identifiers.count]
             )
 
-        } catch {
-            state.errorMessage = mapErrorToMessage(error)
+        } catch is CancellationError {
+            // A newer load superseded this one - don't surface an error
             state.isLoading = false
+        } catch {
+            state.isLoading = false
+            guard !Task.isCancelled else { return }
+            state.errorMessage = mapErrorToMessage(error)
+            state.hasLoaded = true
         }
     }
 
     // MARK: - Private Methods
+
+    /// Fetch SearchResult details for the given identifiers, chunking the
+    /// `identifier:(a OR b OR ...)` query so large favorite lists don't
+    /// exceed URL length limits. Results are de-duplicated by identifier.
+    private func fetchFavoriteDetails(
+        identifiers: [String],
+        searchService: SearchServiceProtocol
+    ) async throws -> [SearchResult] {
+        let options = [
+            "rows": "\(Self.detailsChunkSize)",
+            "fl[]": "identifier,title,year,downloads,date,creator,description,mediatype",
+            "sort[]": "date desc"
+        ]
+
+        var docs: [SearchResult] = []
+        var seenIdentifiers = Set<String>()
+        for chunkStart in stride(from: 0, to: identifiers.count, by: Self.detailsChunkSize) {
+            let chunkEnd = min(chunkStart + Self.detailsChunkSize, identifiers.count)
+            let chunk = identifiers[chunkStart..<chunkEnd]
+            let query = "identifier:(\(chunk.joined(separator: " OR ")))"
+            let response = try await searchService.search(query: query, options: options)
+            for doc in response.response.docs where seenIdentifiers.insert(doc.identifier).inserted {
+                docs.append(doc)
+            }
+        }
+        return docs
+    }
 
     private func filterByMediaType(items: [FavoriteItem], types: [String]) -> [FavoriteItem] {
         items.filter { item in
@@ -232,10 +288,7 @@ final class FavoritesViewModel: ObservableObject {
     }
 
     private func mapErrorToMessage(_ error: Error) -> String {
-        if let networkError = error as? NetworkError {
-            return ErrorPresenter.shared.userFriendlyMessage(for: networkError)
-        }
-        return "An unexpected error occurred. Please try again."
+        ErrorMessageMapper.message(for: error)
     }
 }
 

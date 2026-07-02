@@ -14,6 +14,10 @@ import SwiftUI
 /// - Filter options for content type (All/Video/Music)
 /// - Dual-section results display (Videos and Music)
 /// - Pagination with infinite scroll
+///
+/// The view is a thin layer over two `SearchViewModel`s (one per section so
+/// Videos and Music keep independent pagination); debounce, filter switching,
+/// and navigation stay here.
 struct SearchView: View {
     // MARK: - State
 
@@ -23,20 +27,20 @@ struct SearchView: View {
     @State private var selectedFilter: ContentFilter = .all
     @State private var isSearching = false
 
-    /// Search results
-    @State private var videoResults: [SearchResult] = []
-    @State private var musicResults: [SearchResult] = []
+    /// Search view models - one per section so Videos and Music paginate
+    /// independently. Page size matches the shipping UI (20 per page).
+    @StateObject private var videoViewModel = SearchViewModel(
+        searchService: DefaultSearchService(),
+        pageSize: 20
+    )
+    @StateObject private var musicViewModel = SearchViewModel(
+        searchService: DefaultSearchService(),
+        pageSize: 20
+    )
 
-    /// Pagination state
-    @State private var videoPage = 0
-    @State private var musicPage = 0
-    @State private var hasMoreVideos = false
-    @State private var hasMoreMusic = false
-    @State private var isLoadingMoreVideos = false
-    @State private var isLoadingMoreMusic = false
-
-    /// Error state
-    @State private var errorMessage: String?
+    /// The trimmed query the current results were fetched with. Pagination
+    /// uses this so load-more requests match the page-0 query exactly.
+    @State private var activeQuery = ""
 
     /// Navigation path
     @State private var navigationPath = NavigationPath()
@@ -50,9 +54,6 @@ struct SearchView: View {
     /// Active pagination tasks (cancelled when new search starts)
     @State private var videoPaginationTask: Task<Void, Never>?
     @State private var musicPaginationTask: Task<Void, Never>?
-
-    /// Page size for results
-    private let pageSize = 20
 
     // MARK: - Body
 
@@ -78,10 +79,25 @@ struct SearchView: View {
             handleSearchTextChange(newValue)
         }
         .onChange(of: selectedFilter) { _, _ in
-            if !searchText.isEmpty {
-                performSearch(query: searchText, resetResults: true)
+            let trimmed = searchText.trimmingCharacters(in: .whitespacesAndNewlines)
+            if !trimmed.isEmpty {
+                performSearch(query: trimmed)
             }
         }
+    }
+
+    // MARK: - Results Accessors
+
+    private var videoResults: [SearchResult] {
+        videoViewModel.state.results
+    }
+
+    private var musicResults: [SearchResult] {
+        musicViewModel.state.results
+    }
+
+    private var combinedErrorMessage: String? {
+        videoViewModel.state.errorMessage ?? musicViewModel.state.errorMessage
     }
 
     // MARK: - Filter Picker
@@ -102,29 +118,25 @@ struct SearchView: View {
 
     // MARK: - Content Area
 
-    /// Computed property to determine which content state to show
-    private var contentState: ContentState {
-        if searchText.isEmpty {
-            return .empty
-        } else if isSearching && videoResults.isEmpty && musicResults.isEmpty {
-            return .loading
-        } else if errorMessage != nil {
-            return .error
-        } else if videoResults.isEmpty && musicResults.isEmpty {
-            return .noResults
-        } else {
-            return .results
-        }
-    }
+    /// Which content state to show, via the shared tested helper.
+    /// A full-screen error only makes sense when there is nothing to show:
+    /// pagination failures with results on screen stay silent (matching the
+    /// previous behavior).
+    private var contentState: SearchContentState {
+        let hasBlockingError = combinedErrorMessage != nil
+            && videoResults.isEmpty && musicResults.isEmpty
 
-    private enum ContentState {
-        case empty, loading, error, noResults, results
+        return SearchContentState.determine(
+            searchText: searchText,
+            isSearching: isSearching,
+            hasError: hasBlockingError,
+            videoResultsCount: videoResults.count,
+            musicResultsCount: musicResults.count
+        )
     }
 
     @ViewBuilder
     private var contentArea: some View {
-        // Use switch statement for cleaner state handling
-        // Each state returns a completely separate view hierarchy
         switch contentState {
         case .empty:
             emptySearchState
@@ -176,11 +188,11 @@ struct SearchView: View {
                 filterPicker
 
                 VStack(alignment: .leading, spacing: 60) {
-                    if selectedFilter != .music {
+                    if selectedFilter.includesVideos {
                         SkeletonRow(cardType: .video, count: 4)
                     }
 
-                    if selectedFilter != .videos {
+                    if selectedFilter.includesMusic {
                         SkeletonRow(cardType: .music, count: 6)
                     }
                 }
@@ -196,7 +208,7 @@ struct SearchView: View {
         VStack {
             Spacer()
             ErrorContentView.loadingFailed(contentType: "search results") {
-                performSearch(query: searchText, resetResults: true)
+                performSearch(query: activeQuery)
             }
             Spacer()
         }
@@ -222,16 +234,16 @@ struct SearchView: View {
                 filterPicker
 
                 VStack(alignment: .leading, spacing: 60) {
-                    if selectedFilter != .music && !videoResults.isEmpty {
+                    if selectedFilter.includesVideos && !videoResults.isEmpty {
                         resultsSection(
                             title: "Videos",
                             results: videoResults,
                             mediaType: .video,
-                            isLoadingMore: isLoadingMoreVideos,
+                            isLoadingMore: videoViewModel.state.isLoading && !videoResults.isEmpty,
                             onItemAppear: checkLoadMoreVideos,
                             onSeeAll: {
                                 navigationPath.append(SearchResultsDestination(
-                                    query: searchText,
+                                    query: activeQuery,
                                     mediaType: .video
                                 ))
                             }
@@ -239,16 +251,16 @@ struct SearchView: View {
                         .tvFocusSection()
                     }
 
-                    if selectedFilter != .videos && !musicResults.isEmpty {
+                    if selectedFilter.includesMusic && !musicResults.isEmpty {
                         resultsSection(
                             title: "Music",
                             results: musicResults,
                             mediaType: .music,
-                            isLoadingMore: isLoadingMoreMusic,
+                            isLoadingMore: musicViewModel.state.isLoading && !musicResults.isEmpty,
                             onItemAppear: checkLoadMoreMusic,
                             onSeeAll: {
                                 navigationPath.append(SearchResultsDestination(
-                                    query: searchText,
+                                    query: activeQuery,
                                     mediaType: .music
                                 ))
                             }
@@ -344,20 +356,16 @@ struct SearchView: View {
             try? await Task.sleep(nanoseconds: 500_000_000)
 
             if !Task.isCancelled {
-                performSearch(query: trimmed, resetResults: true)
+                performSearch(query: trimmed)
             }
         }
     }
 
     private func clearResults() {
         cancelAllSearchTasks()
-        videoResults = []
-        musicResults = []
-        videoPage = 0
-        musicPage = 0
-        hasMoreVideos = false
-        hasMoreMusic = false
-        errorMessage = nil
+        videoViewModel.clearResults()
+        musicViewModel.clearResults()
+        activeQuery = ""
         isSearching = false
     }
 
@@ -367,114 +375,78 @@ struct SearchView: View {
         musicPaginationTask?.cancel()
     }
 
-    private func performSearch(query: String, resetResults: Bool) {
+    /// Run page-0 searches for the sections included by the current filter.
+    /// Excluded sections are cleared so stale results don't reappear when
+    /// switching filters back and forth.
+    private func performSearch(query: String) {
         guard !query.isEmpty else { return }
 
-        // Cancel any in-flight search/pagination to prevent stale results overwriting newer ones
+        // Cancel any in-flight search/pagination to prevent stale results
+        // overwriting newer ones
         cancelAllSearchTasks()
 
-        if resetResults {
-            isSearching = true
-            errorMessage = nil
-            videoResults = []
-            musicResults = []
-            videoPage = 0
-            musicPage = 0
+        activeQuery = query
+        isSearching = true
+        videoViewModel.clearResults()
+        musicViewModel.clearResults()
+
+        let filter = selectedFilter
+
+        // Both sections search concurrently (separate main-actor tasks whose
+        // network awaits interleave), matching the previous async-let timing.
+        let videoTask = Task { @MainActor in
+            await searchSection(
+                viewModel: videoViewModel,
+                include: filter.includesVideos,
+                query: query,
+                apiMediaType: ContentFilter.videos.apiMediaType
+            )
+        }
+        let musicTask = Task { @MainActor in
+            await searchSection(
+                viewModel: musicViewModel,
+                include: filter.includesMusic,
+                query: query,
+                apiMediaType: ContentFilter.music.apiMediaType
+            )
         }
 
-        let currentFilter = selectedFilter
-
         activeSearchTask = Task { @MainActor in
-            do {
-                switch currentFilter {
-                case .all:
-                    async let videosTask = searchMedia(
-                        query: query,
-                        mediaType: ContentFilter.videos.apiMediaType,
-                        page: 0
-                    )
-                    async let musicTask = searchMedia(
-                        query: query,
-                        mediaType: ContentFilter.music.apiMediaType,
-                        page: 0
-                    )
-
-                    let (videos, music) = try await (videosTask, musicTask)
-
-                    // Check if cancelled before updating state
-                    guard !Task.isCancelled else { return }
-
-                    videoResults = videos.results
-                    hasMoreVideos = videos.hasMore
-                    musicResults = music.results
-                    hasMoreMusic = music.hasMore
-
-                case .videos:
-                    let videos = try await searchMedia(
-                        query: query,
-                        mediaType: ContentFilter.videos.apiMediaType,
-                        page: 0
-                    )
-
-                    guard !Task.isCancelled else { return }
-
-                    videoResults = videos.results
-                    hasMoreVideos = videos.hasMore
-
-                case .music:
-                    let music = try await searchMedia(
-                        query: query,
-                        mediaType: ContentFilter.music.apiMediaType,
-                        page: 0
-                    )
-
-                    guard !Task.isCancelled else { return }
-
-                    musicResults = music.results
-                    hasMoreMusic = music.hasMore
-                }
-
-                isSearching = false
-            } catch {
-                // Don't update error state if cancelled
-                guard !Task.isCancelled else { return }
-
-                isSearching = false
-                if let networkError = error as? NetworkError {
-                    errorMessage = ErrorPresenter.shared.userFriendlyMessage(for: networkError)
-                } else {
-                    errorMessage = "An error occurred while searching. Please try again."
-                }
+            // Forward cancellation to the section tasks (unstructured tasks
+            // don't inherit it)
+            await withTaskCancellationHandler {
+                await videoTask.value
+                await musicTask.value
+            } onCancel: {
+                videoTask.cancel()
+                musicTask.cancel()
             }
+
+            guard !Task.isCancelled else { return }
+            isSearching = false
         }
     }
 
-    private func searchMedia(
+    private func searchSection(
+        viewModel: SearchViewModel,
+        include: Bool,
         query: String,
-        mediaType: String,
-        page: Int
-    ) async throws -> (results: [SearchResult], hasMore: Bool) {
-        let options: [String: String] = [
-            "rows": "\(pageSize)",
-            "page": "\(page + 1)",
-            "fl[]": "identifier,title,mediatype,creator,description,date,year,downloads",
-            "sort[]": "downloads desc"
-        ]
-
-        let fullQuery = "\(query) AND mediatype:(\(mediaType))"
-        let response = try await APIManager.networkService.search(query: fullQuery, options: options)
-
-        let hasMore = response.response.docs.count == pageSize &&
-            (page + 1) * pageSize < response.response.numFound
-
-        return (response.response.docs, hasMore)
+        apiMediaType: String
+    ) async {
+        guard include else {
+            viewModel.clearResults()
+            return
+        }
+        await viewModel.search(
+            query: SearchQueryBuilder.buildQuery(searchText: query, mediaType: apiMediaType)
+        )
     }
 
     // MARK: - Pagination
 
     private func checkLoadMoreVideos(item: SearchResult) {
-        guard hasMoreVideos,
-              !isLoadingMoreVideos,
+        guard videoViewModel.state.hasMoreResults,
+              !videoViewModel.state.isLoading,
               let index = videoResults.firstIndex(of: item),
               index >= videoResults.count - 3 else { return }
 
@@ -482,39 +454,22 @@ struct SearchView: View {
     }
 
     private func loadMoreVideos() {
-        guard !isLoadingMoreVideos, hasMoreVideos else { return }
-
-        isLoadingMoreVideos = true
-        let nextPage = videoPage + 1
-        let currentQuery = searchText
+        let query = activeQuery
+        guard !query.isEmpty else { return }
 
         videoPaginationTask = Task { @MainActor in
-            do {
-                let result = try await searchMedia(
-                    query: currentQuery,
-                    mediaType: ContentFilter.videos.apiMediaType,
-                    page: nextPage
+            await videoViewModel.loadNextPage(
+                query: SearchQueryBuilder.buildQuery(
+                    searchText: query,
+                    mediaType: ContentFilter.videos.apiMediaType
                 )
-
-                // Don't update if cancelled or query changed
-                guard !Task.isCancelled, searchText == currentQuery else {
-                    isLoadingMoreVideos = false
-                    return
-                }
-
-                videoResults.append(contentsOf: result.results)
-                videoPage = nextPage
-                hasMoreVideos = result.hasMore
-            } catch {
-                // Silently fail pagination - don't show error for loading more
-            }
-            isLoadingMoreVideos = false
+            )
         }
     }
 
     private func checkLoadMoreMusic(item: SearchResult) {
-        guard hasMoreMusic,
-              !isLoadingMoreMusic,
+        guard musicViewModel.state.hasMoreResults,
+              !musicViewModel.state.isLoading,
               let index = musicResults.firstIndex(of: item),
               index >= musicResults.count - 3 else { return }
 
@@ -522,33 +477,16 @@ struct SearchView: View {
     }
 
     private func loadMoreMusic() {
-        guard !isLoadingMoreMusic, hasMoreMusic else { return }
-
-        isLoadingMoreMusic = true
-        let nextPage = musicPage + 1
-        let currentQuery = searchText
+        let query = activeQuery
+        guard !query.isEmpty else { return }
 
         musicPaginationTask = Task { @MainActor in
-            do {
-                let result = try await searchMedia(
-                    query: currentQuery,
-                    mediaType: ContentFilter.music.apiMediaType,
-                    page: nextPage
+            await musicViewModel.loadNextPage(
+                query: SearchQueryBuilder.buildQuery(
+                    searchText: query,
+                    mediaType: ContentFilter.music.apiMediaType
                 )
-
-                // Don't update if cancelled or query changed
-                guard !Task.isCancelled, searchText == currentQuery else {
-                    isLoadingMoreMusic = false
-                    return
-                }
-
-                musicResults.append(contentsOf: result.results)
-                musicPage = nextPage
-                hasMoreMusic = result.hasMore
-            } catch {
-                // Silently fail pagination
-            }
-            isLoadingMoreMusic = false
+            )
         }
     }
 }
@@ -556,31 +494,11 @@ struct SearchView: View {
 // MARK: - Content Filter
 
 extension SearchView {
-    /// Filter options for search results
-    enum ContentFilter: String, CaseIterable, Identifiable {
-        case all
-        case videos
-        case music
-
-        var id: String { rawValue }
-
-        var displayName: String {
-            switch self {
-            case .all: return "All"
-            case .videos: return "Videos"
-            case .music: return "Music"
-            }
-        }
-
-        /// The media type query parameter for the API
-        var apiMediaType: String {
-            switch self {
-            case .all: return "movies OR etree OR audio"
-            case .videos: return "movies"
-            case .music: return "etree OR audio"
-            }
-        }
-    }
+    /// Filter options for search results.
+    ///
+    /// Alias for the tested `SearchContentFilter` helper in SearchHelpers -
+    /// kept as a nested name so call sites keep reading naturally.
+    typealias ContentFilter = SearchContentFilter
 }
 
 // MARK: - Preview

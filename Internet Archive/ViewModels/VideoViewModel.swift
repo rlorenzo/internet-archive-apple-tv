@@ -176,7 +176,9 @@ final class VideoViewModel: ObservableObject {
             )
 
             guard loadToken == currentLoadToken else { return }
-            state.items.append(contentsOf: response.response.docs)
+            // De-duplicate: IA sort orders shift between pages, so page N+1
+            // can re-contain page-N items (duplicate ForEach IDs break focus)
+            SearchResultDeduplicator.appendUnique(response.response.docs, to: &state.items)
             state.currentPage = nextPage
             state.totalFound = response.response.numFound
             state.hasMore = SearchResultsGridHelpers.hasMorePages(
@@ -205,6 +207,9 @@ final class VideoViewModel: ObservableObject {
 
     /// Load collection data (legacy non-paginated method; retained for compatibility)
     func loadCollection() async {
+        let loadToken = UUID()
+        currentLoadToken = loadToken
+
         state.isLoading = true
         state.errorMessage = nil
 
@@ -216,6 +221,10 @@ final class VideoViewModel: ObservableObject {
                     limit: nil
                 )
             }
+
+            // A stale response (a newer load started meanwhile) must not
+            // overwrite the newer load's state
+            guard loadToken == currentLoadToken else { return }
 
             // Update collection name from response
             state.collection = result.collection
@@ -233,6 +242,7 @@ final class VideoViewModel: ObservableObject {
             )
 
         } catch {
+            guard loadToken == currentLoadToken else { return }
             state.isLoading = false
             state.hasLoaded = true
             state.errorMessage = mapErrorToMessage(error)
@@ -279,10 +289,7 @@ final class VideoViewModel: ObservableObject {
     // MARK: - Private Methods
 
     private func mapErrorToMessage(_ error: Error) -> String {
-        if let networkError = error as? NetworkError {
-            return ErrorPresenter.shared.userFriendlyMessage(for: networkError)
-        }
-        return "An unexpected error occurred. Please try again."
+        ErrorMessageMapper.message(for: error)
     }
 }
 

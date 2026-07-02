@@ -5,6 +5,7 @@
 //  Unit tests for ContentFilterService
 //
 
+import Foundation
 import Testing
 @testable import Internet_Archive
 
@@ -139,6 +140,32 @@ struct ContentFilterServiceTests {
 
         let filterResult = ContentFilterService.shared.shouldFilter(result)
         #expect(filterResult.isFiltered, "Items with porn in title should always be filtered")
+    }
+
+    @Test func shouldFilterKeywordMatchesWholeWordsOnly() {
+        // Disable license filtering to test keyword-only filtering
+        let service = ContentFilterService.shared
+        service.setLicenseFilteringEnabled(false)
+
+        let result = SearchResult(
+            identifier: "test-item",
+            title: "Exxxtreme Sports Compilation",
+            collection: ["movies"]
+        )
+
+        let filterResult = service.shouldFilter(result)
+        #expect(!filterResult.isFiltered, "Keyword inside a longer word should not trigger filtering")
+    }
+
+    @Test func shouldFilterKeywordAtWordBoundary() {
+        let result = SearchResult(
+            identifier: "test-item",
+            title: "xxx: the collection",
+            collection: ["movies"]
+        )
+
+        let filterResult = ContentFilterService.shared.shouldFilter(result)
+        #expect(filterResult.isFiltered, "Keyword delimited by punctuation should still be filtered")
     }
 
     @Test func shouldFilterSafeTitle() {
@@ -309,6 +336,19 @@ struct ContentFilterServiceTests {
 
         #expect(query.contains("-collection:(no-preview)"), "Exclusion query should include no-preview")
         #expect(query.contains("-collection:(hentai)"), "Exclusion query should include hentai")
+    }
+
+    @Test func buildExclusionQueryIsDeterministic() {
+        let service = ContentFilterService.shared
+
+        let first = service.buildExclusionQuery()
+        let second = service.buildExclusionQuery()
+        #expect(first == second, "Exclusion query must be identical across calls for stable URLs")
+
+        // Terms are emitted in sorted order so the request URL never changes
+        // between launches (keeps URL caching effective).
+        let terms = first.components(separatedBy: " ")
+        #expect(terms == terms.sorted(), "Exclusion terms should be sorted")
     }
 
     // MARK: - Statistics Tests

@@ -195,6 +195,43 @@ struct ItemDetailViewModelTests {
         #expect(!viewModel.state.isLoading)
     }
 
+    // MARK: - Load Metadata Tests
+
+    @Test func loadMetadataWithEmptyIdentifierSetsError() async {
+        let response = await viewModel.loadMetadata()
+
+        #expect(response == nil)
+        #expect(!mockService.getMetadataCalled)
+        #expect(viewModel.state.errorMessage != nil)
+    }
+
+    @Test func loadMetadataSuccessStoresResponse() async {
+        viewModel.configure(with: makeConfig(identifier: "test_item", title: "Test"))
+        mockService.mockResponse = TestFixtures.itemMetadataResponse
+
+        let response = await viewModel.loadMetadata()
+
+        #expect(response != nil)
+        #expect(mockService.getMetadataCalled)
+        #expect(mockService.lastIdentifier == "test_item")
+        #expect(viewModel.state.metadataResponse != nil)
+        #expect(!viewModel.state.isLoading)
+        #expect(viewModel.state.errorMessage == nil)
+    }
+
+    @Test func loadMetadataWithErrorSetsErrorMessage() async {
+        viewModel.configure(with: makeConfig(identifier: "test_item", title: "Test"))
+        // Non-retryable error so the retry mechanism fails fast
+        mockService.errorToThrow = NetworkError.resourceNotFound
+
+        let response = await viewModel.loadMetadata()
+
+        #expect(response == nil)
+        #expect(viewModel.state.metadataResponse == nil)
+        #expect(viewModel.state.errorMessage != nil)
+        #expect(!viewModel.state.isLoading)
+    }
+
     // MARK: - Filter Playable Files Tests
 
     @Test func filterPlayableFilesForVideo() {

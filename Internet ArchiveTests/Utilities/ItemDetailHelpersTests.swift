@@ -288,13 +288,13 @@ final class DateFormattingHelpersTests: XCTestCase {
 
     func testFormatDateString_isoFormat_formats() {
         let result = DateFormattingHelpers.formatDateString("2024-01-15")
-        // Should format to medium date style
-        XCTAssertFalse(result.contains("-"))  // Should not be raw format
+        // Fixed POSIX "MMM dd, yyyy" format, matching Global.formatDate
+        XCTAssertEqual(result, "Jan 15, 2024")
     }
 
     func testFormatDateString_slashFormat_formats() {
         let result = DateFormattingHelpers.formatDateString("2024/06/20")
-        XCTAssertFalse(result.contains("/"))  // Should not be raw format
+        XCTAssertEqual(result, "Jun 20, 2024")
     }
 
     func testFormatDateString_yearOnly_returnsAsIs() {
@@ -403,6 +403,30 @@ final class IAURLHelpersTests: XCTestCase {
 
         XCTAssertNotNil(url)
         XCTAssertEqual(url?.absoluteString, "https://archive.org/services/img/test_item_456")
+    }
+
+    func testThumbnailURL_identifierWithSpaces_encodesSpaces() {
+        let url = IAURLHelpers.thumbnailURL(for: "my item")
+
+        XCTAssertNotNil(url)
+        XCTAssertEqual(url?.absoluteString, "https://archive.org/services/img/my%20item")
+    }
+
+    func testItemImageURL_validIdentifier_buildsCorrectURL() {
+        let url = IAURLHelpers.itemImageURL(for: "test-item-123")
+
+        XCTAssertNotNil(url)
+        XCTAssertEqual(
+            url?.absoluteString,
+            "https://archive.org/services/get-item-image.php?identifier=test-item-123"
+        )
+    }
+
+    func testItemImageURL_identifierWithSpecialChars_encodes() {
+        let url = IAURLHelpers.itemImageURL(for: "item&more")
+
+        XCTAssertNotNil(url)
+        XCTAssertTrue(url!.absoluteString.contains("%26")) // encoded &
     }
 
     func testDownloadURL_simpleFilename_buildsCorrectURL() {

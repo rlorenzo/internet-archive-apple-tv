@@ -25,6 +25,9 @@ struct SearchResultsGridView: View {
     @State private var currentPage = 0
     @State private var errorMessage: String?
     @State private var loadTask: Task<Void, Never>?
+    /// Generation counter for in-flight loads: a superseded load's response
+    /// must not touch state (flags included) now owned by the newer load.
+    @State private var loadGeneration = 0
 
     private let pageSize = 30
 
@@ -66,12 +69,16 @@ struct SearchResultsGridView: View {
 
     // MARK: - Error View
 
-    private func errorView(message _: String) -> some View {
+    private func errorView(message: String) -> some View {
         VStack {
             Spacer()
-            ErrorContentView.loadingFailed(contentType: "results") {
-                loadResults(page: 0)
-            }
+            ErrorContentView(
+                title: "Failed to Load",
+                message: message,
+                onRetry: {
+                    loadResults(page: 0)
+                }
+            )
             Spacer()
         }
     }
@@ -128,6 +135,8 @@ struct SearchResultsGridView: View {
 
     private func loadResults(page: Int) {
         loadTask?.cancel()
+        loadGeneration += 1
+        let requestGeneration = loadGeneration
 
         if page == 0 {
             isLoading = true
@@ -149,18 +158,20 @@ struct SearchResultsGridView: View {
                     "sort[]": "downloads desc"
                 ]
 
-                let fullQuery = "\(query) AND mediatype:(\(apiMediaType))"
+                let fullQuery = SearchQueryBuilder.buildQuery(searchText: query, mediaType: apiMediaType)
                 let response = try await APIManager.networkService.search(
                     query: fullQuery,
                     options: options
                 )
 
-                guard !Task.isCancelled else { return }
+                // A superseded load must not overwrite the newer load's state
+                // (the newer call owns the flags now, so don't touch them either)
+                guard requestGeneration == loadGeneration else { return }
 
                 if page == 0 {
                     results = response.response.docs
                 } else {
-                    results.append(contentsOf: response.response.docs)
+                    SearchResultDeduplicator.appendUnique(response.response.docs, to: &results)
                 }
 
                 currentPage = page
@@ -170,10 +181,15 @@ struct SearchResultsGridView: View {
                 isLoading = false
                 isLoadingMore = false
             } catch {
-                guard !Task.isCancelled else { return }
+                // A superseded load must not touch state owned by the newer call
+                guard requestGeneration == loadGeneration else { return }
 
                 isLoading = false
                 isLoadingMore = false
+
+                // Don't surface an error for a load that was cancelled
+                // without a successor (e.g. navigating away mid-load)
+                guard !(error is CancellationError), !Task.isCancelled else { return }
 
                 if let networkError = error as? NetworkError {
                     errorMessage = ErrorPresenter.shared.userFriendlyMessage(for: networkError)
