@@ -221,6 +221,9 @@ final class MusicViewModel: ObservableObject {
 
     /// Load collection data (legacy non-paginated method; retained for compatibility)
     func loadCollection() async {
+        let loadToken = UUID()
+        currentLoadToken = loadToken
+
         state.isLoading = true
         state.errorMessage = nil
 
@@ -233,6 +236,10 @@ final class MusicViewModel: ObservableObject {
                 )
             }
 
+            // A stale response (a newer load started meanwhile) must not
+            // overwrite the newer load's state
+            guard loadToken == currentLoadToken else { return }
+
             // Update collection name from response
             state.collection = result.collection
 
@@ -241,8 +248,9 @@ final class MusicViewModel: ObservableObject {
             state.isLoading = false
             state.hasLoaded = true
 
-            // Fetch collection metadata for the display title
-            await loadCollectionTitle(loadToken: currentLoadToken)
+            // Fetch collection metadata for the display title, passing the
+            // token captured at the start so a stale title is discarded
+            await loadCollectionTitle(loadToken: loadToken)
 
             ErrorLogger.shared.logSuccess(
                 operation: .getCollections,
@@ -250,6 +258,7 @@ final class MusicViewModel: ObservableObject {
             )
 
         } catch {
+            guard loadToken == currentLoadToken else { return }
             state.isLoading = false
             state.hasLoaded = true
             state.errorMessage = mapErrorToMessage(error)

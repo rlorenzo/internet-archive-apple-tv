@@ -14,7 +14,8 @@ enum SRTConversionHelpers {
 
     /// Regex matching the SRT/VTT timing arrow with optional surrounding whitespace.
     /// Real-world files use "-->" without spaces or with tabs around it.
-    private static let timingArrowPattern = "\\s*-->\\s*"
+    /// Internal so `SubtitleParser` can share the same pattern.
+    static let timingArrowPattern = "\\s*-->\\s*"
 
     // MARK: - SRT to VTT Conversion
 

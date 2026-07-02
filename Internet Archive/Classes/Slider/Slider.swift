@@ -60,12 +60,22 @@ public class Slider: UIView {
     @IBInspectable public var max: Double = 100 {
         didSet {
             distance = max - min
+            // Keep value within the new range (triggers the value didSet,
+            // which notifies the delegate and redraws)
+            if value > max {
+                value = max
+            }
             updateViews()
         }
     }
     @IBInspectable public var min: Double = 0 {
         didSet {
             distance = max - min
+            // Keep value within the new range (triggers the value didSet,
+            // which notifies the delegate and redraws)
+            if value < min {
+                value = min
+            }
             updateViews()
         }
     }

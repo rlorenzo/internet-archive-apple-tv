@@ -179,11 +179,13 @@ struct RetryMechanism {
             }
         }
 
-        // Fallback for raw URLErrors that escaped mapping to NetworkError:
-        // transient transport failures are worth retrying.
+        // Fallback for raw URLErrors that escaped mapping to NetworkError.
+        // Only timeouts are retried; .networkConnectionLost maps to
+        // NetworkError.noConnection, which is deliberately non-retryable
+        // (see the .noConnection case above), so classify it consistently.
         if let urlError = error as? URLError {
             switch urlError.code {
-            case .timedOut, .networkConnectionLost:
+            case .timedOut:
                 return true
             default:
                 return false

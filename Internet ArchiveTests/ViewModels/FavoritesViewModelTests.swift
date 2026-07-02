@@ -411,6 +411,46 @@ struct FavoritesViewModelTests {
         #expect(!viewModel.state.isLoading)
     }
 
+    @Test func loadFavoritesWithDetailsCancelledReloadLeavesHasLoadedFalse() async {
+        // A reload cancelled mid-flight must leave hasLoaded false so the view
+        // retries on reappear instead of trusting the previous load's flag
+        Global.saveFavoriteData(identifier: "local_movie")
+
+        // First load completes successfully and sets hasLoaded
+        let fastSearchService = MockSearchService()
+        fastSearchService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "local_movie", mediatype: "movies")
+        ])
+        await viewModel.loadFavoritesWithDetails(
+            username: "",
+            searchService: fastSearchService
+        )
+        #expect(viewModel.state.hasLoaded)
+
+        let slowSearchService = SlowMockSearchService()
+        slowSearchService.delayMilliseconds = 500
+        slowSearchService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "local_movie", mediatype: "movies")
+        ])
+
+        let loadTask = Task {
+            await viewModel.loadFavoritesWithDetails(
+                username: "",
+                searchService: slowSearchService
+            )
+        }
+
+        // Cancel while the details fetch is still in flight
+        try? await Task.sleep(nanoseconds: 50_000_000) // 50ms
+        loadTask.cancel()
+        await loadTask.value
+
+        #expect(!viewModel.state.hasLoaded)
+        #expect(!viewModel.state.isLoading)
+
+        Global.resetFavoriteData()
+    }
+
     @Test func peopleFavoritesCount() async {
         let accountItem = FavoriteItem(
             identifier: "person1",

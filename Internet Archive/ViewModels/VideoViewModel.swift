@@ -207,6 +207,9 @@ final class VideoViewModel: ObservableObject {
 
     /// Load collection data (legacy non-paginated method; retained for compatibility)
     func loadCollection() async {
+        let loadToken = UUID()
+        currentLoadToken = loadToken
+
         state.isLoading = true
         state.errorMessage = nil
 
@@ -218,6 +221,10 @@ final class VideoViewModel: ObservableObject {
                     limit: nil
                 )
             }
+
+            // A stale response (a newer load started meanwhile) must not
+            // overwrite the newer load's state
+            guard loadToken == currentLoadToken else { return }
 
             // Update collection name from response
             state.collection = result.collection
@@ -235,6 +242,7 @@ final class VideoViewModel: ObservableObject {
             )
 
         } catch {
+            guard loadToken == currentLoadToken else { return }
             state.isLoading = false
             state.hasLoaded = true
             state.errorMessage = mapErrorToMessage(error)

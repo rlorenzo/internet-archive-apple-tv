@@ -415,8 +415,10 @@ struct RetryMechanismTests {
         #expect(RetryMechanism.isRetryable(URLError(.timedOut)))
     }
 
-    @Test func isRetryable_rawURLErrorConnectionLostIsRetryable() {
-        #expect(RetryMechanism.isRetryable(URLError(.networkConnectionLost)))
+    @Test func isRetryable_rawURLErrorConnectionLostIsNotRetryable() {
+        // .networkConnectionLost maps to NetworkError.noConnection, which is
+        // deliberately non-retryable - the raw URLError fallback must agree
+        #expect(!RetryMechanism.isRetryable(URLError(.networkConnectionLost)))
     }
 
     @Test func isRetryable_rawURLErrorBadURLIsNotRetryable() {

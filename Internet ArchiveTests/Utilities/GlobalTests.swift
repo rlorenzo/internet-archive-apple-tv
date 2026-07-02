@@ -180,17 +180,18 @@ final class GlobalTests: XCTestCase {
     @MainActor
     func testFormatDatePlainDateDelegatesToSharedHelper() {
         // Plain yyyy-MM-dd dates (common in IA search results) are formatted
-        // via DateFormattingHelpers instead of being returned raw
+        // via DateFormattingHelpers, whose POSIX-fixed "MMM dd, yyyy" output
+        // matches the ISO-datetime path above
         let formatted = Global.formatDate(string: "2024-01-15")
 
-        XCTAssertEqual(formatted, DateFormattingHelpers.formatDateString("2024-01-15"))
+        XCTAssertEqual(formatted, "Jan 15, 2024")
     }
 
     @MainActor
     func testFormatDateSlashDateDelegatesToSharedHelper() {
         let formatted = Global.formatDate(string: "2024/06/01")
 
-        XCTAssertEqual(formatted, DateFormattingHelpers.formatDateString("2024/06/01"))
+        XCTAssertEqual(formatted, "Jun 01, 2024")
     }
 
     @MainActor

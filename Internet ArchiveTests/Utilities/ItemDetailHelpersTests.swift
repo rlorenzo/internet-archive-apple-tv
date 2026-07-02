@@ -288,13 +288,13 @@ final class DateFormattingHelpersTests: XCTestCase {
 
     func testFormatDateString_isoFormat_formats() {
         let result = DateFormattingHelpers.formatDateString("2024-01-15")
-        // Should format to medium date style
-        XCTAssertFalse(result.contains("-"))  // Should not be raw format
+        // Fixed POSIX "MMM dd, yyyy" format, matching Global.formatDate
+        XCTAssertEqual(result, "Jan 15, 2024")
     }
 
     func testFormatDateString_slashFormat_formats() {
         let result = DateFormattingHelpers.formatDateString("2024/06/20")
-        XCTAssertFalse(result.contains("/"))  // Should not be raw format
+        XCTAssertEqual(result, "Jun 20, 2024")
     }
 
     func testFormatDateString_yearOnly_returnsAsIs() {

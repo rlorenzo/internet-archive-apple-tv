@@ -179,6 +179,24 @@ final class SliderTests: XCTestCase {
         XCTAssertEqual(slider.max, 50)
     }
 
+    func testLoweringMax_reclampsValue() {
+        createTestObjects()
+        slider.value = 80
+
+        slider.max = 50
+
+        XCTAssertEqual(slider.value, 50)
+    }
+
+    func testRaisingMin_reclampsValue() {
+        createTestObjects()
+        slider.value = 20
+
+        slider.min = 40
+
+        XCTAssertEqual(slider.value, 40)
+    }
+
     // MARK: - Animated Value Setting
 
     func testSetValueAnimated() {

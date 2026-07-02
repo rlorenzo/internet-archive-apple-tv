@@ -89,6 +89,9 @@ final class CollectionViewModel: ObservableObject {
         state.errorMessage = nil
         state.items = []
         state.collectionName = identifier
+        // Clear the previous collection's metadata so a failed metadata fetch
+        // below can't leave a stale description on screen
+        state.collectionMetadata = nil
 
         do {
             let response = try await collectionService.getCollectionPage(
@@ -110,6 +113,14 @@ final class CollectionViewModel: ObservableObject {
                 state.collectionMetadata = metadata.metadata
             } catch {
                 guard loadToken == currentLoadToken else { return }
+                // Non-fatal: use the fallback description, but log for debugging
+                ErrorLogger.shared.log(
+                    error: error,
+                    context: ErrorContext(
+                        operation: .getMetadata,
+                        additionalInfo: ["collection": identifier]
+                    )
+                )
             }
 
             state.isLoading = false

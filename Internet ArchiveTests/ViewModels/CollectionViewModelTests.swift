@@ -395,6 +395,40 @@ final class CollectionViewModelTests: XCTestCase {
         XCTAssertNil(viewModel.state.errorMessage)
     }
 
+    func testLoadCollectionContents_metadataFailureClearsPreviousMetadata() async {
+        // First load: identifier A with metadata success
+        mockService.mockPageResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "item1")
+        ])
+        mockService.mockMetadataResponse = ItemMetadataResponse(
+            files: nil,
+            metadata: ItemMetadata(title: "Collection A", description: "A's description")
+        )
+
+        await viewModel.loadCollectionContents(
+            identifier: "collection_a",
+            mediaTypeFilter: "movies",
+            sort: "week desc"
+        )
+
+        XCTAssertEqual(viewModel.state.collectionMetadata?.title, "Collection A")
+
+        // Second load: identifier B where the metadata fetch fails
+        // (nil mockMetadataResponse makes the mock throw for getMetadata)
+        mockService.mockMetadataResponse = nil
+
+        await viewModel.loadCollectionContents(
+            identifier: "collection_b",
+            mediaTypeFilter: "movies",
+            sort: "week desc"
+        )
+
+        // A's stale metadata must not survive into B's state
+        XCTAssertNil(viewModel.state.collectionMetadata)
+        XCTAssertTrue(viewModel.state.hasLoaded)
+        XCTAssertNil(viewModel.state.errorMessage)
+    }
+
     func testLoadCollectionContents_errorSetsErrorMessage() async {
         mockService.errorToThrow = NetworkError.timeout
 

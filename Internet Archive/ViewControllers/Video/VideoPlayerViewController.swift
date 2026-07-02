@@ -417,6 +417,10 @@ final class VideoPlayerViewController: AVPlayerViewController {
                 // Don't save if duration is invalid
                 guard durationSeconds > 0, !durationSeconds.isNaN, !durationSeconds.isInfinite else { return }
 
+                // The player item may have changed while the duration loaded;
+                // don't cache (or persist) a stale item's duration
+                guard self.player?.currentItem === currentItem else { return }
+
                 self.cachedDurationSeconds = durationSeconds
                 self.persistProgress(
                     identifier: identifier,

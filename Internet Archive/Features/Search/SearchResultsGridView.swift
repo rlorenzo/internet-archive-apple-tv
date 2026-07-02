@@ -25,6 +25,9 @@ struct SearchResultsGridView: View {
     @State private var currentPage = 0
     @State private var errorMessage: String?
     @State private var loadTask: Task<Void, Never>?
+    /// Generation counter for in-flight loads: a superseded load's response
+    /// must not touch state (flags included) now owned by the newer load.
+    @State private var loadGeneration = 0
 
     private let pageSize = 30
 
@@ -132,6 +135,8 @@ struct SearchResultsGridView: View {
 
     private func loadResults(page: Int) {
         loadTask?.cancel()
+        loadGeneration += 1
+        let requestGeneration = loadGeneration
 
         if page == 0 {
             isLoading = true
@@ -159,13 +164,9 @@ struct SearchResultsGridView: View {
                     options: options
                 )
 
-                guard !Task.isCancelled else {
-                    // Always reset the flags, or skeletons show forever and
-                    // load-more stays dead after navigating away mid-load
-                    isLoading = false
-                    isLoadingMore = false
-                    return
-                }
+                // A superseded load must not overwrite the newer load's state
+                // (the newer call owns the flags now, so don't touch them either)
+                guard requestGeneration == loadGeneration else { return }
 
                 if page == 0 {
                     results = response.response.docs
@@ -180,10 +181,15 @@ struct SearchResultsGridView: View {
                 isLoading = false
                 isLoadingMore = false
             } catch {
+                // A superseded load must not touch state owned by the newer call
+                guard requestGeneration == loadGeneration else { return }
+
                 isLoading = false
                 isLoadingMore = false
 
-                guard !Task.isCancelled else { return }
+                // Don't surface an error for a load that was cancelled
+                // without a successor (e.g. navigating away mid-load)
+                guard !(error is CancellationError), !Task.isCancelled else { return }
 
                 if let networkError = error as? NetworkError {
                     errorMessage = ErrorPresenter.shared.userFriendlyMessage(for: networkError)

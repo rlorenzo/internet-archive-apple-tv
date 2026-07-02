@@ -109,7 +109,7 @@ final class SubtitleParser: Sendable {
     /// Tolerates missing or non-space whitespace around the arrow.
     private func parseTimingLine(_ line: String) -> (start: Double, end: Double)? {
         let normalized = line.replacingOccurrences(
-            of: "\\s*-->\\s*",
+            of: SRTConversionHelpers.timingArrowPattern,
             with: " --> ",
             options: .regularExpression
         )

@@ -147,9 +147,7 @@ final class ItemDetailViewModel: ObservableObject {
         state.errorMessage = nil
 
         do {
-            let response = try await RetryMechanism.execute(config: .single) {
-                try await self.metadataService.getMetadata(identifier: self.state.identifier)
-            }
+            let response = try await fetchMetadata(identifier: state.identifier)
 
             state.isLoading = false
 
@@ -177,9 +175,7 @@ final class ItemDetailViewModel: ObservableObject {
         state.errorMessage = nil
 
         do {
-            let metadataResponse = try await RetryMechanism.execute(config: .single) {
-                try await self.metadataService.getMetadata(identifier: self.state.identifier)
-            }
+            let metadataResponse = try await fetchMetadata(identifier: state.identifier)
 
             state.isLoading = false
 
@@ -290,6 +286,15 @@ final class ItemDetailViewModel: ObservableObject {
     }
 
     // MARK: - Private Methods
+
+    /// Fetch the item metadata via the injected service with a single retry.
+    /// Shared by `loadMetadata()` and `loadMediaForPlayback()`, which apply
+    /// their own state handling around it.
+    private func fetchMetadata(identifier: String) async throws -> ItemMetadataResponse {
+        try await RetryMechanism.execute(config: .single) {
+            try await self.metadataService.getMetadata(identifier: identifier)
+        }
+    }
 
     private func mapErrorToMessage(_ error: Error) -> String {
         ErrorMessageMapper.message(for: error)

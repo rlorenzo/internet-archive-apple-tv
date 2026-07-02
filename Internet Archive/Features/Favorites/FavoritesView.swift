@@ -64,7 +64,7 @@ struct FavoritesView: View {
                     // previous load was cancelled before finishing.
                     if !viewModel.state.hasLoaded || loadedFavoritesVersion != appState.favoritesVersion {
                         loadedFavoritesVersion = appState.favoritesVersion
-                        await loadFavorites()
+                        await restartFavoritesLoad()
                     }
                 }
                 .onChange(of: appState.favoritesVersion) { _, newVersion in
@@ -180,7 +180,7 @@ struct FavoritesView: View {
             .padding(.vertical, 40)
         }
         .refreshable {
-            await loadFavorites()
+            await restartFavoritesLoad()
         }
     }
 
@@ -240,6 +240,18 @@ struct FavoritesView: View {
             username: username,
             searchService: DefaultSearchService()
         )
+    }
+
+    /// Restart the favorites load from an async context (.task, .refreshable),
+    /// tracking it in `loadTask` so `reloadFavorites()`/`cancelLoadTask()` can
+    /// cancel it instead of letting loads overlap.
+    private func restartFavoritesLoad() async {
+        loadTask?.cancel()
+        let task = Task {
+            await loadFavorites()
+        }
+        loadTask = task
+        await task.value
     }
 
     /// Reload from a synchronous context (retry button, onChange handlers).

@@ -74,6 +74,9 @@ final class FavoritesViewModel: ObservableObject {
 
         state.isLoading = true
         state.errorMessage = nil
+        // Reset for this load: hasLoaded reflects the current load, not a
+        // previous one, so views don't skip a reload based on stale state.
+        state.hasLoaded = false
 
         do {
             let response = try await favoritesService.getFavoriteItems(username: username)
@@ -83,9 +86,11 @@ final class FavoritesViewModel: ObservableObject {
             state.movieItems = filterByMediaType(items: items, types: ["movies", "video"])
             state.musicItems = filterByMediaType(items: items, types: ["audio", "etree"])
             state.isLoading = false
+            state.hasLoaded = true
         } catch {
             state.errorMessage = mapErrorToMessage(error)
             state.isLoading = false
+            state.hasLoaded = true
         }
     }
 
@@ -151,6 +156,9 @@ final class FavoritesViewModel: ObservableObject {
     func loadFavoritesWithDetails(username: String, searchService: SearchServiceProtocol) async {
         state.isLoading = true
         state.errorMessage = nil
+        // Reset for this load: if it's cancelled, hasLoaded stays false so the
+        // view retries on reappear instead of trusting a previous load's flag.
+        state.hasLoaded = false
 
         do {
             // Account favorites are only available when logged in
