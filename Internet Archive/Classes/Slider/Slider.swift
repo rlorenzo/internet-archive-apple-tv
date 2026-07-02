@@ -274,13 +274,15 @@ public class Slider: UIView {
             // Block-based timer with [weak self]: the target/selector API
             // makes the run loop retain the slider until invalidation
             deceleratingTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { [weak self] timer in
+                // Self-invalidate if the slider is gone (repeating timers
+                // retain themselves on the run loop)
+                guard self != nil else {
+                    timer.invalidate()
+                    return
+                }
                 // Timers scheduled from the gesture handler run on the main run loop
                 MainActor.assumeIsolated {
-                    guard let self else {
-                        timer.invalidate()
-                        return
-                    }
-                    self.handleDeceleratingTimer(timer: timer)
+                    self?.handleDeceleratingTimer()
                 }
             }
             delegate?.sliderDidEndScrubbing(self)
@@ -295,7 +297,7 @@ public class Slider: UIView {
         delegate?.sliderDidTap(self)
     }
 
-    @objc private func handleDeceleratingTimer(timer _: Timer) {
+    private func handleDeceleratingTimer() {
         let leading = seekerViewLeadingConstraintConstant + deceleratingVelocity * 0.01
         set(percentage: Double(leading / barView.frame.width))
         seekerViewLeadingConstraintConstant = seekerViewLeadingConstraint.constant
