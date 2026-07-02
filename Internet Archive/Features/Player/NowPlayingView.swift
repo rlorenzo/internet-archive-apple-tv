@@ -60,16 +60,14 @@ enum NowPlayingPresenter {
         var startIndex = 0
         var trackResumeTime: Double?
 
-        if let progress = savedProgress {
-            if let savedIndex = progress.trackIndex, savedIndex < tracks.count {
-                startIndex = savedIndex
-                trackResumeTime = progress.trackCurrentTime
-            } else if let savedFilename = progress.trackFilename {
-                if let matchIndex = tracks.firstIndex(where: { $0.filename == savedFilename }) {
-                    startIndex = matchIndex
-                    trackResumeTime = progress.trackCurrentTime
-                }
-            }
+        if let progress = savedProgress,
+           let resumeIndex = NowPlayingHelpers.resumeStartIndex(
+               trackFilename: progress.trackFilename,
+               trackIndex: progress.trackIndex,
+               tracks: tracks
+           ) {
+            startIndex = resumeIndex
+            trackResumeTime = progress.trackCurrentTime
         }
 
         // Find the root view controller to present from
@@ -198,7 +196,6 @@ struct NowPlayingView: UIViewControllerRepresentable {
         )
 
         viewController.onDismiss = onDismiss
-        context.coordinator.viewController = viewController
 
         return viewController
     }
@@ -206,21 +203,6 @@ struct NowPlayingView: UIViewControllerRepresentable {
     func updateUIViewController(_ uiViewController: NowPlayingViewController, context: Context) {
         // Updates are not needed after initial setup
         // The NowPlayingViewController manages its own state
-    }
-
-    func makeCoordinator() -> Coordinator {
-        Coordinator(onDismiss: onDismiss)
-    }
-
-    // MARK: - Coordinator
-
-    class Coordinator: NSObject {
-        weak var viewController: NowPlayingViewController?
-        var onDismiss: (() -> Void)?
-
-        init(onDismiss: (() -> Void)?) {
-            self.onDismiss = onDismiss
-        }
     }
 }
 
@@ -273,18 +255,15 @@ extension NowPlayingView {
         var startIndex = 0
         var trackResumeTime: Double?
 
-        if let progress = savedProgress {
-            // Find the track to resume from
-            if let savedIndex = progress.trackIndex, savedIndex < tracks.count {
-                startIndex = savedIndex
-                trackResumeTime = progress.trackCurrentTime
-            } else if let savedFilename = progress.trackFilename {
-                // Fall back to matching by filename
-                if let matchIndex = tracks.firstIndex(where: { $0.filename == savedFilename }) {
-                    startIndex = matchIndex
-                    trackResumeTime = progress.trackCurrentTime
-                }
-            }
+        // Find the track to resume from: filename first, index as fallback
+        if let progress = savedProgress,
+           let resumeIndex = NowPlayingHelpers.resumeStartIndex(
+               trackFilename: progress.trackFilename,
+               trackIndex: progress.trackIndex,
+               tracks: tracks
+           ) {
+            startIndex = resumeIndex
+            trackResumeTime = progress.trackCurrentTime
         }
 
         return NowPlayingView(

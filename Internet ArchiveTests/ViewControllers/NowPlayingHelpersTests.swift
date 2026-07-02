@@ -164,6 +164,106 @@ struct NowPlayingProgressTitleTests {
     }
 }
 
+// MARK: - Resume Start Index Tests
+
+@Suite("NowPlayingHelpers.resumeStartIndex Tests")
+struct NowPlayingResumeStartIndexTests {
+
+    private func makeTracks(filenames: [String]) -> [AudioTrack] {
+        filenames.enumerated().compactMap { index, filename in
+            guard let streamURL = URL(string: "https://archive.org/download/test/\(filename)") else {
+                return nil
+            }
+            return AudioTrack(
+                id: "test/\(filename)",
+                itemIdentifier: "test",
+                filename: filename,
+                trackNumber: index + 1,
+                title: "Track \(index + 1)",
+                artist: "Artist",
+                album: "Album",
+                duration: 180,
+                streamURL: streamURL,
+                thumbnailURL: nil
+            )
+        }
+    }
+
+    @Test func prefersFilenameMatchOverIndex() {
+        let tracks = makeTracks(filenames: ["a.mp3", "b.mp3", "c.mp3"])
+
+        // Filename points at index 2; the saved index (from a shuffled
+        // queue) points elsewhere - filename must win
+        let result = NowPlayingHelpers.resumeStartIndex(
+            trackFilename: "c.mp3",
+            trackIndex: 0,
+            tracks: tracks
+        )
+
+        #expect(result == 2)
+    }
+
+    @Test func fallsBackToIndexWhenFilenameMissing() {
+        let tracks = makeTracks(filenames: ["a.mp3", "b.mp3", "c.mp3"])
+
+        let result = NowPlayingHelpers.resumeStartIndex(
+            trackFilename: nil,
+            trackIndex: 1,
+            tracks: tracks
+        )
+
+        #expect(result == 1)
+    }
+
+    @Test func fallsBackToIndexWhenFilenameNotFound() {
+        let tracks = makeTracks(filenames: ["a.mp3", "b.mp3"])
+
+        let result = NowPlayingHelpers.resumeStartIndex(
+            trackFilename: "gone.mp3",
+            trackIndex: 1,
+            tracks: tracks
+        )
+
+        #expect(result == 1)
+    }
+
+    @Test func returnsNilWhenIndexOutOfRangeAndNoFilenameMatch() {
+        let tracks = makeTracks(filenames: ["a.mp3", "b.mp3"])
+
+        let result = NowPlayingHelpers.resumeStartIndex(
+            trackFilename: "gone.mp3",
+            trackIndex: 100,
+            tracks: tracks
+        )
+
+        #expect(result == nil)
+    }
+
+    @Test func returnsNilForNegativeIndex() {
+        let tracks = makeTracks(filenames: ["a.mp3"])
+
+        let result = NowPlayingHelpers.resumeStartIndex(
+            trackFilename: nil,
+            trackIndex: -1,
+            tracks: tracks
+        )
+
+        #expect(result == nil)
+    }
+
+    @Test func returnsNilWhenNothingSaved() {
+        let tracks = makeTracks(filenames: ["a.mp3"])
+
+        let result = NowPlayingHelpers.resumeStartIndex(
+            trackFilename: nil,
+            trackIndex: nil,
+            tracks: tracks
+        )
+
+        #expect(result == nil)
+    }
+}
+
 // MARK: - Album Progress Tests
 
 @Suite("NowPlayingHelpers.calculateAlbumProgress Tests")

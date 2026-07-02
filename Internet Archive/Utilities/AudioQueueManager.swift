@@ -110,6 +110,14 @@ final class AudioQueueManager: ObservableObject {
         currentIndex + 1
     }
 
+    /// Index of the current track in the original (unshuffled) order.
+    /// Use this when persisting resume state: the playback queue may be
+    /// shuffled, but resume happens against the original sorted list.
+    var currentIndexInOriginalOrder: Int? {
+        guard let current = currentTrack else { return nil }
+        return originalOrder.firstIndex(of: current)
+    }
+
     // MARK: - Queue Management
 
     /// Set the queue with tracks, optionally starting at a specific index

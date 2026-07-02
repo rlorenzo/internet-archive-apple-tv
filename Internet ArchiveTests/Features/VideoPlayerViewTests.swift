@@ -2,7 +2,7 @@
 //  VideoPlayerViewTests.swift
 //  Internet ArchiveTests
 //
-//  Tests for VideoPlayerView - video format selection, URL building, coordinator
+//  Tests for VideoPlayerView - video format selection, URL building
 //  Migrated to Swift Testing for Sprint 2
 //
 
@@ -140,32 +140,6 @@ struct VideoPlayerViewFindPlayableVideoTests {
             FileInfo(name: "image.png", source: "original", format: "PNG")
         ]
         #expect(VideoPlayerView.findPlayableVideo(in: files) == nil)
-    }
-}
-
-// MARK: - VideoPlayerView Coordinator Tests
-
-@Suite("VideoPlayerView Coordinator Tests")
-struct VideoPlayerViewCoordinatorTests {
-
-    @Test("Coordinator init with onDismiss callback")
-    func initWithOnDismiss() {
-        var dismissCalled = false
-        let coordinator = VideoPlayerView.Coordinator(onDismiss: { dismissCalled = true })
-        coordinator.onDismiss?()
-        #expect(dismissCalled)
-    }
-
-    @Test("Coordinator init with nil onDismiss")
-    func initWithNilOnDismiss() {
-        let coordinator = VideoPlayerView.Coordinator(onDismiss: nil)
-        #expect(coordinator.onDismiss == nil)
-    }
-
-    @Test("Coordinator viewController initially nil")
-    func viewControllerInitiallyNil() {
-        let coordinator = VideoPlayerView.Coordinator(onDismiss: nil)
-        #expect(coordinator.viewController == nil)
     }
 }
 

@@ -46,18 +46,26 @@ public class Slider: UIView {
      */
     @IBInspectable public var value: Double = 0 {
         didSet {
+            // Clamp to [min, max] as documented. Re-assignment inside didSet
+            // does not re-trigger the observer.
+            if value < min {
+                value = min
+            } else if value > max {
+                value = max
+            }
             updateViews()
             delegate?.slider(self, didChangeValue: value)
         }
     }
     @IBInspectable public var max: Double = 100 {
         didSet {
-            distance = max
+            distance = max - min
             updateViews()
         }
     }
     @IBInspectable public var min: Double = 0 {
         didSet {
+            distance = max - min
             updateViews()
         }
     }
@@ -263,7 +271,18 @@ public class Slider: UIView {
 
             let direction: CGFloat = velocity.x > 0 ? 1 : -1
             deceleratingVelocity = abs(velocity.x) > decelerationMaxVelocity ? decelerationMaxVelocity * direction : velocity.x
-            deceleratingTimer = Timer.scheduledTimer(timeInterval: 0.01, target: self, selector: #selector(handleDeceleratingTimer(timer:)), userInfo: nil, repeats: true)
+            // Block-based timer with [weak self]: the target/selector API
+            // makes the run loop retain the slider until invalidation
+            deceleratingTimer = Timer.scheduledTimer(withTimeInterval: 0.01, repeats: true) { [weak self] timer in
+                // Timers scheduled from the gesture handler run on the main run loop
+                MainActor.assumeIsolated {
+                    guard let self else {
+                        timer.invalidate()
+                        return
+                    }
+                    self.handleDeceleratingTimer(timer: timer)
+                }
+            }
             delegate?.sliderDidEndScrubbing(self)
             // Note: sliderDidFinishScrubbing will be called when deceleration completes in stopDeceleratingTimer
         default:
