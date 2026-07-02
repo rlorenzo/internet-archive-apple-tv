@@ -213,10 +213,10 @@ struct VideoPlayerView: UIViewControllerRepresentable {
         // Store coordinator reference for dismiss handling
         context.coordinator.viewController = viewController
 
-        // Delay play() until player is ready
-        DispatchQueue.main.asyncAfter(deadline: .now() + 0.5) {
-            player.play()
-        }
+        // Start playback immediately - AVPlayer begins once the item is
+        // ready, and a blind delay could start audio after dismissal or
+        // fight the resume-seek
+        player.play()
 
         return viewController
     }

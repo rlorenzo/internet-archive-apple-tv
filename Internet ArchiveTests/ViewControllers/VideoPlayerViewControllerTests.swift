@@ -269,6 +269,41 @@ final class VideoPlayerViewControllerTests: XCTestCase {
         XCTAssertNotNil(viewController)
     }
 
+    // MARK: - Transport Bar Metadata Tests
+
+    func testVideoPlayerViewController_setsTitleInExternalMetadata() {
+        let player = makePlayer()
+        _ = VideoPlayerViewController(
+            player: player,
+            subtitleTracks: [],
+            identifier: "test",
+            title: "My Video Title"
+        )
+
+        let metadata = player.currentItem?.externalMetadata ?? []
+        let titleItem = metadata.first { $0.identifier == .commonIdentifierTitle }
+
+        XCTAssertNotNil(titleItem)
+        XCTAssertEqual(titleItem?.value as? String, "My Video Title")
+    }
+
+    func testVideoPlayerViewController_noTitleOmitsTitleMetadata() {
+        let player = makePlayer()
+        _ = VideoPlayerViewController(
+            player: player,
+            subtitleTracks: [],
+            identifier: "test",
+            title: nil
+        )
+
+        let metadata = player.currentItem?.externalMetadata ?? []
+        let titleItem = metadata.first { $0.identifier == .commonIdentifierTitle }
+
+        XCTAssertNil(titleItem)
+        // The blank creation date override is still present
+        XCTAssertTrue(metadata.contains { $0.identifier == .commonIdentifierCreationDate })
+    }
+
     // MARK: - Generated Subtitles (tvOS 27+) Tests
 
     func testVideoPlayerViewController_preservesNativeSubtitlesWithoutSidecarTracks() {
