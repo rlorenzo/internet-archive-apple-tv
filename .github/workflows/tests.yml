@@ -50,7 +50,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
     - name: Select Xcode version
       run: |
@@ -66,7 +66,7 @@ jobs:
         xcrun simctl list devices available | grep -i "tv" || true
 
     - name: Cache SPM packages
-      uses: actions/cache@v4
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
       with:
         # The build below uses a repo-local derived data path
         # (-derivedDataPath DerivedData), so cache that SourcePackages
@@ -179,7 +179,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
 
     - name: Select Xcode version
       run: |
@@ -213,7 +213,7 @@ jobs:
         fi
 
     - name: Cache SPM packages
-      uses: actions/cache@v4
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
       with:
         path: |
           ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
@@ -272,7 +272,7 @@ jobs:
 
     - name: Upload test results
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: test-results
         path: TestResults.xcresult
@@ -280,7 +280,7 @@ jobs:
 
     - name: Upload coverage report
       if: success()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: coverage-report
         path: coverage.json
@@ -377,7 +377,7 @@ jobs:
 
     steps:
     - name: Checkout code
-      uses: actions/checkout@v4
+      uses: actions/checkout@34e114876b0b11c390a56381ad16ebd13914f8d5 # v4
       with:
         # The token isn't needed after checkout in this job
         persist-credentials: false
@@ -394,7 +394,7 @@ jobs:
         xcodebuild -version
 
     - name: Cache SPM packages
-      uses: actions/cache@v4
+      uses: actions/cache@0057852bfaa89a56745cba8c7296529d2fc39830 # v4
       with:
         path: |
           ~/Library/Developer/Xcode/DerivedData/**/SourcePackages
@@ -427,7 +427,7 @@ jobs:
 
     - name: Upload UI test results
       if: always()
-      uses: actions/upload-artifact@v4
+      uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4.6.2
       with:
         name: ui-test-results
         path: UITestResults.xcresult
