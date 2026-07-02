@@ -16,6 +16,8 @@ protocol PeopleFavoritesServiceProtocol: Sendable {
 /// ViewModel state for people favorites
 struct PeopleViewState: Sendable {
     var isLoading: Bool = false
+    /// Whether a load has run to completion (success or failure)
+    var hasLoaded: Bool = false
     var identifier: String = ""
     var name: String = ""
     var movieItems: [SearchResult] = []
@@ -47,6 +49,12 @@ struct PeopleViewState: Sendable {
 /// ViewModel for people screen - handles all business logic
 @MainActor
 final class PeopleViewModel: ObservableObject {
+
+    // MARK: - Constants
+
+    /// Media types shown in a person's favorites (case-insensitive matching,
+    /// aligned with FavoritesViewModel.supportedMediaTypes minus "account")
+    static let supportedMediaTypes = ["movies", "video", "audio", "etree"]
 
     // MARK: - Published State
 
@@ -88,7 +96,11 @@ final class PeopleViewModel: ObservableObject {
             let favoritesResponse = try await favoritesService.getFavoriteItems(username: username)
 
             guard let favorites = favoritesResponse.members, !favorites.isEmpty else {
+                // Clear stale items (e.g. after the person un-favorited everything)
+                state.movieItems = []
+                state.musicItems = []
                 state.isLoading = false
+                state.hasLoaded = true
                 return
             }
 
@@ -96,14 +108,19 @@ final class PeopleViewModel: ObservableObject {
             let identifiers = filterSupportedIdentifiers(favorites)
 
             guard !identifiers.isEmpty else {
+                // Clear stale items when no supported favorites remain
+                state.movieItems = []
+                state.musicItems = []
                 state.isLoading = false
+                state.hasLoaded = true
                 return
             }
 
             // Search for full details
             let options = [
+                "rows": "200",
                 "fl[]": "identifier,title,year,downloads,date,creator,description,mediatype",
-                "sort[]": "date+desc"
+                "sort[]": "date desc"
             ]
 
             let query = "identifier:(\(identifiers.joined(separator: " OR ")))"
@@ -114,6 +131,7 @@ final class PeopleViewModel: ObservableObject {
             state.movieItems = categorized.movies
             state.musicItems = categorized.music
             state.isLoading = false
+            state.hasLoaded = true
 
             ErrorLogger.shared.logSuccess(
                 operation: .getFavorites,
@@ -126,6 +144,7 @@ final class PeopleViewModel: ObservableObject {
 
         } catch {
             state.isLoading = false
+            state.hasLoaded = true
             state.errorMessage = mapErrorToMessage(error)
 
             ErrorLogger.shared.log(
@@ -138,27 +157,27 @@ final class PeopleViewModel: ObservableObject {
         }
     }
 
-    /// Filter favorites for supported media types (movies, audio)
+    /// Filter favorites for supported media types (case-insensitive)
     func filterSupportedIdentifiers(_ favorites: [FavoriteItem]) -> [String] {
         favorites.compactMap { item in
-            guard let mediaType = item.mediatype,
-                  ["movies", "audio"].contains(mediaType) else {
+            guard let mediaType = item.mediatype?.lowercased(),
+                  Self.supportedMediaTypes.contains(mediaType) else {
                 return nil
             }
             return item.identifier
         }
     }
 
-    /// Categorize search results by media type
+    /// Categorize search results by media type (case-insensitive)
     func categorizeByMediaType(_ items: [SearchResult]) -> (movies: [SearchResult], music: [SearchResult]) {
         var movies: [SearchResult] = []
         var music: [SearchResult] = []
 
         for item in items {
-            switch item.safeMediaType {
-            case "movies":
+            switch item.safeMediaType.lowercased() {
+            case "movies", "video":
                 movies.append(item)
-            case "audio":
+            case "audio", "etree":
                 music.append(item)
             default:
                 break

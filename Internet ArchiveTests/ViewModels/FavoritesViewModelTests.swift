@@ -246,7 +246,8 @@ struct FavoritesViewModelTests {
         #expect(viewModel.state.peopleResults.count == 1)
     }
 
-    @Test func loadFavoritesWithDetailsEmptyUsernameSetsError() async {
+    @Test func loadFavoritesWithDetailsEmptyUsernameSkipsAccountFetch() async {
+        // Logged out: no account fetch, no error - local favorites only
         let mockSearchService = MockSearchService()
 
         await viewModel.loadFavoritesWithDetails(
@@ -255,7 +256,107 @@ struct FavoritesViewModelTests {
         )
 
         #expect(!mockService.getFavoriteItemsCalled)
-        #expect(viewModel.state.errorMessage != nil)
+        #expect(!mockSearchService.searchCalled)
+        #expect(viewModel.state.errorMessage == nil)
+        #expect(viewModel.state.hasLoaded)
+        #expect(!viewModel.state.isLoading)
+    }
+
+    @Test func loadFavoritesWithDetailsEmptyUsernameLoadsLocalFavorites() async {
+        // Logged out with a locally-hearted item: details are still fetched
+        Global.saveFavoriteData(identifier: "local_movie")
+
+        let mockSearchService = MockSearchService()
+        mockSearchService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "local_movie", mediatype: "movies")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "",
+            searchService: mockSearchService
+        )
+
+        #expect(!mockService.getFavoriteItemsCalled)
+        #expect(mockSearchService.searchCalled)
+        #expect(mockSearchService.lastQuery?.contains("local_movie") ?? false)
+        #expect(viewModel.state.movieResults.count == 1)
+        #expect(viewModel.state.errorMessage == nil)
+
+        Global.resetFavoriteData()
+    }
+
+    @Test func loadFavoritesWithDetailsMergesLocalFavoritesWithAccount() async {
+        // Signed in with an account favorite AND a local heart
+        Global.saveFavoriteData(identifier: "local_audio")
+
+        let movieFavorite = FavoriteItem(identifier: "movie1", mediatype: "movies", title: "Movie")
+        mockService.mockResponse = FavoritesResponse(members: [movieFavorite])
+
+        let mockSearchService = MockSearchService()
+        mockSearchService.mockResponse = TestFixtures.makeSearchResponse(numFound: 2, docs: [
+            TestFixtures.makeSearchResult(identifier: "movie1", mediatype: "movies"),
+            TestFixtures.makeSearchResult(identifier: "local_audio", mediatype: "audio")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService
+        )
+
+        #expect(mockSearchService.lastQuery?.contains("movie1") ?? false)
+        #expect(mockSearchService.lastQuery?.contains("local_audio") ?? false)
+        #expect(viewModel.state.movieResults.count == 1)
+        #expect(viewModel.state.musicResults.count == 1)
+
+        Global.resetFavoriteData()
+    }
+
+    @Test func loadFavoritesWithDetailsDeduplicatesLocalAndAccountFavorites() async {
+        // Same item favorited on the account and locally: queried only once
+        Global.saveFavoriteData(identifier: "movie1")
+
+        let movieFavorite = FavoriteItem(identifier: "movie1", mediatype: "movies", title: "Movie")
+        mockService.mockResponse = FavoritesResponse(members: [movieFavorite])
+
+        let mockSearchService = MockSearchService()
+        mockSearchService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "movie1", mediatype: "movies")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "testuser",
+            searchService: mockSearchService
+        )
+
+        let occurrences = (mockSearchService.lastQuery ?? "")
+            .components(separatedBy: "movie1").count - 1
+        #expect(occurrences == 1)
+        #expect(viewModel.state.movieResults.count == 1)
+
+        Global.resetFavoriteData()
+    }
+
+    @Test func loadFavoritesWithDetailsChunksLargeIdentifierLists() async {
+        // 60 local favorites > chunk size of 50 - two requests expected
+        for index in 0..<60 {
+            Global.saveFavoriteData(identifier: "bulk_item_\(index)")
+        }
+
+        let mockSearchService = MockSearchService()
+        mockSearchService.mockResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "bulk_item_0", mediatype: "movies")
+        ])
+
+        await viewModel.loadFavoritesWithDetails(
+            username: "",
+            searchService: mockSearchService
+        )
+
+        #expect(mockSearchService.searchCallCount == 2)
+        // Duplicate docs across chunks are de-duplicated by identifier
+        #expect(viewModel.state.movieResults.count == 1)
+
+        Global.resetFavoriteData()
     }
 
     @Test func loadFavoritesWithDetailsEmptyFavoritesReturnsEarly() async {

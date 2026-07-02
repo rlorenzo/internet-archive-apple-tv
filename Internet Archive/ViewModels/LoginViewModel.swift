@@ -111,18 +111,24 @@ final class LoginViewModel: ObservableObject {
                 return false
             }
         } catch {
-            state.errorMessage = mapErrorToMessage(error)
             state.isLoading = false
+            // Don't surface an error for a login the user abandoned
+            guard !(error is CancellationError), !Task.isCancelled else {
+                return false
+            }
+            state.errorMessage = mapErrorToMessage(error)
             return false
         }
     }
 
-    /// Log out the current user
+    /// Log out the current user.
+    ///
+    /// Clears the UserDefaults login flag and Keychain credentials (matching
+    /// `AppState.logout()`). Device-local favorites are intentionally
+    /// preserved: they are device-scoped, not account-bound.
     func logout() {
-        // Clear stored data
         Global.saveUserData(userData: [:])
         _ = KeychainManager.shared.clearUserCredentials()
-        Global.resetFavoriteData()
 
         state = LoginViewState.initial
     }

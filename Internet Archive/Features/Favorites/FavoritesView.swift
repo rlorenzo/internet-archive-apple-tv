@@ -14,7 +14,9 @@ import SwiftUI
 /// - Favorite Music
 /// - Followed Creators/People
 ///
-/// Uses `FavoritesViewModel` for data loading and state management.
+/// Favorites are merged from two sources by `FavoritesViewModel`:
+/// - Device-local favorites saved via the heart button (always shown)
+/// - Internet Archive account favorites (when signed in)
 struct FavoritesView: View {
     @EnvironmentObject private var appState: AppState
 
@@ -36,44 +38,63 @@ struct FavoritesView: View {
 
     @State private var loadTask: Task<Void, Never>?
 
+    /// The `AppState.favoritesVersion` the current results reflect. Used to
+    /// reload when a heart was toggled while this tab was not visible.
+    @State private var loadedFavoritesVersion: Int?
+
     // MARK: - Body
 
     var body: some View {
         NavigationStack {
-            Group {
-                if appState.isAuthenticated {
-                    authenticatedContent
-                } else {
-                    unauthenticatedContent
+            content
+                .navigationTitle("Favorites")
+                .navigationDestination(item: $selectedItem) { item in
+                    ItemDetailView(item: item, mediaType: selectedMediaType)
                 }
-            }
-            .navigationTitle("Favorites")
-            .navigationDestination(item: $selectedItem) { item in
-                ItemDetailView(item: item, mediaType: selectedMediaType)
-            }
-            .navigationDestination(item: $selectedPerson) { person in
-                PeopleDetailView(
-                    identifier: person.identifier,
-                    name: person.name
-                )
-            }
-            .onDisappear {
-                cancelLoadTask()
-            }
+                .navigationDestination(item: $selectedPerson) { person in
+                    PeopleDetailView(
+                        identifier: person.identifier,
+                        name: person.name
+                    )
+                }
+                .task {
+                    // Load once per content change: on first appearance, and on
+                    // re-appearance only if favorites changed while away or a
+                    // previous load was cancelled before finishing.
+                    if !viewModel.state.hasLoaded || loadedFavoritesVersion != appState.favoritesVersion {
+                        loadedFavoritesVersion = appState.favoritesVersion
+                        await loadFavorites()
+                    }
+                }
+                .onChange(of: appState.favoritesVersion) { _, newVersion in
+                    loadedFavoritesVersion = newVersion
+                    reloadFavorites()
+                }
+                .onChange(of: appState.isAuthenticated) { _, _ in
+                    reloadFavorites()
+                }
+                .onDisappear {
+                    cancelLoadTask()
+                }
         }
     }
 
-    // MARK: - Authenticated Content
+    // MARK: - Content
 
     @ViewBuilder
-    private var authenticatedContent: some View {
-        if viewModel.state.isLoading && !viewModel.state.hasResults {
+    private var content: some View {
+        switch FavoritesViewHelpers.authenticatedContentState(
+            isLoading: viewModel.state.isLoading,
+            hasResults: viewModel.state.hasResults,
+            errorMessage: viewModel.state.errorMessage
+        ) {
+        case .loading:
             loadingContent
-        } else if let errorMessage = viewModel.state.errorMessage {
-            errorContent(message: errorMessage)
-        } else if !viewModel.state.hasResults {
+        case .error(let message):
+            errorContent(message: message)
+        case .empty:
             emptyContent
-        } else {
+        case .content:
             favoritesContent
         }
     }
@@ -90,16 +111,13 @@ struct FavoritesView: View {
         }
         .accessibilityElement(children: .combine)
         .accessibilityLabel("Loading your favorites")
-        .onAppear {
-            loadFavorites()
-        }
     }
 
     private func errorContent(message: String) -> some View {
         ErrorContentView(
             message: message,
             onRetry: {
-                loadFavorites()
+                reloadFavorites()
             }
         )
     }
@@ -108,11 +126,22 @@ struct FavoritesView: View {
         VStack(spacing: 40) {
             Spacer()
             EmptyContentView.noFavorites()
+            if !appState.isAuthenticated {
+                signInHint
+            }
             Spacer()
         }
-        .onAppear {
-            loadFavorites()
-        }
+    }
+
+    /// Hint shown to signed-out users: local favorites still work, but
+    /// account favorites require signing in.
+    private var signInHint: some View {
+        Text("Sign in from the Account tab to also see your Internet Archive account favorites.")
+            .font(.callout)
+            .foregroundStyle(.tertiary)
+            .multilineTextAlignment(.center)
+            .frame(maxWidth: 600)
+            .padding(.horizontal, 40)
     }
 
     private var favoritesContent: some View {
@@ -140,18 +169,17 @@ struct FavoritesView: View {
                 if !viewModel.state.peopleResults.isEmpty {
                     peopleSection
                 }
+
+                if !appState.isAuthenticated {
+                    signInHint
+                        .frame(maxWidth: .infinity)
+                }
             }
             .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: isCompactLayout))
             .padding(.vertical, 40)
         }
-        .onAppear {
-            // Refresh if returning to screen and state might be stale
-            if viewModel.state.allItems.isEmpty {
-                loadFavorites()
-            }
-        }
         .refreshable {
-            loadFavorites()
+            await loadFavorites()
         }
     }
 
@@ -201,52 +229,23 @@ struct FavoritesView: View {
         .accessibilityLabel("Followed Creators section with \(viewModel.state.peopleResults.count) creators")
     }
 
-    // MARK: - Unauthenticated Content
-
-    private var unauthenticatedContent: some View {
-        VStack(spacing: 24) {
-            Spacer()
-
-            Image(systemName: "heart.slash")
-                .font(.system(size: 80))
-                .foregroundStyle(.tertiary)
-
-            Text("Sign In Required")
-                .font(.title2)
-                .fontWeight(.semibold)
-
-            Text("Sign in to your Internet Archive account to view and manage your favorites.")
-                .font(.body)
-                .foregroundStyle(.secondary)
-                .multilineTextAlignment(.center)
-                .frame(maxWidth: 500)
-
-            // Note: Users can sign in via the Account tab
-            Text("Go to the Account tab to sign in")
-                .font(.callout)
-                .foregroundStyle(.tertiary)
-                .padding(.top, 20)
-
-            Spacer()
-        }
-        .padding()
-        .accessibilityElement(children: .combine)
-        .accessibilityLabel("Sign in required to view favorites. Go to the Account tab to sign in.")
-    }
-
     // MARK: - Helper Methods
 
-    private func loadFavorites() {
-        guard let username = appState.username else { return }
+    /// Load favorites. Local favorites are always shown; the username is
+    /// passed only when signed in so account favorites merge in.
+    private func loadFavorites() async {
+        let username = appState.isAuthenticated ? (appState.username ?? "") : ""
+        await viewModel.loadFavoritesWithDetails(
+            username: username,
+            searchService: DefaultSearchService()
+        )
+    }
 
-        // Cancel any existing load task
+    /// Reload from a synchronous context (retry button, onChange handlers).
+    private func reloadFavorites() {
         loadTask?.cancel()
-
         loadTask = Task {
-            await viewModel.loadFavoritesWithDetails(
-                username: username,
-                searchService: DefaultSearchService()
-            )
+            await loadFavorites()
         }
     }
 
@@ -308,8 +307,7 @@ private struct PersonCard: View {
     }
 
     private var avatarURL: URL? {
-        // Internet Archive user avatar URL pattern
-        URL(string: "https://archive.org/services/img/\(identifier)")
+        FavoritesViewHelpers.avatarURL(for: identifier)
     }
 }
 

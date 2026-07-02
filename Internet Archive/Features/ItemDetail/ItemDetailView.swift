@@ -34,6 +34,8 @@ struct ItemDetailView: View {
     /// Media type determines aspect ratio and playback behavior
     let mediaType: MediaItemCard.MediaType
 
+    @EnvironmentObject private var appState: AppState
+
     @Environment(\.isCompactLayout) private var isCompactLayout
 
     // MARK: - State
@@ -458,12 +460,15 @@ struct ItemDetailView: View {
     }
 
     private func toggleFavorite() {
+        // Favorites are device-local (no API key for server-side saves)
         if isFavorited {
             Global.removeFavoriteData(identifier: item.identifier)
         } else {
             Global.saveFavoriteData(identifier: item.identifier)
         }
         isFavorited.toggle()
+        // Let the Favorites tab know it needs to refresh
+        appState.notifyFavoritesChanged()
     }
 
     // MARK: - Player View (for fullScreenCover - audio only)

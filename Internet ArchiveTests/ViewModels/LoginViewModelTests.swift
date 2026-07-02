@@ -203,6 +203,24 @@ struct LoginViewModelTests {
         _ = KeychainManager.shared.clearUserCredentials()
     }
 
+    @Test func logoutPreservesLocalFavorites() async {
+        // Local favorites are device-scoped and must survive sign-out
+        Global.resetFavoriteData()
+        Global.saveFavoriteData(identifier: "kept_after_logout")
+
+        mockService.mockLoginResponse = TestFixtures.successfulAuthResponse
+        _ = await viewModel.login(email: "test@example.com", password: "password123")
+
+        viewModel.logout()
+
+        #expect(Global.getFavoriteData()?.contains("kept_after_logout") ?? false)
+
+        // Cleanup
+        Global.resetFavoriteData()
+        Global.saveUserData(userData: [:])
+        _ = KeychainManager.shared.clearUserCredentials()
+    }
+
     // MARK: - Check Login Status Tests
 
     @Test func checkLoginStatusWhenLoggedIn() {

@@ -228,15 +228,24 @@ struct MediaItemCard: View {
 // MARK: - Convenience Initializers
 
 extension MediaItemCard {
-    /// Create a MediaItemCard from a SearchResult
-    init(searchResult: SearchResult, progress: Double? = nil) {
-        let mediaType: MediaType = searchResult.mediatype == "etree" ? .music : .video
+    /// Create a MediaItemCard from a SearchResult.
+    ///
+    /// - Parameters:
+    ///   - searchResult: The item to display.
+    ///   - mediaType: Explicit card type. Pass the section's media type when
+    ///     known. When nil, the type is derived from the item's `mediatype`
+    ///     via `MediaTypeHelpers` so both "audio" and "etree" render as
+    ///     square music cards.
+    ///   - progress: Optional playback progress (0.0 to 1.0).
+    init(searchResult: SearchResult, mediaType: MediaType? = nil, progress: Double? = nil) {
+        let resolvedType = mediaType
+            ?? (MediaTypeHelpers.isAudioType(searchResult.mediatype) ? .music : .video)
 
         self.init(
             identifier: searchResult.identifier,
             title: searchResult.safeTitle,
             subtitle: searchResult.creator ?? searchResult.year,
-            mediaType: mediaType,
+            mediaType: resolvedType,
             progress: progress
         )
     }
@@ -303,7 +312,7 @@ struct MediaGridSection: View {
                     Button {
                         onItemSelected(item)
                     } label: {
-                        MediaItemCard(searchResult: item)
+                        MediaItemCard(searchResult: item, mediaType: mediaType)
                     }
                     .tvCardStyle()
                 }

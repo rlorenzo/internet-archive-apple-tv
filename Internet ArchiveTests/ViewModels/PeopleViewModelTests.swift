@@ -223,6 +223,30 @@ final class PeopleViewModelTests: XCTestCase {
         XCTAssertTrue(result.isEmpty)
     }
 
+    func testFilterSupportedIdentifiers_includesEtreeAndVideo() {
+        let favorites = [
+            FavoriteItem(identifier: "etree1", mediatype: "etree", title: "Concert"),
+            FavoriteItem(identifier: "video1", mediatype: "video", title: "Video")
+        ]
+
+        let result = viewModel.filterSupportedIdentifiers(favorites)
+
+        XCTAssertEqual(result.count, 2)
+        XCTAssertTrue(result.contains("etree1"))
+        XCTAssertTrue(result.contains("video1"))
+    }
+
+    func testFilterSupportedIdentifiers_caseInsensitive() {
+        let favorites = [
+            FavoriteItem(identifier: "movie1", mediatype: "Movies", title: "Movie"),
+            FavoriteItem(identifier: "audio1", mediatype: "AUDIO", title: "Audio")
+        ]
+
+        let result = viewModel.filterSupportedIdentifiers(favorites)
+
+        XCTAssertEqual(result.count, 2)
+    }
+
     // MARK: - Categorize By Media Type Tests
 
     func testCategorizeByMediaType_separatesCorrectly() {
@@ -255,6 +279,42 @@ final class PeopleViewModelTests: XCTestCase {
 
         XCTAssertTrue(result.movies.isEmpty)
         XCTAssertTrue(result.music.isEmpty)
+    }
+
+    func testCategorizeByMediaType_includesEtreeAndVideo() {
+        let items = [
+            TestFixtures.makeSearchResult(identifier: "v1", mediatype: "video"),
+            TestFixtures.makeSearchResult(identifier: "e1", mediatype: "etree")
+        ]
+
+        let result = viewModel.categorizeByMediaType(items)
+
+        XCTAssertEqual(result.movies.count, 1)
+        XCTAssertEqual(result.music.count, 1)
+    }
+
+    // MARK: - Stale Item Clearing Tests
+
+    func testLoadFavorites_emptyResponse_clearsStaleItems() async {
+        viewModel.configure(identifier: "@testuser", name: "Test")
+
+        // First load returns items
+        mockService.mockFavoritesResponse = FavoritesResponse(members: [
+            FavoriteItem(identifier: "movie1", mediatype: "movies", title: "Movie")
+        ])
+        mockService.mockSearchResponse = TestFixtures.makeSearchResponse(numFound: 1, docs: [
+            TestFixtures.makeSearchResult(identifier: "movie1", mediatype: "movies")
+        ])
+        await viewModel.loadFavorites()
+        XCTAssertEqual(viewModel.state.movieItems.count, 1)
+
+        // Second load returns no favorites - stale items must be cleared
+        mockService.mockFavoritesResponse = FavoritesResponse(members: [])
+        await viewModel.loadFavorites()
+
+        XCTAssertTrue(viewModel.state.movieItems.isEmpty)
+        XCTAssertTrue(viewModel.state.musicItems.isEmpty)
+        XCTAssertTrue(viewModel.state.hasLoaded)
     }
 
     // MARK: - Item Access Tests

@@ -114,6 +114,54 @@ struct AppStateTests {
         #expect(KeychainManager.shared.userEmail == nil)
     }
 
+    @Test func logoutClearsUserDefaultsLoginFlag() {
+        // Given: The legacy UserDefaults flag written by LoginViewModel.login
+        _ = KeychainManager.shared.clearUserCredentials()
+        Global.saveUserData(userData: ["logged-in": true])
+        let sut = AppState()
+        sut.setLoggedIn(email: testEmail, username: testUsername)
+        #expect(Global.isLoggedIn())
+
+        // When: Logging out
+        sut.logout()
+
+        // Then: Global.isLoggedIn() should agree with the Keychain state
+        #expect(!Global.isLoggedIn())
+
+        // Cleanup
+        Global.saveUserData(userData: [:])
+    }
+
+    @Test func logoutPreservesLocalFavorites() {
+        // Given: Device-local favorites and an authenticated state
+        _ = KeychainManager.shared.clearUserCredentials()
+        Global.resetFavoriteData()
+        Global.saveFavoriteData(identifier: "kept_after_signout")
+        let sut = AppState()
+        sut.setLoggedIn(email: testEmail, username: testUsername)
+
+        // When: Logging out
+        sut.logout()
+
+        // Then: Local favorites survive (device-local, not account-bound)
+        #expect(Global.getFavoriteData()?.contains("kept_after_signout") ?? false)
+
+        // Cleanup
+        Global.resetFavoriteData()
+    }
+
+    // MARK: - Favorites Change Notification Tests
+
+    @Test func notifyFavoritesChangedIncrementsVersion() {
+        let sut = AppState()
+        let initialVersion = sut.favoritesVersion
+
+        sut.notifyFavoritesChanged()
+        sut.notifyFavoritesChanged()
+
+        #expect(sut.favoritesVersion == initialVersion + 2)
+    }
+
     // MARK: - refreshAuthState Tests
 
     @Test func refreshAuthStateUpdatesFromKeychain() {

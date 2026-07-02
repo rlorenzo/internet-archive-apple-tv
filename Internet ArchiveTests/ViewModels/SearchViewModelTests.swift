@@ -13,6 +13,7 @@ import Foundation
 
 final class MockSearchService: SearchServiceProtocol, @unchecked Sendable {
     var searchCalled = false
+    var searchCallCount = 0
     var lastQuery: String?
     var lastOptions: [String: String]?
     var mockResponse: SearchResponse?
@@ -20,6 +21,7 @@ final class MockSearchService: SearchServiceProtocol, @unchecked Sendable {
 
     func search(query: String, options: [String: String]) async throws -> SearchResponse {
         searchCalled = true
+        searchCallCount += 1
         lastQuery = query
         lastOptions = options
 
@@ -36,6 +38,7 @@ final class MockSearchService: SearchServiceProtocol, @unchecked Sendable {
 
     func reset() {
         searchCalled = false
+        searchCallCount = 0
         lastQuery = nil
         lastOptions = nil
         mockResponse = nil
