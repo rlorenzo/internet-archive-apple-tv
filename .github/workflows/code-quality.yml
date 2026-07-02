@@ -7,12 +7,12 @@ on:
     branches: [ master, main ]
 
 env:
-  XCODE_VERSION: "26.1"
+  XCODE_VERSION: "26.4"
 
 jobs:
   periphery:
     name: Periphery (Unused Code)
-    runs-on: macos-latest
+    runs-on: macos-26
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
