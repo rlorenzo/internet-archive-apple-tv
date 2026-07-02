@@ -51,8 +51,7 @@ final class APIManager: NSObject {
     private let apiVersion: Int
 
     let headers: HTTPHeaders = [
-        "User-Agent": "Wayback_Machine_iOS/\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")",
-        "Wayback-Extension-Version": "Wayback_Machine_iOS/\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0")"
+        "User-Agent": "InternetArchive-AppleTV/\(Bundle.main.infoDictionary?["CFBundleShortVersionString"] as? String ?? "1.0") (tvOS)"
     ]
 
     /// Check if running in test environment
@@ -192,10 +191,15 @@ final class APIManager: NSObject {
         var modifiedOptions = options
         if applyContentFilter, let existingFields = options["fl[]"] {
             var fields = existingFields
-            if !fields.contains("collection") {
+            // Compare exact comma-separated tokens; a substring check would
+            // treat e.g. "collection_size" as already containing "collection".
+            let fieldTokens = Set(existingFields.split(separator: ",").map {
+                $0.trimmingCharacters(in: .whitespaces)
+            })
+            if !fieldTokens.contains("collection") {
                 fields += ",collection"
             }
-            if !fields.contains("licenseurl") {
+            if !fieldTokens.contains("licenseurl") {
                 fields += ",licenseurl"
             }
             modifiedOptions["fl[]"] = fields
@@ -223,6 +227,10 @@ final class APIManager: NSObject {
             queryItems.append(URLQueryItem(name: key, value: value))
         }
         components.queryItems = queryItems
+        // URLQueryItem leaves "+" unescaped, but advancedsearch.php decodes "+"
+        // as a space; re-encode it so queries like "C++" survive the round trip.
+        components.percentEncodedQuery = components.percentEncodedQuery?
+            .replacingOccurrences(of: "+", with: "%2B")
         return components.url
     }
 
@@ -249,7 +257,7 @@ final class APIManager: NSObject {
         ]
 
         let response = try await searchTyped(
-            query: "collection:(\(collection)) And mediatype:\(resultType)",
+            query: "collection:(\(collection)) AND mediatype:\(resultType)",
             options: options,
             applyContentFilter: applyContentFilter
         )
@@ -260,10 +268,19 @@ final class APIManager: NSObject {
             if numFound == 0 {
                 return (collection, [])
             }
+            // Cap the follow-up request: large collections can contain 100k+
+            // items and an unbounded rows value would fetch them all.
+            let maxRows = 5000
+            if numFound > maxRows {
+                ErrorLogger.shared.logWarning(
+                    "Collection '\(collection)' has \(numFound) items; truncating fetch to \(maxRows)",
+                    operation: .loadMedia
+                )
+            }
             return try await getCollectionsTyped(
                 collection: collection,
                 resultType: resultType,
-                limit: numFound,
+                limit: min(numFound, maxRows),
                 applyContentFilter: applyContentFilter
             )
         }
@@ -314,7 +331,8 @@ final class APIManager: NSObject {
 
         return try await AF.request(url,
                                     method: .get,
-                                    encoding: URLEncoding.default)
+                                    encoding: URLEncoding.default,
+                                    headers: headers)
             .validate()
             .serializingDecodable(FavoritesResponse.self)
             .value

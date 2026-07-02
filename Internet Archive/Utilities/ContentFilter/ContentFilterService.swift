@@ -121,12 +121,11 @@ final class ContentFilterService {
         }
 
         // Always check title for blocked keywords (adult content - cannot be disabled)
-        if let title = result.title?.lowercased() {
-            for keyword in blockedKeywords where title.contains(keyword) {
-                stats.totalItemsFiltered += 1
-                incrementReason("keyword")
-                return .filtered(reason: .blockedKeyword(keyword))
-            }
+        if let title = result.title?.lowercased(),
+           let keyword = firstBlockedKeyword(in: title) {
+            stats.totalItemsFiltered += 1
+            incrementReason("keyword")
+            return .filtered(reason: .blockedKeyword(keyword))
         }
 
         // Check license if license filtering is enabled (optional user preference)
@@ -165,12 +164,11 @@ final class ContentFilterService {
         }
 
         // Always check title for blocked keywords
-        if let title = metadata.title?.lowercased() {
-            for keyword in blockedKeywords where title.contains(keyword) {
-                stats.totalItemsFiltered += 1
-                incrementReason("keyword")
-                return .filtered(reason: .blockedKeyword(keyword))
-            }
+        if let title = metadata.title?.lowercased(),
+           let keyword = firstBlockedKeyword(in: title) {
+            stats.totalItemsFiltered += 1
+            incrementReason("keyword")
+            return .filtered(reason: .blockedKeyword(keyword))
         }
 
         // Check license if license filtering is enabled
@@ -246,9 +244,11 @@ final class ContentFilterService {
         collections.contains { contentWarningCollections.contains($0.lowercased()) }
     }
 
-    /// Build a search query exclusion string for API calls
+    /// Build a search query exclusion string for API calls.
+    /// Collections are sorted so the query (and thus the request URL) is
+    /// deterministic across launches, keeping URL caching effective.
     func buildExclusionQuery() -> String {
-        let exclusions = blockedCollections.map { "-collection:(\($0))" }
+        let exclusions = blockedCollections.sorted().map { "-collection:(\($0))" }
         return exclusions.joined(separator: " ")
     }
 
@@ -272,6 +272,19 @@ final class ContentFilterService {
     }
 
     // MARK: - Private Helpers
+
+    /// Returns the first blocked keyword found in the given lowercased title,
+    /// matching on word boundaries so a substring inside a longer word
+    /// (e.g. "xxx" in "Exxxtreme") does not trigger a false positive.
+    private func firstBlockedKeyword(in lowercasedTitle: String) -> String? {
+        for keyword in blockedKeywords {
+            let pattern = "\\b\(NSRegularExpression.escapedPattern(for: keyword))\\b"
+            if lowercasedTitle.range(of: pattern, options: .regularExpression) != nil {
+                return keyword
+            }
+        }
+        return nil
+    }
 
     private func incrementReason(_ reason: String) {
         stats.filterReasons[reason, default: 0] += 1
