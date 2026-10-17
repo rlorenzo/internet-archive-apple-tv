@@ -351,6 +351,14 @@ XCTAssertTrue(element.waitForExistence(timeout: 5))
 - Test focus restoration after dismissing overlays (alerts, modals, full-screen video)
 - The app uses AVKit's built-in remote command handling — full background audio tests require physical hardware
 
+### iPhone Duo (foldable) Testing
+
+Requires Xcode 27.1+. Run the app on the iPhone Duo simulator and use Device Hub to check each posture (closed, partially open, fully open) and orientation:
+
+- Layout adapts via size classes with no black borders on the inner display
+- Nothing important (controls, text, the video player) sits under the fold region when partially open
+- Playback and Now Playing keep state across fold/unfold
+
 ### Simulator Limitations
 
 - Background audio does not persist like on physical devices
