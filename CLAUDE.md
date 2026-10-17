@@ -2,7 +2,7 @@
 
 ## Project Overview
 
-This is a tvOS app for Apple TV that provides access to the Internet Archive's media collections (movies, music, etc.).
+This is a multiplatform app (tvOS, iPhone, iPad, visionOS) that provides access to the Internet Archive's media collections (movies, music, etc.). tvOS is the primary platform; the iOS-family targets share the same SwiftUI code via `PlatformMetrics` and size classes.
 
 ## Git Rules
 
@@ -120,6 +120,11 @@ Internet ArchiveUITests/        # UI tests
 - Feature views use `NavigationStack` with `@Binding` for presented items
 - Media playback uses UIKit via `UIViewControllerRepresentable` wrappers
 - Year browsing pushes `YearBrowseView` via `NavigationStack` `.navigationDestination` from `CollectionBrowserView`, `VideoHomeView`, and `MusicHomeView`
+
+### iPhone Duo / foldable layout
+- Drive layout from size classes (`@Environment(\.horizontalSizeClass)` / `\.isCompactLayout`), never from interface orientation or fixed screen dimensions
+- Do not use `UIScreen.main`; read the window or scene bounds (see `PlatformMetrics`)
+- Building with the iOS 27.1 SDK (Xcode 27.1) lets the app use the iPhone Duo inner display; test with its simulator in each posture. CI still builds with Xcode 26.4, so don't use 27.1-only APIs without an `#available` / `#if compiler` guard
 
 ## Code Style
 
