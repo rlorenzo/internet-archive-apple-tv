@@ -28,7 +28,7 @@ jobs:
   smoke-test:
     name: Smoke Test (tvOS ${{ matrix.tvos-version }})
     if: github.event_name != 'schedule'
-    runs-on: macos-26
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -37,16 +37,18 @@ jobs:
         # tvOS 18.x runtimes are no longer available on this image. Each entry
         # pairs a runtime with an Xcode version that bundles it.
         include:
-          - tvos-version: '26.2'
+          - os: macos-26
+            tvos-version: '26.2'
             xcode: '26.4'
-          - tvos-version: '26.5'
+          - os: macos-26
+            tvos-version: '26.5'
             xcode: '26.5'
-          # tvOS 27 is not yet available on GitHub-hosted runners; it is
-          # blocked on Xcode 27 beta landing in the image
-          # (actions/runner-images#14196). Uncomment this entry once it ships
-          # to exercise the on-device generated-subtitles path on tvOS 27.
-          # - tvos-version: '27.0'
-          #   xcode: '27.0'
+          # The xcode-27 image (GA Oct 2026, Apple Silicon only) ships Xcode 27
+          # as its default, so no xcode-select is needed. The tvOS version is
+          # matched by prefix to cover whichever 27.x runtime the image bundles.
+          - os: xcode-27
+            tvos-version: '27'
+            xcode: ''
 
     steps:
     - name: Checkout code
@@ -54,7 +56,9 @@ jobs:
 
     - name: Select Xcode version
       run: |
-        sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app/Contents/Developer
+        if [ -n "${{ matrix.xcode }}" ]; then
+          sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app/Contents/Developer
+        fi
         xcodebuild -version
 
     - name: List available tvOS runtimes
