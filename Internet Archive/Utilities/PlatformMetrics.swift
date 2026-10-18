@@ -42,7 +42,8 @@ extension EnvironmentValues {
 /// SwiftUI views that already read `@Environment(\.horizontalSizeClass)` should pass
 /// the resolved value via `compact:` for tighter accuracy. Callers that omit it fall
 /// back to the foreground window's reported width — which tracks iPad Split View,
-/// Stage Manager, and visionOS window resizing far more reliably than `UIScreen.main`.
+/// Stage Manager, visionOS window resizing, and the iPhone Duo's inner display far more
+/// reliably than `UIScreen.main`, which Apple has flagged for deprecation.
 @MainActor
 enum PlatformMetrics {
 
@@ -90,9 +91,10 @@ enum PlatformMetrics {
     #if !os(tvOS) && !os(visionOS)
     /// Heuristic for "compact" width when no explicit size class is supplied.
     /// Reads the active foreground window's bounds so it tracks iPad Split View
-    /// and Stage Manager. `UIScreen.main` is only consulted as a last resort.
+    /// and Stage Manager, and avoids `UIScreen.main` (ambiguous on multi-display devices
+    /// such as the iPhone Duo). With no connected scene it assumes compact.
     private static var isCompactWidth: Bool {
-        let width = foregroundWindowWidth ?? UIScreen.main.bounds.width
+        guard let width = foregroundWindowWidth else { return true }
         return width < 600
     }
 
@@ -106,7 +108,7 @@ enum PlatformMetrics {
         let window = scenes
             .flatMap(\.windows)
             .first(where: \.isKeyWindow) ?? scenes.flatMap(\.windows).first
-        return window?.bounds.width
+        return window?.bounds.width ?? scenes.first?.screen.bounds.width
     }
     #endif
 }
