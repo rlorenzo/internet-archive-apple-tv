@@ -113,7 +113,10 @@ private struct EpisodeRow: View {
 enum EpisodeListHelpers {
     /// "44 min", "1 hr 5 min", or "<1 min"
     static func formatDuration(_ seconds: Double) -> String {
-        let totalMinutes = Int((seconds / 60).rounded())
+        // Int(_:) traps on NaN, infinity, or values beyond Int's range
+        guard let totalMinutes = Int(exactly: (seconds / 60).rounded()) else {
+            return "Unknown duration"
+        }
         guard totalMinutes > 0 else { return "<1 min" }
         let hours = totalMinutes / 60
         let minutes = totalMinutes % 60

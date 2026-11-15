@@ -125,7 +125,9 @@ struct PlayableMediaResolverEpisodeTests {
         #expect(PlayableMediaResolver.parseDuration(input) == expected)
     }
 
-    @Test("Rejects empty or invalid durations", arguments: ["", "0", "abc", "1:x", "1:2:3:4"])
+    @Test("Rejects empty or invalid durations", arguments: [
+        "", "0", "abc", "1:x", "1:2:3:4", "1e100", "inf", "nan", "-5", "99999:00:00"
+    ])
     func rejectsInvalidDurations(input: String) {
         #expect(PlayableMediaResolver.parseDuration(input) == nil)
     }
@@ -188,6 +190,13 @@ struct PlayableMediaResolverEpisodeTests {
     ])
     func formatsEpisodeDurations(seconds: Double, expected: String) {
         #expect(EpisodeListHelpers.formatDuration(seconds) == expected)
+    }
+
+    @Test("Unrepresentable durations format without trapping", arguments: [
+        Double.infinity, Double.nan, 1e100
+    ])
+    func formatsUnrepresentableDurations(seconds: Double) {
+        #expect(EpisodeListHelpers.formatDuration(seconds) == "Unknown duration")
     }
 
     @Test("Episode accessibility label includes number, title and length")

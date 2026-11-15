@@ -248,14 +248,22 @@ enum PlayableMediaResolver {
         return (lastComponent as NSString).deletingPathExtension
     }
 
+    /// Longest plausible running time; larger `length` values are bad metadata.
+    static let maxEpisodeDuration: Double = 7 * 24 * 60 * 60
+
     /// IA reports `length` as seconds ("1520.14") or as "MM:SS" / "HH:MM:SS".
+    /// Returns nil for empty, zero, non-finite, or implausibly long values.
     static func parseDuration(_ length: String?) -> Double? {
         guard let length, !length.isEmpty else { return nil }
-        if let seconds = Double(length) { return seconds > 0 ? seconds : nil }
-        let parts = length.split(separator: ":").map { Double($0) }
-        guard parts.count <= 3, parts.allSatisfy({ $0 != nil }) else { return nil }
-        let total = parts.compactMap { $0 }.reduce(0) { $0 * 60 + $1 }
-        return total > 0 ? total : nil
+        let total: Double
+        if let seconds = Double(length) {
+            total = seconds
+        } else {
+            let parts = length.split(separator: ":").map { Double($0) }
+            guard parts.count <= 3, parts.allSatisfy({ $0 != nil }) else { return nil }
+            total = parts.compactMap { $0 }.reduce(0) { $0 * 60 + $1 }
+        }
+        return total > 0 && total <= maxEpisodeDuration ? total : nil
     }
 
     // MARK: - Audio Resolution
