@@ -18,6 +18,7 @@ enum VideoPlayerPresenter {
     /// - Parameters:
     ///   - item: The search result item
     ///   - metadata: Item metadata response containing files and server info
+    ///   - filename: Episode to play; nil plays the item's best video
     ///   - resumeTime: Optional time to resume from
     ///   - onDismiss: Callback when player is dismissed
     /// - Returns: true if presentation was successful, false if no playable video found
@@ -26,11 +27,16 @@ enum VideoPlayerPresenter {
     static func presentFromMetadata(
         item: SearchResult,
         metadata: ItemMetadataResponse,
+        filename: String? = nil,
         resumeTime: Double? = nil,
         onDismiss: (() -> Void)? = nil
     ) -> Bool {
         // Resolve the playable video (file selection, URL, subtitles, title)
-        guard let video = PlayableMediaResolver.resolveVideo(item: item, metadata: metadata) else {
+        guard let video = PlayableMediaResolver.resolveVideo(
+            item: item,
+            metadata: metadata,
+            filename: filename
+        ) else {
             return false
         }
 
@@ -74,6 +80,20 @@ enum VideoPlayerPresenter {
         playerVC.allowsPictureInPicturePlayback = false
         playerVC.showsPlaybackControls = true
         playerVC.onDismiss = onDismiss
+
+        // Autoplay the next episode of a multi-video item
+        if let next = PlayableMediaResolver.nextEpisode(after: video.filename, in: metadata.files ?? []) {
+            playerVC.onPlaybackEnded = { [weak playerVC] in
+                playerVC?.dismiss(animated: true) {
+                    presentFromMetadata(
+                        item: item,
+                        metadata: metadata,
+                        filename: next.filename,
+                        onDismiss: onDismiss
+                    )
+                }
+            }
+        }
 
         // Present using UIKit - this ensures proper remote control handling
         presentingVC.present(playerVC, animated: true) {
@@ -213,17 +233,23 @@ extension VideoPlayerView {
     /// - Parameters:
     ///   - item: The search result item
     ///   - metadata: Item metadata response containing files and server info
+    ///   - filename: Episode to play; nil plays the item's best video
     ///   - resumeTime: Optional time to resume from
     ///   - onDismiss: Callback when player is dismissed
     /// - Returns: VideoPlayerView if a playable video file is found, nil otherwise
     static func fromMetadata(
         item: SearchResult,
         metadata: ItemMetadataResponse,
+        filename: String? = nil,
         resumeTime: Double? = nil,
         onDismiss: (() -> Void)? = nil
     ) -> VideoPlayerView? {
         // Resolve the playable video (file selection, URL, subtitles, title)
-        guard let video = PlayableMediaResolver.resolveVideo(item: item, metadata: metadata) else {
+        guard let video = PlayableMediaResolver.resolveVideo(
+            item: item,
+            metadata: metadata,
+            filename: filename
+        ) else {
             return nil
         }
 

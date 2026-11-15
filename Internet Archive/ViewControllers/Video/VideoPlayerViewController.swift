@@ -64,6 +64,14 @@ final class VideoPlayerViewController: AVPlayerViewController {
     /// Callback invoked when the player is dismissed
     var onDismiss: (() -> Void)?
 
+    /// Callback invoked when the current video plays to its end
+    /// (used to autoplay the next episode of a multi-video item)
+    var onPlaybackEnded: (() -> Void)?
+
+    /// Token for the play-to-end notification observer. `nonisolated(unsafe)`
+    /// so deinit can remove it; it is only written on the main actor.
+    nonisolated(unsafe) private var playbackEndObserver: NSObjectProtocol?
+
     /// Subtitle overlay view
     private lazy var subtitleOverlay: SubtitleOverlayView = {
         let overlay = SubtitleOverlayView()
@@ -186,6 +194,27 @@ final class VideoPlayerViewController: AVPlayerViewController {
             name: UIApplication.willResignActiveNotification,
             object: nil
         )
+        observePlaybackEnd()
+    }
+
+    /// Notify `onPlaybackEnded` when the video finishes. Any item (object:
+    /// nil) is matched against the current item in the handler because the
+    /// player can be set after viewDidLoad runs. Block-based with
+    /// queue: .main so the @MainActor handler runs on the main thread.
+    private func observePlaybackEnd() {
+        guard playbackEndObserver == nil else { return }
+        playbackEndObserver = NotificationCenter.default.addObserver(
+            forName: .AVPlayerItemDidPlayToEndTime,
+            object: nil,
+            queue: .main
+        ) { [weak self] notification in
+            let endedItem = notification.object as? AVPlayerItem
+            MainActor.assumeIsolated {
+                guard let self, let endedItem, endedItem === self.player?.currentItem else { return }
+                self.saveCurrentProgress()
+                self.onPlaybackEnded?()
+            }
+        }
     }
 
     override func viewWillDisappear(_ animated: Bool) {
@@ -229,6 +258,9 @@ final class VideoPlayerViewController: AVPlayerViewController {
         // Note: progressSaveTimer is invalidated in viewWillDisappear/stopProgressTracking
         // Cannot access Timer from deinit due to Swift 6 Sendable requirements
         NotificationCenter.default.removeObserver(self)
+        if let playbackEndObserver {
+            NotificationCenter.default.removeObserver(playbackEndObserver)
+        }
     }
 
     /// Whether to leave AVPlayer's native subtitle pipeline untouched.

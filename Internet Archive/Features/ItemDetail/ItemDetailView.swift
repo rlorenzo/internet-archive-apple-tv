@@ -66,6 +66,16 @@ struct ItemDetailView: View {
     /// Task for loading metadata (stored for cancellation)
     @State private var loadMetadataTask: Task<Void, Never>?
 
+    /// Playable episodes of a multi-video item (empty until metadata loads;
+    /// one entry for a single video)
+    @State private var episodes: [VideoEpisode] = []
+
+    /// Saved progress per episode filename, for the episode list
+    @State private var episodeProgress: [String: PlaybackProgress] = [:]
+
+    /// Episode the next playback should open; nil plays the item's best video
+    @State private var selectedFilename: String?
+
     // MARK: - ViewModel Accessors
 
     /// Full metadata response (includes files and server info)
@@ -160,6 +170,10 @@ struct ItemDetailView: View {
                     .padding(.vertical, 60)
                 }
                 .padding(.horizontal, outerPadding)
+
+                episodeSection
+                    .padding(.horizontal, outerPadding)
+                    .padding(.bottom, 60)
             }
         }
     }
@@ -173,6 +187,7 @@ struct ItemDetailView: View {
                 thumbnailView
                 controlsSection
                 metadataSection
+                episodeSection
             }
             .padding(.horizontal, PlatformMetrics.horizontalPadding(compact: true))
             .padding(.vertical, 24)
@@ -265,6 +280,21 @@ struct ItemDetailView: View {
         }
     }
 
+    // MARK: - Episodes Section
+
+    /// Episode list, shown only for items with more than one episode
+    @ViewBuilder
+    private var episodeSection: some View {
+        if episodes.count > 1 {
+            EpisodeListView(
+                episodes: episodes,
+                progressByFilename: episodeProgress,
+                lastWatchedFilename: savedProgress?.filename,
+                onSelect: playEpisode
+            )
+        }
+    }
+
     // MARK: - Controls Section
 
     private var controlsSection: some View {
@@ -348,6 +378,11 @@ struct ItemDetailView: View {
 
             guard !Task.isCancelled else { return }
 
+            if mediaType == .video, let files = response?.files {
+                episodes = PlayableMediaResolver.resolveEpisodes(in: files)
+                checkSavedProgress()
+            }
+
             if playbackPending {
                 if response != nil {
                     // Dismiss the loading cover; the player is presented
@@ -364,31 +399,59 @@ struct ItemDetailView: View {
     }
 
     private func checkSavedProgress() {
-        savedProgress = PlaybackProgressManager.shared.getProgress(for: item.identifier)
+        let manager = PlaybackProgressManager.shared
+        savedProgress = manager.getProgress(for: item.identifier)
+        guard episodes.count > 1 else {
+            episodeProgress = [:]
+            return
+        }
+        var progress: [String: PlaybackProgress] = [:]
+        for episode in episodes {
+            progress[episode.filename] = manager.getProgress(for: item.identifier, filename: episode.filename)
+        }
+        episodeProgress = progress
     }
 
     // MARK: - Actions
 
     private func playFromBeginning() {
+        selectedFilename = nil
         resumeTime = nil
         presentPlayer()
     }
 
     private func playWithResume() {
         if let progress = savedProgress {
-            // For audio, use trackCurrentTime; for video, use currentTime
+            // For audio, use trackCurrentTime; for video, use currentTime.
+            // Video resumes the episode the progress belongs to, not
+            // whichever file happens to be first.
             resumeTime = progress.isAudio ? progress.trackCurrentTime : progress.currentTime
+            selectedFilename = progress.isAudio ? nil : progress.filename
         }
         presentPlayer()
     }
 
     private func startOver() {
-        // Clear saved progress
-        if savedProgress != nil {
-            PlaybackProgressManager.shared.removeProgress(for: item.identifier)
-            savedProgress = nil
+        // Restart the last-watched episode (or the item) from the beginning
+        if let progress = savedProgress {
+            if progress.isAudio {
+                PlaybackProgressManager.shared.removeProgress(for: item.identifier)
+                selectedFilename = nil
+            } else {
+                PlaybackProgressManager.shared.removeProgress(for: item.identifier, filename: progress.filename)
+                selectedFilename = progress.filename
+            }
+            checkSavedProgress()
         }
         resumeTime = nil
+        presentPlayer()
+    }
+
+    /// Play an episode from the list, resuming it when partly watched
+    private func playEpisode(_ episode: VideoEpisode) {
+        let progress = episodeProgress[episode.filename]
+        selectedFilename = episode.filename
+        resumeTime = progress.flatMap { $0.isComplete ? nil : $0.currentTime }
         presentPlayer()
     }
 
@@ -413,6 +476,7 @@ struct ItemDetailView: View {
             let success = VideoPlayerPresenter.presentFromMetadata(
                 item: item,
                 metadata: response,
+                filename: selectedFilename,
                 resumeTime: resumeTime,
                 onDismiss: {
                     // Refresh progress after playback
