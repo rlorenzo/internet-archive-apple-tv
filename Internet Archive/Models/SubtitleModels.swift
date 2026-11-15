@@ -102,71 +102,47 @@ enum SubtitleLanguage: String, CaseIterable, Sendable {
 
     /// Human-readable display name for the language
     var displayName: String {
-        switch self {
-        case .english: return "English"
-        case .spanish: return "Spanish"
-        case .french: return "French"
-        case .german: return "German"
-        case .italian: return "Italian"
-        case .portuguese: return "Portuguese"
-        case .russian: return "Russian"
-        case .japanese: return "Japanese"
-        case .korean: return "Korean"
-        case .chinese: return "Chinese"
-        case .arabic: return "Arabic"
-        case .hindi: return "Hindi"
-        case .dutch: return "Dutch"
-        case .polish: return "Polish"
-        case .swedish: return "Swedish"
-        case .norwegian: return "Norwegian"
-        case .danish: return "Danish"
-        case .finnish: return "Finnish"
-        case .turkish: return "Turkish"
-        case .greek: return "Greek"
-        case .hebrew: return "Hebrew"
-        case .thai: return "Thai"
-        case .vietnamese: return "Vietnamese"
-        case .indonesian: return "Indonesian"
-        case .czech: return "Czech"
-        case .hungarian: return "Hungarian"
-        case .romanian: return "Romanian"
-        case .ukrainian: return "Ukrainian"
-        }
+        Self.languageInfo[self]?.name ?? rawValue
     }
 
     /// Common variations of language names found in filenames
     var filenameVariations: [String] {
-        switch self {
-        case .english: return ["english", "eng", "en", "en-us", "en-gb", "en_us", "en_gb"]
-        case .spanish: return ["spanish", "español", "espanol", "spa", "es", "es-es", "es-mx", "es_es"]
-        case .french: return ["french", "français", "francais", "fra", "fre", "fr", "fr-fr"]
-        case .german: return ["german", "deutsch", "ger", "deu", "de", "de-de"]
-        case .italian: return ["italian", "italiano", "ita", "it", "it-it"]
-        case .portuguese: return ["portuguese", "português", "portugues", "por", "pt", "pt-br", "pt-pt"]
-        case .russian: return ["russian", "русский", "rus", "ru"]
-        case .japanese: return ["japanese", "日本語", "jpn", "ja", "jp"]
-        case .korean: return ["korean", "한국어", "kor", "ko", "kr"]
-        case .chinese: return ["chinese", "中文", "chi", "zho", "zh", "zh-cn", "zh-tw", "mandarin", "cantonese"]
-        case .arabic: return ["arabic", "العربية", "ara", "ar"]
-        case .hindi: return ["hindi", "हिन्दी", "hin", "hi"]
-        case .dutch: return ["dutch", "nederlands", "nld", "dut", "nl"]
-        case .polish: return ["polish", "polski", "pol", "pl"]
-        case .swedish: return ["swedish", "svenska", "swe", "sv"]
-        case .norwegian: return ["norwegian", "norsk", "nor", "no", "nb", "nn"]
-        case .danish: return ["danish", "dansk", "dan", "da"]
-        case .finnish: return ["finnish", "suomi", "fin", "fi"]
-        case .turkish: return ["turkish", "türkçe", "turkce", "tur", "tr"]
-        case .greek: return ["greek", "ελληνικά", "gre", "ell", "el"]
-        case .hebrew: return ["hebrew", "עברית", "heb", "he", "iw"]
-        case .thai: return ["thai", "ไทย", "tha", "th"]
-        case .vietnamese: return ["vietnamese", "tiếng việt", "vie", "vi"]
-        case .indonesian: return ["indonesian", "bahasa indonesia", "ind", "id"]
-        case .czech: return ["czech", "čeština", "ces", "cze", "cs"]
-        case .hungarian: return ["hungarian", "magyar", "hun", "hu"]
-        case .romanian: return ["romanian", "română", "ron", "rum", "ro"]
-        case .ukrainian: return ["ukrainian", "українська", "ukr", "uk"]
-        }
+        Self.languageInfo[self]?.variations ?? [rawValue]
     }
+
+    /// Display name and filename variations per language. A lookup table
+    /// rather than two 28-case switches keeps cyclomatic complexity flat;
+    /// `SubtitleLanguageTests` asserts every case has an entry.
+    private static let languageInfo: [SubtitleLanguage: (name: String, variations: [String])] = [
+        .english: ("English", ["english", "eng", "en", "en-us", "en-gb", "en_us", "en_gb"]),
+        .spanish: ("Spanish", ["spanish", "español", "espanol", "spa", "es", "es-es", "es-mx", "es_es"]),
+        .french: ("French", ["french", "français", "francais", "fra", "fre", "fr", "fr-fr"]),
+        .german: ("German", ["german", "deutsch", "ger", "deu", "de", "de-de"]),
+        .italian: ("Italian", ["italian", "italiano", "ita", "it", "it-it"]),
+        .portuguese: ("Portuguese", ["portuguese", "português", "portugues", "por", "pt", "pt-br", "pt-pt"]),
+        .russian: ("Russian", ["russian", "русский", "rus", "ru"]),
+        .japanese: ("Japanese", ["japanese", "日本語", "jpn", "ja", "jp"]),
+        .korean: ("Korean", ["korean", "한국어", "kor", "ko", "kr"]),
+        .chinese: ("Chinese", ["chinese", "中文", "chi", "zho", "zh", "zh-cn", "zh-tw", "mandarin", "cantonese"]),
+        .arabic: ("Arabic", ["arabic", "العربية", "ara", "ar"]),
+        .hindi: ("Hindi", ["hindi", "हिन्दी", "hin", "hi"]),
+        .dutch: ("Dutch", ["dutch", "nederlands", "nld", "dut", "nl"]),
+        .polish: ("Polish", ["polish", "polski", "pol", "pl"]),
+        .swedish: ("Swedish", ["swedish", "svenska", "swe", "sv"]),
+        .norwegian: ("Norwegian", ["norwegian", "norsk", "nor", "no", "nb", "nn"]),
+        .danish: ("Danish", ["danish", "dansk", "dan", "da"]),
+        .finnish: ("Finnish", ["finnish", "suomi", "fin", "fi"]),
+        .turkish: ("Turkish", ["turkish", "türkçe", "turkce", "tur", "tr"]),
+        .greek: ("Greek", ["greek", "ελληνικά", "gre", "ell", "el"]),
+        .hebrew: ("Hebrew", ["hebrew", "עברית", "heb", "he", "iw"]),
+        .thai: ("Thai", ["thai", "ไทย", "tha", "th"]),
+        .vietnamese: ("Vietnamese", ["vietnamese", "tiếng việt", "vie", "vi"]),
+        .indonesian: ("Indonesian", ["indonesian", "bahasa indonesia", "ind", "id"]),
+        .czech: ("Czech", ["czech", "čeština", "ces", "cze", "cs"]),
+        .hungarian: ("Hungarian", ["hungarian", "magyar", "hun", "hu"]),
+        .romanian: ("Romanian", ["romanian", "română", "ron", "rum", "ro"]),
+        .ukrainian: ("Ukrainian", ["ukrainian", "українська", "ukr", "uk"])
+    ]
 
     /// Initialize from a string found in a filename
     static func fromFilename(_ component: String) -> SubtitleLanguage? {
