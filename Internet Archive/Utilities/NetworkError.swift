@@ -40,6 +40,15 @@ enum NetworkError: Error, Sendable {
 
     /// Human-readable error description
     var localizedDescription: String {
+        connectionOrDataDescription
+            ?? accountOrAPIDescription
+            ?? "Unknown error occurred"
+    }
+
+    /// Descriptions for network transport and response-parsing errors;
+    /// `nil` for every other case. Split from `localizedDescription` (with
+    /// `accountOrAPIDescription`) to keep each switch's complexity low.
+    private var connectionOrDataDescription: String? {
         switch self {
         case .noConnection:
             return "No internet connection available"
@@ -55,6 +64,15 @@ enum NetworkError: Error, Sendable {
             return "Failed to decode response: \(error.localizedDescription)"
         case .invalidData:
             return "Invalid data received"
+        default:
+            return nil
+        }
+    }
+
+    /// Descriptions for authentication, API, filtering and unknown errors;
+    /// `nil` for the connection/data cases handled above.
+    private var accountOrAPIDescription: String? {
+        switch self {
         case .unauthorized:
             return "Unauthorized access"
         case .authenticationFailed:
@@ -72,7 +90,9 @@ enum NetworkError: Error, Sendable {
         case .contentFiltered:
             return "This content is not available"
         case .unknown(let error):
-            return error?.localizedDescription ?? "Unknown error occurred"
+            return error?.localizedDescription
+        default:
+            return nil
         }
     }
 

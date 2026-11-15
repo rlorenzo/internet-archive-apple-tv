@@ -401,29 +401,72 @@ final class NowPlayingViewController: UIViewController {
     // MARK: - Playback
 
     private func playTrack(_ track: AudioTrack, resumeTime: Double? = nil) {
-        // Update UI
+        let initialTime = resumeTime ?? 0
+        resetNowPlayingUI(for: track, initialTime: initialTime)
+
+        // Setup player
+        let playerItem = AVPlayerItem(url: track.streamURL)
+        observeStatus(of: playerItem)
+
+        if player == nil {
+            player = AVPlayer(playerItem: playerItem)
+        } else {
+            player?.replaceCurrentItem(with: playerItem)
+        }
+
+        // If resuming, defer playback until after seeking
+        let shouldDeferPlayback = initialTime > 0
+        let trackDuration = track.duration
+        Task { @MainActor in
+            await loadDurationAndResume(
+                for: playerItem,
+                trackDuration: trackDuration,
+                initialTime: initialTime
+            )
+        }
+
+        // Start playback immediately only if not resuming
+        if !shouldDeferPlayback {
+            player?.play()
+        }
+        controlsView.setPlaying(true)
+        startTimeObserver()
+        startProgressTracking()
+        observeEndAndFailure(of: playerItem)
+
+        UIApplication.shared.isIdleTimerDisabled = true
+
+        // Log success
+        ErrorLogger.shared.logSuccess(
+            operation: .playAudio,
+            info: [
+                "identifier": track.itemIdentifier,
+                "filename": track.filename,
+                "trackNumber": "\(track.trackNumber ?? 0)"
+            ]
+        )
+    }
+
+    /// Show the new track's metadata and reset the slider. The max is reset
+    /// too: a stale duration from the previous track would corrupt progress
+    /// calculations in saveProgress. The slider updates again after seeking
+    /// when resuming.
+    private func resetNowPlayingUI(for track: AudioTrack, initialTime: Double) {
         titleLabel.text = track.title
         artistLabel.text = track.artistAlbumDisplay
         albumArtView.setImage(url: track.thumbnailURL ?? imageURL)
         updateTrackPositionLabel()
-
-        // Animate album art
         albumArtView.animatePulse()
 
-        // Reset slider (will update after seeking if resuming).
-        // The max must be reset too: a stale duration from the previous
-        // track would corrupt progress calculations in saveProgress.
         slider.max = track.duration ?? 0
-        let initialTime = resumeTime ?? 0
         slider.set(value: initialTime, animated: false)
         slider.leftLabel.text = formatTime(initialTime)
         slider.rightLabel.text = "--:--"
+    }
 
-        // Setup player
-        let playerItem = AVPlayerItem(url: track.streamURL)
-
-        // Observe item status to catch failures (e.g. 404): without this a
-        // broken stream stalls silently with the UI stuck on "playing"
+    /// Observe item status to catch failures (e.g. 404): without this a
+    /// broken stream stalls silently with the UI stuck on "playing".
+    private func observeStatus(of playerItem: AVPlayerItem) {
         playerItemStatusObservation?.invalidate()
         playerItemStatusObservation = playerItem.observe(\.status, options: [.new]) { [weak self] item, _ in
             let status = item.status
@@ -440,68 +483,49 @@ final class NowPlayingViewController: UIViewController {
                 }
             }
         }
+    }
 
-        if player == nil {
-            player = AVPlayer(playerItem: playerItem)
-        } else {
-            player?.replaceCurrentItem(with: playerItem)
-        }
+    /// Load the asset duration to size the slider (falling back to track
+    /// metadata), then seek to `initialTime` and start playback when
+    /// resuming. Playback was deferred by the caller when `initialTime > 0`.
+    private func loadDurationAndResume(
+        for playerItem: AVPlayerItem,
+        trackDuration: Double?,
+        initialTime: Double
+    ) async {
+        let isResuming = initialTime > 0
+        do {
+            let durationSeconds = try await playerItem.asset.load(.duration).seconds
 
-        // If resuming, defer playback until after seeking
-        let shouldDeferPlayback = (resumeTime ?? 0) > 0
+            // Use loaded duration if finite, otherwise fall back to track metadata
+            let isUsable = durationSeconds.isFinite && durationSeconds > 0
+            updateSliderDuration(isUsable ? durationSeconds : trackDuration, initialTime: initialTime)
 
-        // Load duration asynchronously, then seek if resuming
-        // Capture track duration for fallback
-        let trackDuration = track.duration
-        Task { @MainActor in
-            do {
-                let duration = try await playerItem.asset.load(.duration)
-                let durationSeconds = duration.seconds
-
-                // Use loaded duration if finite, otherwise fall back to track metadata
-                let effectiveDuration: Double?
-                if durationSeconds.isFinite && durationSeconds > 0 {
-                    effectiveDuration = durationSeconds
-                } else {
-                    effectiveDuration = trackDuration
-                }
-
-                if let effectiveDuration = effectiveDuration {
-                    slider.max = effectiveDuration
-                    slider.rightLabel.text = formatTime(initialTime - effectiveDuration)
-                }
-
-                // Seek to resume position after duration is loaded
-                if let resumeTime = resumeTime, resumeTime > 0 {
-                    let targetTime = CMTime(seconds: resumeTime, preferredTimescale: 600)
-                    await player?.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
-                    // Start playback after seek completes
-                    player?.play()
-                }
-            } catch {
-                // Use track duration if available
-                if let duration = trackDuration {
-                    slider.max = duration
-                    slider.rightLabel.text = formatTime(initialTime - duration)
-                }
-                // If we failed to load duration but were deferring, start playback anyway
-                if shouldDeferPlayback {
-                    player?.play()
-                }
+            // Seek to resume position after duration is loaded, then play
+            if isResuming {
+                let targetTime = CMTime(seconds: initialTime, preferredTimescale: 600)
+                await player?.seek(to: targetTime, toleranceBefore: .zero, toleranceAfter: .zero)
+                player?.play()
+            }
+        } catch {
+            updateSliderDuration(trackDuration, initialTime: initialTime)
+            // If we failed to load duration but were deferring, start playback anyway
+            if isResuming {
+                player?.play()
             }
         }
+    }
 
-        // Start playback immediately only if not resuming
-        if !shouldDeferPlayback {
-            player?.play()
-        }
-        controlsView.setPlaying(true)
-        startTimeObserver()
-        startProgressTracking()
+    private func updateSliderDuration(_ duration: Double?, initialTime: Double) {
+        guard let duration else { return }
+        slider.max = duration
+        slider.rightLabel.text = formatTime(initialTime - duration)
+    }
 
-        // Setup end/failure notifications. Block-based observers with
-        // queue: .main are used because the selector API does not guarantee
-        // main-thread delivery and the handlers are @MainActor.
+    /// Setup end/failure notifications. Block-based observers with
+    /// queue: .main are used because the selector API does not guarantee
+    /// main-thread delivery and the handlers are @MainActor.
+    private func observeEndAndFailure(of playerItem: AVPlayerItem) {
         if let observer = trackEndObserver {
             NotificationCenter.default.removeObserver(observer)
         }
@@ -530,18 +554,6 @@ final class NowPlayingViewController: UIViewController {
                 self?.handleTrackPlaybackFailure(errorDescription: errorDescription)
             }
         }
-
-        UIApplication.shared.isIdleTimerDisabled = true
-
-        // Log success
-        ErrorLogger.shared.logSuccess(
-            operation: .playAudio,
-            info: [
-                "identifier": track.itemIdentifier,
-                "filename": track.filename,
-                "trackNumber": "\(track.trackNumber ?? 0)"
-            ]
-        )
     }
 
     private func trackDidEnd() {

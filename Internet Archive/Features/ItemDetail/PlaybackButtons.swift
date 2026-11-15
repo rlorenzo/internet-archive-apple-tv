@@ -88,52 +88,68 @@ struct PlaybackButtons: View {
         .accessibilityHint("Double-tap to start playback")
     }
 
+    // MARK: - Resume / Start Over Buttons
+
+    private var resumeButton: some View {
+        Button(action: onResume) {
+            HStack(spacing: 12) {
+                Image(systemName: "play.fill")
+                    .font(.title2)
+                Text("Resume")
+                    .font(.title3)
+                    .fontWeight(.semibold)
+                    .lineLimit(1)
+            }
+            .fixedSize()
+            .padding(.horizontal, 40)
+            .padding(.vertical, 20)
+        }
+        .buttonStyle(PlaybackButtonStyle(isPrimary: true))
+        #if os(tvOS)
+        .focused($focusedButton, equals: .resume)
+        #endif
+        .accessibilityLabel("Resume")
+        .accessibilityHint("Double-tap to continue from where you left off")
+    }
+
+    private var startOverButton: some View {
+        Button(action: onStartOver) {
+            HStack(spacing: 12) {
+                Image(systemName: "arrow.counterclockwise")
+                    .font(.title2)
+                Text("Start Over")
+                    .font(.title3)
+                    .fontWeight(.medium)
+                    .lineLimit(1)
+            }
+            .fixedSize()
+            .padding(.horizontal, 40)
+            .padding(.vertical, 20)
+        }
+        .buttonStyle(PlaybackButtonStyle(isPrimary: false))
+        #if os(tvOS)
+        .focused($focusedButton, equals: .startOver)
+        #endif
+        .accessibilityLabel("Start Over")
+        .accessibilityHint("Double-tap to start playback from the beginning")
+    }
+
     // MARK: - Resume Buttons (With Progress)
 
     private func resumeButtons(progress: PlaybackProgress) -> some View {
         VStack(alignment: .leading, spacing: 12) {
-            HStack(spacing: 20) {
-                // Resume button (primary)
-                Button(action: onResume) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "play.fill")
-                            .font(.title2)
-                        Text("Resume")
-                            .font(.title3)
-                            .fontWeight(.semibold)
-                            .lineLimit(1)
-                    }
-                    .fixedSize()
-                    .padding(.horizontal, 40)
-                    .padding(.vertical, 20)
+            // Side by side when there's room; stacked when the column is too
+            // narrow (e.g. the wide-layout left column on iPhone Duo's inner
+            // display), so fixed-size buttons never overflow off-screen.
+            ViewThatFits(in: .horizontal) {
+                HStack(spacing: 20) {
+                    resumeButton
+                    startOverButton
                 }
-                .buttonStyle(PlaybackButtonStyle(isPrimary: true))
-                #if os(tvOS)
-                .focused($focusedButton, equals: .resume)
-                #endif
-                .accessibilityLabel("Resume")
-                .accessibilityHint("Double-tap to continue from where you left off")
-
-                // Start Over button (secondary)
-                Button(action: onStartOver) {
-                    HStack(spacing: 12) {
-                        Image(systemName: "arrow.counterclockwise")
-                            .font(.title2)
-                        Text("Start Over")
-                            .font(.title3)
-                            .fontWeight(.medium)
-                            .lineLimit(1)
-                    }
-                    .fixedSize()
-                    .padding(.horizontal, 40)
-                    .padding(.vertical, 20)
+                VStack(alignment: .leading, spacing: 12) {
+                    resumeButton
+                    startOverButton
                 }
-                .buttonStyle(PlaybackButtonStyle(isPrimary: false))
-                #if os(tvOS)
-                .focused($focusedButton, equals: .startOver)
-                #endif
-                .accessibilityLabel("Start Over")
-                .accessibilityHint("Double-tap to start playback from the beginning")
             }
 
             // Time remaining info

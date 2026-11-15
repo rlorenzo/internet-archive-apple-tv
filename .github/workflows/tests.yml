@@ -28,7 +28,7 @@ jobs:
   smoke-test:
     name: Smoke Test (tvOS ${{ matrix.tvos-version }})
     if: github.event_name != 'schedule'
-    runs-on: macos-26
+    runs-on: ${{ matrix.os }}
     timeout-minutes: 45
     strategy:
       fail-fast: false
@@ -37,16 +37,18 @@ jobs:
         # tvOS 18.x runtimes are no longer available on this image. Each entry
         # pairs a runtime with an Xcode version that bundles it.
         include:
-          - tvos-version: '26.2'
+          - os: macos-26
+            tvos-version: '26.2'
             xcode: '26.4'
-          - tvos-version: '26.5'
+          - os: macos-26
+            tvos-version: '26.5'
             xcode: '26.5'
-          # tvOS 27 is not yet available on GitHub-hosted runners; it is
-          # blocked on Xcode 27 beta landing in the image
-          # (actions/runner-images#14196). Uncomment this entry once it ships
-          # to exercise the on-device generated-subtitles path on tvOS 27.
-          # - tvos-version: '27.0'
-          #   xcode: '27.0'
+          # The xcode-27 image (GA Oct 2026, Apple Silicon only) ships Xcode 27
+          # as its default, so no xcode-select is needed. The tvOS version is
+          # matched by prefix to cover whichever 27.x runtime the image bundles.
+          - os: xcode-27
+            tvos-version: '27'
+            xcode: ''
 
     steps:
     - name: Checkout code
@@ -54,7 +56,9 @@ jobs:
 
     - name: Select Xcode version
       run: |
-        sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app/Contents/Developer
+        if [ -n "${{ matrix.xcode }}" ]; then
+          sudo xcode-select -s /Applications/Xcode_${{ matrix.xcode }}.app/Contents/Developer
+        fi
         xcodebuild -version
 
     - name: List available tvOS runtimes
@@ -95,14 +99,19 @@ jobs:
 
         # Find devices under the tvOS version section
         # The output format groups devices under headers like "-- tvOS 18.5 --"
-        # We need to find devices listed after our target version header
+        # We need to find devices listed after our target version header.
+        # A prefix like "27" can match several runtimes (e.g. 27.0 and 27.2);
+        # simctl lists them oldest first, so take the first Apple TV in the
+        # LAST matching section: the newest runtime, which matches the
+        # selected Xcode's SDK. An older runtime can be shut down mid-job.
         DEVICE_ID=$(xcrun simctl list devices available | \
           awk -v ver="$TVOS_VERSION" '
-            /^-- tvOS/ { in_section = ($0 ~ "tvOS " ver) }
-            in_section && /Apple TV/ {
+            /^-- tvOS/ { in_section = ($0 ~ "tvOS " ver); taken = 0 }
+            in_section && !taken && /Apple TV/ {
               match($0, /[A-F0-9-]{36}/);
-              if (RSTART > 0) { print substr($0, RSTART, 36); exit }
+              if (RSTART > 0) { pick = substr($0, RSTART, 36); taken = 1 }
             }
+            END { if (pick != "") print pick }
           ')
 
         if [ -z "$DEVICE_ID" ]; then
@@ -142,6 +151,10 @@ jobs:
         DEVICE_ID="${{ steps.find-simulator.outputs.DEVICE_ID }}"
         APP_PATH=$(find DerivedData/Build/Products -name "Internet Archive.app" -type d | head -1)
         echo "Installing app from: $APP_PATH"
+        # The simulator can be shut down during the long build step; make
+        # sure it is booted again before installing.
+        xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
+        xcrun simctl bootstatus "$DEVICE_ID" -b
         xcrun simctl install "$DEVICE_ID" "$APP_PATH"
         echo "Launching app..."
         # Launch the app - capture output and exit code separately

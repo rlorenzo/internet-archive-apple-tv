@@ -69,7 +69,7 @@ jobs:
 
       - name: Install Lizard
         run: |
-          python3 -m pip install --user lizard
+          python3 -m pip install --user lizard==1.26.0  # pinned: new releases can change CCN scoring
           echo "$HOME/.local/bin" >> "$GITHUB_PATH"
 
       - name: Run Lizard (fail if any function has CCN > 15)

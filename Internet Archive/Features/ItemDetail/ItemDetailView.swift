@@ -5,7 +5,6 @@
 //  Item detail modal view displaying metadata, description, and playback controls
 //
 
-import NukeUI
 import SwiftUI
 
 /// Item detail view displaying metadata, description, and playback controls.
@@ -141,7 +140,7 @@ struct ItemDetailView: View {
         GeometryReader { geometry in
             ScrollView {
                 let outerPadding = PlatformMetrics.horizontalPadding(compact: false)
-                let columnSpacing: CGFloat = 60
+                let columnSpacing: CGFloat = 40  // matches CollectionBrowserView header
                 // Subtract both the outer padding and the inter-column spacing
                 // before splitting so the thumbnail / metadata ratio is a true
                 // 40 / 60 of the *usable* two-column area, not of the full
@@ -152,7 +151,7 @@ struct ItemDetailView: View {
                         thumbnailView
                         controlsSection
                     }
-                    .frame(width: columnsWidth * 0.4)
+                    .frame(width: columnsWidth * 0.4, alignment: .leading)
 
                     VStack(alignment: .leading, spacing: 30) {
                         metadataSection
@@ -182,32 +181,18 @@ struct ItemDetailView: View {
 
     // MARK: - Thumbnail View
 
+    /// Same shared thumbnail as the collection header: crops to fill a
+    /// fixed aspect-ratio frame, so the image spans the full column width
+    /// instead of letterboxing and leaving an uneven gap beside it.
     private var thumbnailView: some View {
-        VStack {
-            LazyImage(url: thumbnailURL) { state in
-                if let image = state.image {
-                    image
-                        .resizable()
-                        .aspectRatio(contentMode: .fit)
-                } else {
-                    placeholderImage
-                }
-            }
-            .aspectRatio(mediaType.aspectRatio, contentMode: .fit)
-            .clipShape(RoundedRectangle(cornerRadius: 16))
-        }
+        MediaThumbnailView(
+            identifier: item.identifier,
+            mediaType: mediaType,
+            aspectRatio: mediaType.aspectRatio,
+            cornerRadius: 16,
+            placeholderIconSize: 80
+        )
         .padding(.vertical, 60)
-    }
-
-    private var placeholderImage: some View {
-        RoundedRectangle(cornerRadius: 16)
-            .fill(Color.placeholderFill)
-            .aspectRatio(mediaType.aspectRatio, contentMode: .fit)
-            .overlay(
-                Image(systemName: mediaType.placeholderIcon)
-                    .font(.system(size: 80))
-                    .foregroundStyle(.secondary)
-            )
     }
 
     // MARK: - Metadata Section
@@ -303,10 +288,6 @@ struct ItemDetailView: View {
     }
 
     // MARK: - Computed Properties
-
-    private var thumbnailURL: URL? {
-        IAURLHelpers.thumbnailURL(for: item.identifier)
-    }
 
     private var displayCreator: String? {
         metadata?.creator ?? item.creator
