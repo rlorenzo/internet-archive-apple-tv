@@ -99,14 +99,19 @@ jobs:
 
         # Find devices under the tvOS version section
         # The output format groups devices under headers like "-- tvOS 18.5 --"
-        # We need to find devices listed after our target version header
+        # We need to find devices listed after our target version header.
+        # A prefix like "27" can match several runtimes (e.g. 27.0 and 27.2);
+        # simctl lists them oldest first, so take the first Apple TV in the
+        # LAST matching section: the newest runtime, which matches the
+        # selected Xcode's SDK. An older runtime can be shut down mid-job.
         DEVICE_ID=$(xcrun simctl list devices available | \
           awk -v ver="$TVOS_VERSION" '
-            /^-- tvOS/ { in_section = ($0 ~ "tvOS " ver) }
-            in_section && /Apple TV/ {
+            /^-- tvOS/ { in_section = ($0 ~ "tvOS " ver); taken = 0 }
+            in_section && !taken && /Apple TV/ {
               match($0, /[A-F0-9-]{36}/);
-              if (RSTART > 0) { print substr($0, RSTART, 36); exit }
+              if (RSTART > 0) { pick = substr($0, RSTART, 36); taken = 1 }
             }
+            END { if (pick != "") print pick }
           ')
 
         if [ -z "$DEVICE_ID" ]; then
@@ -146,6 +151,10 @@ jobs:
         DEVICE_ID="${{ steps.find-simulator.outputs.DEVICE_ID }}"
         APP_PATH=$(find DerivedData/Build/Products -name "Internet Archive.app" -type d | head -1)
         echo "Installing app from: $APP_PATH"
+        # The simulator can be shut down during the long build step; make
+        # sure it is booted again before installing.
+        xcrun simctl boot "$DEVICE_ID" 2>/dev/null || true
+        xcrun simctl bootstatus "$DEVICE_ID" -b
         xcrun simctl install "$DEVICE_ID" "$APP_PATH"
         echo "Launching app..."
         # Launch the app - capture output and exit code separately
